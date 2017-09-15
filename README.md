@@ -1,8 +1,12 @@
 # Vhostuser CNI plugin
 
-- It is a vhostuser plugin in Kubernetes and provides accelerate DPDK workloads in container networking
+- Vhostuser plugin is a Container Network Interface (CNI) plugin to run with OVS-DPDK and VPP along with Multus CNI plugin in Kubernetes for Bare metal RA. It enhances high performance container Networking solution and Dataplane Acceleration for NFV Environment.
 
 - DPDK Vhostuser is new virtualization technology. Please refer to [here](http://dpdk.org/doc/guides/howto/virtio_user_for_container_networking.html) for more information.
+
+<p align="center">
+   <img src="doc/images/Vhostuser-plugin.png" width="1008" />
+</p>
 
 ## Build & Clean
 
@@ -59,8 +63,18 @@ Given the following network configuration:
 EOF
 ```
 
-### Integrated with Multus plugin
 
+### Integrated with Multus plugin for high performance container Networking solution for NFV Environment 
+
+Refer Multus (NFV based Multi - Network plugin), DPDK-SRIOV CNI plugins
+* [Multus - Multi Network plugin](https://github.com/Intel-Corp/multus-cni)
+* [DPDK-SRIOV - Dataplane plugin](https://github.com/Intel-Corp/sriov-cni)
+
+<p align="center">
+   <img src="doc/images/Vhostuser-with-multus.png" width="1008" />
+</p>
+
+### Configuration details
 ```
 # cat > /etc/cni/net.d/10-multus.conf <<EOF
 {
