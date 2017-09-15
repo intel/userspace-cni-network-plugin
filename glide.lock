@@ -1,0 +1,25 @@
+hash: 1418e4fe8ff60b7cb625c37c956bc7139c2267228572ba3e53231fcec3c84a79
+updated: 2017-07-19T21:52:23.096616022-07:00
+imports:
+- name: github.com/containernetworking/cni
+  version: 5c3c17164270150467498a32c71436c7cd5501be
+  subpackages:
+  - pkg/invoke
+  - pkg/ip
+  - pkg/ipam
+  - pkg/ns
+  - pkg/skel
+  - pkg/types
+- name: github.com/coreos/go-iptables
+  version: fbb73372b87f6e89951c2b6b31470c2c9d5cfae3
+  subpackages:
+  - iptables
+- name: github.com/vishvananda/netlink
+  version: ecf47fd5739b3d2c3daf7c89c4b9715a2605c21b
+  subpackages:
+  - nl
+- name: golang.org/x/sys
+  version: e11762ca30adc5b39fdbfd8c4250dabeb8e456d3
+  subpackages:
+  - unix
+testImports: []
