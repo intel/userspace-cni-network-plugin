@@ -183,4 +183,4 @@ Run the VPP in another container B and ping the Container A
 If the system works well, the ping would be successful
 
 ### Contacts
-For any questions about Acceleratus CNI, please reach out on github issue or feel free to contact the developer @john and @kural in our [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
+For any questions about Vhostuser CNI, please reach out on github issue or feel free to contact the developer @john and @kural in our [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
