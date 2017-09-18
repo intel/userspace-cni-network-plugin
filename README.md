@@ -70,6 +70,9 @@ Refer Multus (NFV based Multi - Network plugin), DPDK-SRIOV CNI plugins
 * [Multus - Multi Network plugin](https://github.com/Intel-Corp/multus-cni)
 * [DPDK-SRIOV - Dataplane plugin](https://github.com/Intel-Corp/sriov-cni)
 
+Encourage the users/developers to use Multus based Kubernetes CDR/TPR based network objects. Please follow the configuration details in the link: [Usage with Kubernetes CRD/TPR based Network Objects](https://github.com/Intel-Corp/multus-cni/blob/master/README.md#usage-with-kubernetes-crdtpr-based-network-objects)
+
+Please refer the Kubernetes Network SIG - Multiple Network PoC proposal for more details refer the link - [K8s Multiple Network proposal](https://docs.google.com/document/d/1TW3P4c8auWwYy-w_5afIPDcGNLK3LZf0m14943eVfVg/edit)
 <p align="center">
    <img src="doc/images/Vhostuser-with-multus.png" width="1008" />
 </p>
