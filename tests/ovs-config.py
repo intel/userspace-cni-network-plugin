@@ -34,12 +34,12 @@ def createVhostPort(sock):
 	sock_dir, sock_file = tmp[0], tmp[1]
 
 	try:
-		# Specify the socket directory in the ovsdb
-		cmd = 'ovs-vsctl --no-wait set Open_vSwitch . other_config:vhost-sock-dir={}'.format(sock_dir)
-		execCommand(cmd)
-
 		# Add the DPDK Vhost User Port, OVS works as the server
 		cmd = 'ovs-vsctl add-port br0 {} -- set Interface {} type=dpdkvhostuser'.format(sock_file, sock_file)
+		execCommand(cmd)
+
+		# Move the socket to desired location
+		cmd = 'mv /usr/local/var/run/openvswitch/{} {}/{}'.format(sock_file, sock_dir, sock_file)
 		execCommand(cmd)
 	except:
 		print "Some errors occured, please have a check..."
