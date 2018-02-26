@@ -28,7 +28,6 @@ Remove the binary and temporary files generated whild building the source codes.
 
 * `name` (string, required): the name of the network
 * `type` (string, required): "vhostuser"
-* `if0name` (string, required): name of the virtual interface
 * `vhost` (dictionary, required): Vhostuser configurations.
 * `ipam` (dictionary, optional): IPAM configuration to be used for this network.
 
@@ -42,7 +41,7 @@ Given the following network configuration:
 # cat > /etc/cni/net.d/99-vhostuser.conf <<EOF
 {
 	"type": "vhostuser",
-    	"name": "vhostuser-network",
+	"name": "vhostuser-network",
 	"if0name": "net0",
 	"vhost": {
 		"vhost_tool": "/path/to/vhost-user-net-plugin/tests/vpp-config.py"
