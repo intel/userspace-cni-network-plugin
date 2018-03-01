@@ -199,17 +199,19 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	createVhostPort(n, args.ContainerID)
 
-	// run the IPAM plugin and get back the config to apply
-	result, err = ipam.ExecAdd(n.IPAM.Type, args.StdinData)
-	if err != nil {
-		return fmt.Errorf("failed to set up IPAM: %v", err)
-	}
-	if result.IP4 == nil {
-		return errors.New("IPAM plugin returned missing IPv4 config")
-	}
+	if n.IPAM.Type != "" {
+		// run the IPAM plugin and get back the config to apply
+		result, err = ipam.ExecAdd(n.IPAM.Type, args.StdinData)
+		if err != nil {
+			return fmt.Errorf("failed to set up IPAM: %v", err)
+		}
+		if result.IP4 == nil {
+			return errors.New("IPAM plugin returned missing IPv4 config")
+		}
 
-	containerIP := result.IP4.IP.IP.String()
-	SetupContainerNetwork(n, args.ContainerID, containerIP)
+		containerIP := result.IP4.IP.IP.String()
+		SetupContainerNetwork(n, args, containerIP)
+	}
 
 	return result.Print()
 }
@@ -220,7 +222,10 @@ func cmdDel(args *skel.CmdArgs) error {
 			return err
 		}
 
-		return ipam.ExecDel(n.IPAM.Type, args.StdinData)
+		if n.IPAM.Type != "" {
+			return ipam.ExecDel(n.IPAM.Type, args.StdinData)
+		}
+		return nil
 	} else {
 		return err
 	}
