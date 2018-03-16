@@ -10,7 +10,7 @@
 
 ## Build & Clean
 
-This plugin is recommended to build with Go 1.7.5 which is fully tested. Other versions of Go are theoretically supported, but MIGHT cause unknown issue, please try to fix it by yourself.
+This plugin is recommended to build with Go 1.7.5 and VPP 17.01 which is fully tested. Other versions of Go and VPP are theoretically supported, but MIGHT cause unknown issue, please try to fix it by yourself / Welcome PR for latest VPP version.
 
 ```
 #./build
@@ -129,6 +129,47 @@ EOF
 
 Note: The Vhostuser CNI supports different IPAM plugins for the IP addresses management. The generated IP address information will be stored in one configuration file.
 
+## Installing VPP or DPDK-OVS
+Both VPP (Vector Packet Processing) and DPDK-OVS support VHOST_USER virtual ports. And it uses DPDK VIRTIO_USER as its client for the container network. Install VPP or DPDK-OVS for the Kubernetes node(s).
+
+### Installing VPP
+There are two ways to install the VPP packages. 
+First of all, the VPP has pre-build packages for the main Linux distributions, please refer to the VPP’s [wiki page](https://wiki.fd.io/view/VPP/Installing_VPP_binaries_from_packages) for the details. Using Ubuntu 16.04 (Xenial) as an example to demonstrate how to install VPP from pre-build packages:
+```
+# export UBUNTU="xenial"
+# export RELEASE=".stable.1701"
+# sudo rm /etc/apt/sources.list.d/99fd.io.list
+# echo "deb [trusted=yes] https://nexus.fd.io/content/repositories/fd.io$RELEASE.ubuntu.$UBUNTU.main/ ./" | sudo tee -a /etc/apt/sources.list.d/99fd.io.list
+# sudo apt-get update
+# sudo apt-get install vpp vpp-dpdk-dkms
+```
+
+The other way is to build the packages from source codes, for the detailed guides, please refer to the wiki page at [here](https://wiki.fd.io/view/VPP/Build,_install,_and_test_images). 
+```
+# git clone https://gerrit.fd.io/r/vpp
+# cd vpp/build-root
+# make distclean
+# ./bootstrap.sh
+# make V=0 PLATFORM=vpp TAG=vpp install-deb
+# sudo dpkg install *.deb
+```
+### Installing DPDK-OVS
+To install the DPDK-OVS, the source codes contains a [document](https://github.com/openvswitch/ovs/blob/master/Documentation/intro/install/dpdk.rst) for how to install the DPDK-OVS.
+
+### Configuring the system
+Both VPP and DPDK-OVS are DPDK based application, so there are some requirements, detailed system requirements can be found at [DPDK requirements](http://dpdk.org/doc/guides/linux_gsg/sys_reqs.html). Hugepages are the main requirement for the VHOST_USER virtual ports. 
+```
+# echo 'vm.nr_hugepages=2048' > /etc/sysctl.d/hugepages.conf
+```
+Or add the following configuration to the grub configuration:
+```
+# default_hugepagesz=2m hugepagesz=2m hugepages=2048
+```
+### Building DPDK Docker image and running a pod
+* Before the vhostuser CNI installation, create the VPP 17.01 based Docker image, and use sample application since it provides ping tool to check basic network connectivity.
+* Run 2 VPP 17.01 based pods in the same node. Highly recommend user to take care of it, please contact @kural or @abdul in [Intel-corp](https://intel-corp.herokuapp.com/) for more assistant on this. 
+* With the deployment of 2 pod A and B, following vhostuser cni content with pause/infra/sandbox container ID is stored in /var/lib/cni/vhostuser
+
 ```
 # tree /var/lib/cni/vhostuser
 /var/lib/cni/vhostuser
@@ -140,13 +181,12 @@ Note: The Vhostuser CNI supports different IPAM plugins for the IP addresses man
 │   ├── 65bc360690b6-net1
 │   ├── 65bc360690b6-net1-ip4.conf
 │   └── 65bc360690b6-net1.json
-└── get-prefix.sh
 ```
 
-Shows that there are two vhostuser ports, each for one container.
-* xxxxxxxxxxxx-net1: The socket file for the Vhostuser server/client communication.
-* xxxxxxxxxxxx-net1-ip4.conf: IPAM information for the Vhostuser port.
-* xxxxxxxxxxxx-net1.json: Vhostuser Port information for the management.
+* Shows that there are two vhostuser ports, each for one container.
+** xxxxxxxxxxxx-net1: The socket file for the Vhostuser server/client communication.
+** xxxxxxxxxxxx-net1-ip4.conf: IPAM information for the Vhostuser port.
+** xxxxxxxxxxxx-net1.json: Vhostuser Port information for the management.
 
 ```
 # cat 4d578250ad8d-net1-ip4.conf
@@ -158,7 +198,7 @@ Shows that there are two vhostuser ports, each for one container.
 }
 ```
 
-The IPAM management configuration for the port. 
+* The IPAM management configuration for the port. 
 
 ```
 # cat 4d578250ad8d-net1.json
@@ -171,17 +211,17 @@ The IPAM management configuration for the port.
 }
 ```
 
-Login the container and run the VPP application:
+* Login the container A and run your own script to get the pause/infra/sandbox container ID (_here we used get-prefix.sh to get the container ID from our VPP docker image, highly recommend user to have their own docker image_)
 
 ```
 $ /vhost-user-net-plugin/get-prefix.sh
 4d578250ad8d760c0722be78badb4b4b6d57fed8f95dea23aaa0065aa8657b29
 ```
 
-This container should use socket file/configuration file under the folder
+* Container A should use socket file/configuration file under the folder
 /vhost-user-net-plugin/4d578250ad8d760c0722be78badb4b4b6d57fed8f95dea23aaa0065aa8657b29 .
 
-Run the VPP in a container A as follows
+* Run the VPP(version 17.01) in a container A as follows
 
 ```
 # vpp unix {log /tmp/vpp.log cli-listen 0.0.0.0:5002} api-trace { on } \
@@ -191,13 +231,13 @@ Run the VPP in a container A as follows
 # vppctl set int ip table virtio_user0 0
 ```
 
-Run the VPP in another container B and ping the Container A
+* Run the VPP(version 17.01) in another container B and ping the Container A
 
 ```
 # vppctl ping 10.56.217.132
 ```
 
-If the system works well, the ping would be successful
+* If the system works well, the ping would be successful
 
 ### Contacts
-For any questions about Vhostuser CNI, please reach out on github issue or feel free to contact the developer @john and @kural in our [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
+For any questions about Vhostuser CNI, please reach out on github issue or feel free to contact the developer @Kural and @abdul in our [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
