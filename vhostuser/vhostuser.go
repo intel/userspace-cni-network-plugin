@@ -210,7 +210,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		}
 
 		containerIP := result.IP4.IP.IP.String()
-		SetupContainerNetwork(n, args, containerIP)
+		SetupContainerNetwork(n, args.ContainerID, containerIP)
 	}
 
 	return result.Print()
