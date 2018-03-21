@@ -30,7 +30,7 @@ Remove the binary and temporary files generated whild building the source codes.
 * `type` (string, required): "vhostuser"
 * `if0name` (string, required): name of the virtual interface
 * `vhost` (dictionary, required): Vhostuser configurations.
-* `ipam` (dictionary, optional): IPAM configuration to be used for this network.
+* `ipam` (dictionary, required): IPAM configuration to be used for this network.
 
 ## Usage
 
