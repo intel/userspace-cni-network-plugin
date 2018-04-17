@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -147,13 +148,36 @@ func destroyVhostPort(conf *NetConf, ContainerID string, IfName string) error {
 	cmd_args := []string{"delete", vc.Vhostname}
 	if _, err := ExecCommand(conf.VhostConf.Vhosttool, cmd_args); err == nil {
 		path := filepath.Join(conf.CNIDir, ContainerID)
-		fileName := fmt.Sprintf("%s-%s", ContainerID[:12], IfName)
-		suffixes := []string{"", ".json", "-ip4.conf"}
-		for _, suffix := range suffixes {
-			file := filepath.Join(path, fileName + suffix)
-			os.Remove(file)
+
+		folder, err := os.Open(path)
+		if err != nil {
+			return err
 		}
-		os.Remove(path) // Fails if dir not empty
+		defer folder.Close()
+
+		fileBaseName := fmt.Sprintf("%s-%s", ContainerID[:12], IfName)
+		filesForContainerID, err := folder.Readdirnames(0)
+		if err != nil {
+			return err
+		}
+		numDeletedFiles := 0
+
+		// Remove files with matching container ID and IF name
+		for _, fileName := range filesForContainerID {
+			if match, _ := regexp.MatchString(fileBaseName + ".*", fileName); match == true {
+				file := filepath.Join(path, fileName)
+				if err = os.Remove(file); err != nil {
+					return err
+				}
+				numDeletedFiles++
+			}
+		}
+		// Remove folder for container ID if it's empty
+		if numDeletedFiles == len(filesForContainerID) {
+			if err = os.Remove(path); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
