@@ -73,10 +73,10 @@ func loadConf(bytes []byte) (*NetConf, error) {
 }
 
 // saveVhostConf Save the rendered netconf for cmdDel
-func saveVhostConf(conf *NetConf, args *skel.CmdArgs) error {
-	fileName := fmt.Sprintf("%s-%s.json", args.ContainerID[:12], args.IfName)
+func saveVhostConf(conf *NetConf, ContainerID string, IfName string) error {
+	fileName := fmt.Sprintf("%s-%s.json", ContainerID[:12], IfName)
 	if vhostConfBytes, err := json.Marshal(conf.VhostConf); err == nil {
-		sockDir := filepath.Join(conf.CNIDir, args.ContainerID)
+		sockDir := filepath.Join(conf.CNIDir, ContainerID)
 		path := filepath.Join(sockDir, fileName)
 
 		return ioutil.WriteFile(path, vhostConfBytes, 0644)
@@ -85,9 +85,9 @@ func saveVhostConf(conf *NetConf, args *skel.CmdArgs) error {
 	}
 }
 
-func (vc *VhostConf) loadVhostConf(conf *NetConf, args *skel.CmdArgs) error {
-	fileName := fmt.Sprintf("%s-%s.json", args.ContainerID[:12], args.IfName)
-	sockDir := filepath.Join(conf.CNIDir, args.ContainerID)
+func (vc *VhostConf) loadVhostConf(conf *NetConf, ContainerID string, IfName string) error {
+	fileName := fmt.Sprintf("%s-%s.json", ContainerID[:12], IfName)
+	sockDir := filepath.Join(conf.CNIDir, ContainerID)
 	path := filepath.Join(sockDir, fileName)
 
 	if data, err := ioutil.ReadFile(path); err == nil {
@@ -101,11 +101,11 @@ func (vc *VhostConf) loadVhostConf(conf *NetConf, args *skel.CmdArgs) error {
 	return nil
 }
 
-func createVhostPort(conf *NetConf, args *skel.CmdArgs) error {
-	s := []string{args.ContainerID[:12], args.IfName}
+func createVhostPort(conf *NetConf, ContainerID string, IfName string) error {
+	s := []string{ContainerID[:12], IfName}
 	sockRef := strings.Join(s, "-")
 
-	sockDir := filepath.Join(conf.CNIDir, args.ContainerID)
+	sockDir := filepath.Join(conf.CNIDir, ContainerID)
 	if _, err := os.Stat(sockDir); err != nil {
 		if os.IsNotExist(err) {
 			if err := os.MkdirAll(sockDir, 0700); err != nil {
@@ -129,25 +129,25 @@ func createVhostPort(conf *NetConf, args *skel.CmdArgs) error {
 		}
 
 		conf.VhostConf.Vhostname = vhostName
-		conf.VhostConf.Ifname = args.IfName
+		conf.VhostConf.Ifname = IfName
 		conf.VhostConf.IfMac = GenerateRandomMacAddress()
-		return saveVhostConf(conf, args)
+		return saveVhostConf(conf, ContainerID, IfName)
 	}
 
 	return nil
 }
 
-func destroyVhostPort(conf *NetConf, args *skel.CmdArgs) error {
+func destroyVhostPort(conf *NetConf, ContainerID string, IfName string) error {
 	vc := &VhostConf{}
-	if err := vc.loadVhostConf(conf, args); err != nil {
+	if err := vc.loadVhostConf(conf, ContainerID, IfName); err != nil {
 		return err
 	}
 
 	//vppctl delete vhost-user VirtualEthernet0/0/0
 	cmd_args := []string{"delete", vc.Vhostname}
 	if _, err := ExecCommand(conf.VhostConf.Vhosttool, cmd_args); err == nil {
-		path := filepath.Join(conf.CNIDir, args.ContainerID)
-		fileName := fmt.Sprintf("%s-%s", args.ContainerID[:12], args.IfName)
+		path := filepath.Join(conf.CNIDir, ContainerID)
+		fileName := fmt.Sprintf("%s-%s", ContainerID[:12], IfName)
 		suffixes := []string{"", ".json", "-ip4.conf"}
 		for _, suffix := range suffixes {
 			file := filepath.Join(path, fileName + suffix)
@@ -181,14 +181,14 @@ func GenerateRandomMacAddress() string {
 }
 
 // SetupContainerNetwork Write the configuration to file
-func SetupContainerNetwork(conf *NetConf, args *skel.CmdArgs, containerIP string) {
+func SetupContainerNetwork(conf *NetConf, ContainerID string, containerIP string, IfName string) {
 	cmd_args := []string{"config", conf.VhostConf.Vhostname, containerIP, conf.VhostConf.IfMac}
 	ExecCommand(conf.VhostConf.Vhosttool, cmd_args)
 
 	// Write the configuration to file
 	config := fmt.Sprintf(NET_CONFIG_TEMPLATE, containerIP, conf.VhostConf.IfMac, conf.VhostConf.VhostMac)
-	fileName := fmt.Sprintf("%s-%s-ip4.conf", args.ContainerID[:12], args.IfName)
-	sockDir := filepath.Join(conf.CNIDir, args.ContainerID)
+	fileName := fmt.Sprintf("%s-%s-ip4.conf", ContainerID[:12], IfName)
+	sockDir := filepath.Join(conf.CNIDir, ContainerID)
 	configFile := filepath.Join(sockDir, fileName)
 	ioutil.WriteFile(configFile, []byte(config), 0644)
 }
@@ -202,7 +202,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return result.Print()
 	}
 
-	createVhostPort(n, args)
+	createVhostPort(n, args.ContainerID, args.IfName)
 
 	if n.IPAM.Type != "" {
 		// run the IPAM plugin and get back the config to apply
@@ -214,8 +214,8 @@ func cmdAdd(args *skel.CmdArgs) error {
 			return errors.New("IPAM plugin returned missing IPv4 config")
 		}
 
-		containerIP := result.IP4.IP.IP.String()
-		SetupContainerNetwork(n, args, containerIP)
+		ContainerIP := result.IP4.IP.IP.String()
+		SetupContainerNetwork(n, args.ContainerID, ContainerIP, args.IfName)
 	}
 
 	return result.Print()
@@ -223,7 +223,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 func cmdDel(args *skel.CmdArgs) error {
 	if n, err := loadConf(args.StdinData); err == nil {
-		if err = destroyVhostPort(n, args); err != nil {
+		if err = destroyVhostPort(n, args.ContainerID, args.IfName); err != nil {
 			return err
 		}
 
@@ -239,3 +239,4 @@ func cmdDel(args *skel.CmdArgs) error {
 func main() {
 	skel.PluginMain(cmdAdd, cmdDel)
 }
+
