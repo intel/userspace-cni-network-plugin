@@ -167,7 +167,10 @@ Or add the following configuration to the grub configuration:
 ### Building DPDK Docker image and running a pod
 * Before the vhostuser CNI installation, create the VPP 17.01 based Docker image, and use sample application since it provides ping tool to check basic network connectivity.
 * Run 2 VPP 17.01 based pods in the same node. Highly recommend user to take care of it, please contact @kural or @abdul in [Intel-corp](https://intel-corp.herokuapp.com/) for more assistant on this. 
+	* This CNI plugin moves vhostuser socket file to the /var/lib/cni/vhostuser directory from ovs-vswitchd's path for vhostuser(for release version it is usually /var/run/openvswitch). DPDK application inside
+container expects that it should be /vhost-user-net-plugin. Therefore pod's yaml should contain mountVolume declaration to bind directories.
 * With the deployment of 2 pod A and B, following vhostuser cni content with pause/infra/sandbox container ID is stored in /var/lib/cni/vhostuser
+
 
 ```
 # tree /var/lib/cni/vhostuser
