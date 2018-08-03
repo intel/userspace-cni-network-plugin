@@ -164,7 +164,8 @@ Or add the following configuration to the grub configuration:
 ```
 # default_hugepagesz=2m hugepagesz=2m hugepages=2048
 ```
-### Building DPDK Docker image and running a pod
+
+### Testing the plugin with VPP based Docker image
 * Before the vhostuser CNI installation, create the VPP 17.01 based Docker image, and use sample application since it provides ping tool to check basic network connectivity.
 * Run 2 VPP 17.01 based pods in the same node. Highly recommend user to take care of it, please contact @kural or @abdul in [Intel-corp](https://intel-corp.herokuapp.com/) for more assistant on this. 
 * With the deployment of 2 pod A and B, following vhostuser cni content with pause/infra/sandbox container ID is stored in /var/lib/cni/vhostuser
@@ -237,6 +238,70 @@ $ /vhost-user-net-plugin/get-prefix.sh
 ```
 
 * If the system works well, the ping would be successful
+
+### Testing the plugin with DPDK testpmd application
+
+To follow this example you should have a system with kubernetes available and configured to support native 1 GB hugepages. You should also have multus-cni and vhost-user-net-plugin up and running. See `examples/crd-vhostuser-net.yaml` for example config to use with multus and fix path to vhost tool. If using OVS, check that you have bridge named `br0` in your OVS with `ovs-vsctl show` and if not, create it with `ovs-vsctl add-br br0 -- set bridge br0 datapath_type=netdev`.
+
+#### 1. Build the image to be used
+
+Build container image from
+
+```Dockerfile
+FROM ubuntu:bionic
+
+RUN apt-get update && apt-get install -y dpdk;
+
+ENTRYPOINT ["bash"]
+```
+
+Dockerfile and tag it as `ubuntu-dpdk`:
+
+```bash
+docker build . -t ubuntu-dpdk
+```
+
+#### 2. Create pod with multiple vhostuser interfaces
+
+Copy `get-prefix.sh` script from vhost-user-net-plugin repo to `/var/lib/cni/vhostuser/`. See `examples/pod-multi-vhost.yaml`and start the pod:
+
+```bash
+kubectl create -f examples/pod-multi-vhost.yaml
+```
+
+#### 3. Open terminal to pod and start testpmd
+
+Open terminal to the created pod once it is running:
+
+```bash
+kubectl exec -it multi-vhost-example bash
+```
+
+Launch testpmd and automatically start forwarding packets after sending first burst:
+
+```bash
+# Get container ID
+export ID=$(/vhu/get-prefix.sh)
+
+# Run testpmd with ports created by vhostplugin
+# Note: change coremask to suit your system
+testpmd \
+    -d librte_pmd_virtio.so.17.11 \
+    -m 1024 \
+    -c 0xC \
+    --file-prefix=testpmd_ \
+    --vdev=net_virtio_user0,path=/vhu/${ID}/${ID:0:12}-net1 \
+    --vdev=net_virtio_user1,path=/vhu/${ID}/${ID:0:12}-net2 \
+    --no-pci \
+    -- \
+    --no-lsc-interrupt \
+    --auto-start \
+    --tx-first \
+    --stats-period 1 \
+    --disable-hw-vlan;
+```
+
+If packets are not going through, you may need to configure direct flows to your switch between the used ports. For example, with OVS as the switch, this is done by getting the port numbers with `ovs-ofctl dump-ports br0` and configuring flow, for example, from port 1 to port 2 with `ovs-ofctl add-flow br0 in_port=1,action=output:2` and vice versa.
 
 ### Contacts
 For any questions about Vhostuser CNI, please reach out on github issue or feel free to contact the developer @Kural and @abdul in our [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
