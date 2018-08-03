@@ -4,9 +4,7 @@
 
 - DPDK Vhostuser is new virtualization technology. Please refer to [here](http://dpdk.org/doc/guides/howto/virtio_user_for_container_networking.html) for more information.
 
-<p align="center">
-   <img src="doc/images/Vhostuser-plugin.png" width="1008" />
-</p>
+![Vhostuser plugin](doc/images/Vhostuser-plugin.png)
 
 ## Build & Clean
 
@@ -72,9 +70,8 @@ Refer Multus (NFV based Multi - Network plugin), DPDK-SRIOV CNI plugins
 Encourage the users/developers to use Multus based Kubernetes CDR/TPR based network objects. Please follow the configuration details in the link: [Usage with Kubernetes CRD/TPR based Network Objects](https://github.com/Intel-Corp/multus-cni/blob/master/README.md#usage-with-kubernetes-crdtpr-based-network-objects)
 
 Please refer the Kubernetes Network SIG - Multiple Network PoC proposal for more details refer the link - [K8s Multiple Network proposal](https://docs.google.com/document/d/1TW3P4c8auWwYy-w_5afIPDcGNLK3LZf0m14943eVfVg/edit)
-<p align="center">
-   <img src="doc/images/Vhostuser-with-multus.png" width="1008" />
-</p>
+
+![Vhostuser CNI with multus](doc/images/Vhostuser-with-multus.png)
 
 ### Configuration details
 ```
