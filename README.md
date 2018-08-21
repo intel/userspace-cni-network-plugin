@@ -4,7 +4,7 @@
 
 - DPDK Vhostuser is new virtualization technology. Please refer to [here](http://dpdk.org/doc/guides/howto/virtio_user_for_container_networking.html) for more information.
 
-![Vhostuser plugin](doc/images/Vhostuser-plugin.png)
+![Vhostuser plugin](doc/images/userspace-plugin.png)
 
 ## Build & Clean
 
@@ -71,7 +71,7 @@ Encourage the users/developers to use Multus based Kubernetes CDR/TPR based netw
 
 Please refer the Kubernetes Network SIG - Multiple Network PoC proposal for more details refer the link - [K8s Multiple Network proposal](https://docs.google.com/document/d/1TW3P4c8auWwYy-w_5afIPDcGNLK3LZf0m14943eVfVg/edit)
 
-![Vhostuser CNI with multus](doc/images/Vhostuser-with-multus.png)
+![Vhostuser CNI with multus](doc/images/userspace-with-multus.png)
 
 ### Configuration details
 ```
