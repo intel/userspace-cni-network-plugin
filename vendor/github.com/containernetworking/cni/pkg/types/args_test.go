@@ -47,6 +47,21 @@ var _ = Describe("UnmarshallableBool UnmarshalText", func() {
 	})
 })
 
+var _ = Describe("UnmarshallableString UnmarshalText", func() {
+	DescribeTable("string to string detection should succeed in all cases",
+		func(inputs []string, expected string) {
+			for _, s := range inputs {
+				var us UnmarshallableString
+				err := us.UnmarshalText([]byte(s))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(us)).To(Equal(expected))
+			}
+		},
+		Entry("parse empty string", []string{""}, ""),
+		Entry("parse non-empty string", []string{"notempty"}, "notempty"),
+	)
+})
+
 var _ = Describe("GetKeyField", func() {
 	type testcontainer struct {
 		Valid string `json:"valid,omitempty"`
@@ -101,6 +116,17 @@ var _ = Describe("LoadArgs", func() {
 			ca := CommonArgs{}
 			err := LoadArgs("IgnoreUnknown=1", &ca)
 			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Context("When known arguments are passed and cannot be unmarshalled", func() {
+		It("LoadArgs should fail", func() {
+			conf := struct {
+				IP IPNet
+			}{}
+			err := LoadArgs("IP=10.0.0.0/24", &conf)
+			Expect(err).To(HaveOccurred())
+
 		})
 	})
 })

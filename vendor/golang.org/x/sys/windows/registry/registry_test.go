@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"testing"
 	"time"
+	"unsafe"
 
 	"golang.org/x/sys/windows/registry"
 )
@@ -614,4 +615,142 @@ func TestExpandString(t *testing.T) {
 	if got != want {
 		t.Errorf("want %q string expanded, got %q", want, got)
 	}
+}
+
+func TestInvalidValues(t *testing.T) {
+	softwareK, err := registry.OpenKey(registry.CURRENT_USER, "Software", registry.QUERY_VALUE)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer softwareK.Close()
+
+	testKName := randKeyName("TestInvalidValues_")
+
+	k, exist, err := registry.CreateKey(softwareK, testKName, registry.CREATE_SUB_KEY|registry.QUERY_VALUE|registry.SET_VALUE)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer k.Close()
+
+	if exist {
+		t.Fatalf("key %q already exists", testKName)
+	}
+
+	defer registry.DeleteKey(softwareK, testKName)
+
+	var tests = []struct {
+		Type uint32
+		Name string
+		Data []byte
+	}{
+		{registry.DWORD, "Dword1", nil},
+		{registry.DWORD, "Dword2", []byte{1, 2, 3}},
+		{registry.QWORD, "Qword1", nil},
+		{registry.QWORD, "Qword2", []byte{1, 2, 3}},
+		{registry.QWORD, "Qword3", []byte{1, 2, 3, 4, 5, 6, 7}},
+		{registry.MULTI_SZ, "MultiString1", nil},
+		{registry.MULTI_SZ, "MultiString2", []byte{0}},
+		{registry.MULTI_SZ, "MultiString3", []byte{'a', 'b', 0}},
+		{registry.MULTI_SZ, "MultiString4", []byte{'a', 0, 0, 'b', 0}},
+		{registry.MULTI_SZ, "MultiString5", []byte{'a', 0, 0}},
+	}
+
+	for _, test := range tests {
+		err := k.SetValue(test.Name, test.Type, test.Data)
+		if err != nil {
+			t.Fatalf("SetValue for %q failed: %v", test.Name, err)
+		}
+	}
+
+	for _, test := range tests {
+		switch test.Type {
+		case registry.DWORD, registry.QWORD:
+			value, valType, err := k.GetIntegerValue(test.Name)
+			if err == nil {
+				t.Errorf("GetIntegerValue(%q) succeeded. Returns type=%d value=%v", test.Name, valType, value)
+			}
+		case registry.MULTI_SZ:
+			value, valType, err := k.GetStringsValue(test.Name)
+			if err == nil {
+				if len(value) != 0 {
+					t.Errorf("GetStringsValue(%q) succeeded. Returns type=%d value=%v", test.Name, valType, value)
+				}
+			}
+		default:
+			t.Errorf("unsupported type %d for %s value", test.Type, test.Name)
+		}
+	}
+}
+
+func TestGetMUIStringValue(t *testing.T) {
+	if err := registry.LoadRegLoadMUIString(); err != nil {
+		t.Skip("regLoadMUIString not supported; skipping")
+	}
+	if err := procGetDynamicTimeZoneInformation.Find(); err != nil {
+		t.Skipf("%s not supported; skipping", procGetDynamicTimeZoneInformation.Name)
+	}
+	var dtzi DynamicTimezoneinformation
+	if _, err := GetDynamicTimeZoneInformation(&dtzi); err != nil {
+		t.Fatal(err)
+	}
+	tzKeyName := syscall.UTF16ToString(dtzi.TimeZoneKeyName[:])
+	timezoneK, err := registry.OpenKey(registry.LOCAL_MACHINE,
+		`SOFTWARE\Microsoft\Windows NT\CurrentVersion\Time Zones\`+tzKeyName, registry.READ)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer timezoneK.Close()
+
+	type testType struct {
+		name string
+		want string
+	}
+	var tests = []testType{
+		{"MUI_Std", syscall.UTF16ToString(dtzi.StandardName[:])},
+	}
+	if dtzi.DynamicDaylightTimeDisabled == 0 {
+		tests = append(tests, testType{"MUI_Dlt", syscall.UTF16ToString(dtzi.DaylightName[:])})
+	}
+
+	for _, test := range tests {
+		got, err := timezoneK.GetMUIStringValue(test.name)
+		if err != nil {
+			t.Error("GetMUIStringValue:", err)
+		}
+
+		if got != test.want {
+			t.Errorf("GetMUIStringValue: %s: Got %q, want %q", test.name, got, test.want)
+		}
+	}
+}
+
+type DynamicTimezoneinformation struct {
+	Bias                        int32
+	StandardName                [32]uint16
+	StandardDate                syscall.Systemtime
+	StandardBias                int32
+	DaylightName                [32]uint16
+	DaylightDate                syscall.Systemtime
+	DaylightBias                int32
+	TimeZoneKeyName             [128]uint16
+	DynamicDaylightTimeDisabled uint8
+}
+
+var (
+	kernel32DLL = syscall.NewLazyDLL("kernel32")
+
+	procGetDynamicTimeZoneInformation = kernel32DLL.NewProc("GetDynamicTimeZoneInformation")
+)
+
+func GetDynamicTimeZoneInformation(dtzi *DynamicTimezoneinformation) (rc uint32, err error) {
+	r0, _, e1 := syscall.Syscall(procGetDynamicTimeZoneInformation.Addr(), 1, uintptr(unsafe.Pointer(dtzi)), 0, 0)
+	rc = uint32(r0)
+	if rc == 0xffffffff {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
 }

@@ -1,0 +1,375 @@
+// Copyright (c) 2018 Red Hat.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at:
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//
+// This module provides the library functions to implement the
+// VPP UserSpace CNI implementation. The input to the library is json
+// data defined in usrsptypes. If the configuration contains local data,
+// the 'api' library is used to send the request to the local govpp-agent,
+// which provisions the local VPP instance. If the configuration contains
+// remote data, the database library is used to store the data, which is
+// later read and processed locally by the remotes agent (vpp-app running
+// in the container)
+//
+
+package cnivpp
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/containernetworking/cni/pkg/types/current"
+
+	"github.com/intel/vhost-user-net-plugin/cnivpp/api/bridge"
+	"github.com/intel/vhost-user-net-plugin/cnivpp/api/infra"
+	"github.com/intel/vhost-user-net-plugin/cnivpp/api/interface"
+	"github.com/intel/vhost-user-net-plugin/cnivpp/api/memif"
+	"github.com/intel/vhost-user-net-plugin/cnivpp/api/vhostuser"
+	"github.com/intel/vhost-user-net-plugin/cnivpp/vppdb"
+	"github.com/intel/vhost-user-net-plugin/usrsptypes"
+)
+
+//
+// Constants
+//
+const (
+	dbgBridge    = false
+	dbgInterface = false
+)
+
+const defaultVPPSocketDir = "/var/run/vpp/cni/shared/"
+
+//
+// Types
+//
+type CniVpp struct {
+}
+
+//
+// API Functions
+//
+func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, containerID string, ipResult *current.Result) error {
+	var vppCh vppinfra.ConnectionData
+	var err error
+	var data vppdb.VppSavedData
+
+	// Create Channel to pass requests to VPP
+	vppCh, err = vppinfra.VppOpenCh()
+	if err != nil {
+		return err
+	}
+	defer vppinfra.VppCloseCh(vppCh)
+
+	// Make sure version of API structs used by CNI are same as used by local VPP Instance.
+	err = compatibilityChecks(vppCh)
+	if err != nil {
+		return err
+	}
+
+	//
+	// Create Local Interface
+	//
+	if conf.HostConf.IfType == "memif" {
+		err = addLocalDeviceMemif(vppCh, conf, containerID, &data)
+	} else if conf.HostConf.IfType == "vhostuser" {
+		err = fmt.Errorf("GOOD: Found HostConf.IfType:" + conf.HostConf.IfType)
+	} else {
+		err = fmt.Errorf("ERROR: Unknown HostConf.IfType:" + conf.HostConf.IfType)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	//
+	// Set interface to up (1)
+	//
+	err = vppinterface.SetState(vppCh.Ch, data.SwIfIndex, 1)
+	if err != nil {
+		if dbgInterface {
+			fmt.Println("Error bringing interface UP:", err)
+		}
+		return err
+	}
+
+	//
+	// Add Interface to Local Network
+	//
+
+	// Add L2 Network if supplied
+	if conf.HostConf.NetType == "bridge" {
+
+		var bridgeDomain uint32 = uint32(conf.HostConf.BridgeConf.BridgeId)
+
+		// Add Interface to Bridge. If Bridge does not exist, AddBridgeInterface()
+		// will create.
+		err = vppbridge.AddBridgeInterface(vppCh.Ch, bridgeDomain, data.SwIfIndex)
+		if err != nil {
+			if dbgBridge {
+				fmt.Println("Error:", err)
+			}
+			return err
+		} else {
+			if dbgBridge {
+				fmt.Printf("INTERFACE %d added to BRIDGE %d\n", data.SwIfIndex, bridgeDomain)
+				vppbridge.DumpBridge(vppCh.Ch, bridgeDomain)
+			}
+		}
+		// Add L3 Network if supplied
+	} else if conf.HostConf.NetType == "interface" {
+		if len(ipResult.IPs) != 0 {
+			err = vppinterface.AddDelIpAddress(vppCh.Ch, data.SwIfIndex, 1, ipResult)
+			if err != nil {
+				if dbgInterface {
+					fmt.Println("Error:", err)
+				}
+				return err
+			}
+		}
+	}
+
+	//
+	// Save Create Data for Delete
+	//
+	err = vppdb.SaveVppConfig(conf, containerID, &data)
+
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (cniVpp CniVpp) AddOnContainer(conf *usrsptypes.NetConf, containerID string, ipResult *current.Result) error {
+	return vppdb.SaveRemoteConfig(conf, ipResult, containerID)
+}
+
+func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, containerID string) error {
+	var vppCh vppinfra.ConnectionData
+	var data vppdb.VppSavedData
+	var err error
+
+	// Create Channel to pass requests to VPP
+	vppCh, err = vppinfra.VppOpenCh()
+	if err != nil {
+		return err
+	}
+	defer vppinfra.VppCloseCh(vppCh)
+
+	// Retrieved squirreled away data needed for processing delete
+	err = vppdb.LoadVppConfig(conf, containerID, &data)
+
+	if err != nil {
+		return err
+	}
+
+	//
+	// Remove L2 Network if supplied
+	//
+	if conf.HostConf.NetType == "bridge" {
+
+		// Validate and convert input data
+		var bridgeDomain uint32 = uint32(conf.HostConf.BridgeConf.BridgeId)
+
+		if dbgBridge {
+			fmt.Printf("INTERFACE %d retrieved from CONF - attempt to DELETE Bridge %d\n", data.SwIfIndex, bridgeDomain)
+		}
+
+		// Remove MemIf from Bridge. RemoveBridgeInterface() will delete Bridge if
+		// no more interfaces are associated with the Bridge.
+		err = vppbridge.RemoveBridgeInterface(vppCh.Ch, bridgeDomain, data.SwIfIndex)
+
+		if err != nil {
+			if dbgBridge {
+				fmt.Println("Error:", err)
+			}
+			return err
+		} else {
+			if dbgBridge {
+				fmt.Printf("INTERFACE %d removed from BRIDGE %d\n", data.SwIfIndex, bridgeDomain)
+				vppbridge.DumpBridge(vppCh.Ch, bridgeDomain)
+			}
+		}
+	}
+
+	//
+	// Delete Local Interface
+	//
+	if conf.HostConf.IfType == "memif" {
+		return delLocalDeviceMemif(vppCh, conf, containerID, &data)
+	} else if conf.HostConf.IfType == "vhostuser" {
+		return fmt.Errorf("GOOD: Found HostConf.Type:" + conf.HostConf.IfType)
+	} else {
+		return fmt.Errorf("ERROR: Unknown HostConf.Type:" + conf.HostConf.IfType)
+	}
+
+	return err
+}
+
+func (cniVpp CniVpp) DelFromContainer(conf *usrsptypes.NetConf, containerID string) error {
+	vppdb.CleanupRemoteConfig(conf, containerID)
+	return nil
+}
+
+func CniContainerConfig() (bool, error) {
+
+	vpp := CniVpp{}
+
+	found, conf, ipResult, containerId, err := vppdb.FindRemoteConfig()
+
+	if err == nil {
+		if found {
+			if dbgInterface {
+				fmt.Println("ipResult:")
+				fmt.Println(ipResult)
+			}
+
+			err = vpp.AddOnHost(&conf, containerId, &ipResult)
+
+			if err != nil {
+				if dbgInterface {
+					fmt.Println(err)
+				}
+			}
+		}
+	}
+
+	return found, err
+}
+
+//
+// Local Functions
+//
+
+func compatibilityChecks(vppCh vppinfra.ConnectionData) (err error) {
+
+	// Compatibility Checks
+	err = vppmemif.MemifCompatibilityCheck(vppCh.Ch)
+	if err != nil {
+		return
+	}
+
+	err = vppbridge.BridgeCompatibilityCheck(vppCh.Ch)
+	if err != nil {
+		return
+	}
+
+	err = vppvhostuser.VhostUserCompatibilityCheck(vppCh.Ch)
+	if err != nil {
+		return
+	}
+
+	err = vppinterface.InterfaceCompatibilityCheck(vppCh.Ch)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf, containerID string, data *vppdb.VppSavedData) (err error) {
+	var ok bool
+
+	// Validate and convert input data
+	var memifSocketFile string
+	var memifRole vppmemif.MemifRole
+	var memifMode vppmemif.MemifMode
+
+	if memifSocketFile, ok = os.LookupEnv("USERSPACE_MEMIF_SOCKFILE"); ok == false {
+		fileName := fmt.Sprintf("memif-%s-%s.sock", containerID[:12], conf.If0name)
+		memifSocketFile = filepath.Join(defaultVPPSocketDir, fileName)
+	}
+
+	if conf.HostConf.MemifConf.Role == "master" {
+		memifRole = vppmemif.RoleMaster
+	} else if conf.HostConf.MemifConf.Role == "slave" {
+		memifRole = vppmemif.RoleSlave
+	} else {
+		return fmt.Errorf("ERROR: Invalid MEMIF Role:" + conf.HostConf.MemifConf.Role)
+	}
+
+	if conf.HostConf.MemifConf.Mode == "" {
+		conf.HostConf.MemifConf.Mode = "ethernet"
+	}
+	if conf.HostConf.MemifConf.Mode == "ethernet" {
+		memifMode = vppmemif.ModeEthernet
+	} else if conf.HostConf.MemifConf.Mode == "ip" {
+		memifMode = vppmemif.ModeIP
+	} else if conf.HostConf.MemifConf.Mode == "inject-punt" {
+		memifMode = vppmemif.ModePuntInject
+	} else {
+		return fmt.Errorf("ERROR: Invalid MEMIF Mode:" + conf.HostConf.MemifConf.Mode)
+	}
+
+	// Create Memif Socket
+	data.MemifSocketId, err = vppmemif.CreateMemifSocket(vppCh.Ch, memifSocketFile)
+	if err != nil {
+		if dbgInterface {
+			fmt.Println("Error:", err)
+		}
+		return
+	} else {
+		if dbgInterface {
+			fmt.Println("MEMIF SOCKET", data.MemifSocketId, memifSocketFile, "created")
+			vppmemif.DumpMemifSocket(vppCh.Ch)
+		}
+	}
+
+	// Create MemIf Interface
+	data.SwIfIndex, err = vppmemif.CreateMemifInterface(vppCh.Ch, data.MemifSocketId, memifRole, memifMode)
+	if err != nil {
+		if dbgInterface {
+			fmt.Println("Error:", err)
+		}
+		return
+	} else {
+		if dbgInterface {
+			fmt.Println("MEMIF", data.SwIfIndex, "created", conf.If0name)
+			vppmemif.DumpMemif(vppCh.Ch)
+		}
+	}
+
+	return
+}
+
+func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf, containerID string, data *vppdb.VppSavedData) (err error) {
+
+	var ok bool
+	var memifSocketFile string
+
+	if memifSocketFile, ok = os.LookupEnv("USERSPACE_MEMIF_SOCKFILE"); ok == false {
+		fileName := fmt.Sprintf("memif-%s-%s.sock", containerID[:12], conf.If0name)
+		memifSocketFile = filepath.Join(defaultVPPSocketDir, fileName)
+	}
+
+	err = vppmemif.DeleteMemifInterface(vppCh.Ch, data.SwIfIndex)
+	if err != nil {
+		if dbgInterface {
+			fmt.Println("Error:", err)
+		}
+		return
+	} else {
+		if dbgInterface {
+			fmt.Printf("INTERFACE %d deleted\n", data.SwIfIndex)
+			vppmemif.DumpMemif(vppCh.Ch)
+			vppmemif.DumpMemifSocket(vppCh.Ch)
+		}
+	}
+
+	// Remove file
+	err = vppdb.FileCleanup("", memifSocketFile)
+
+	return
+}

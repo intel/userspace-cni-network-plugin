@@ -1,0 +1,6 @@
+[fdio-stable-1804]
+name=fd.io stable/1804 branch latest merge
+baseurl=https://nexus.fd.io/content/repositories/fd.io.stable.1804.centos7/
+enabled=1
+gpgcheck=0
+
