@@ -1,7 +1,7 @@
 
    * [Userspace CNI plugin](#userspace-cni-plugin)
-      * [Build & Clean](#build-&-clean)
-         * [Update dependencies in vendor/](#update-dependencies-vendor/)
+      * [Build & Clean](#build--clean)
+         * [Update dependencies in vendor/](#update-dependencies-in-vendor)
       * [Network Configuration Reference](#network-configuration-reference)
          * [Work Standalone](#work-standalone)
          * [Integrated with Multus Plugin](#integrated-with-multus-plugin)
@@ -12,9 +12,9 @@
          * [Configuring the System](#configuring-the-system)
       * [VPP CNI Library Intro](#vpp-cni-library-intro)
          * [Building VPP CNI Library with OVS](#building-vpp-cni-library-with-ovs)
-         * [Install VPP](#install-vpp)
+         * [Installing VPP](#installing-vpp)
             * [Prerequisites](#prerequisites)
-            * [Install on CentOS](#install-on-centOS)
+            * [Install on CentOS](#install-on-centos)
             * [Install on Ubuntu](#install-on-ubuntu)
             * [Install on Other Distros](#install-on-other-distros)
       * [Testing](#testing)
@@ -25,9 +25,9 @@
             * [Debug](#debug)
          * [Testing with Kubernetes and Multus](#testing-with-kubernetes-and-multus)
          * [Testing with DPDK Testpmd Application](#testing-with-dpdk-testpmd-application)
-            * [1. Build the image to be used](#1.build-the-image-to-be-used)
-            * [2. Create pod with multiple vhostuser interfaces](#2.-create-pod-with-multiple-vhostuser-interfaces)
-            * [3. Open terminal to pod and start testpmd](#3.-open-terminal-to-pod-and-start-testpmd)
+            * [1. Build the image to be used](#1-build-the-image-to-be-used)
+            * [2. Create pod with multiple vhostuser interfaces](#2-create-pod-with-multiple-vhostuser-interfaces)
+            * [3. Open terminal to pod and start testpmd](#3-open-terminal-to-pod-and-start-testpmd)
       * [Contacts](#contacts)
 
 
@@ -60,7 +60,7 @@ has not been modified to handle pushing data into the container.
 
 The Userspace CNI, based on the input config data, adds interfaces (memif and/or
 vhost-user interfaces) to a local OVS-DPDK or VPP instance running on the host.
-Then adds that interface to a local network, like a L2 Bridge. The Userspace CNI
+Then adds that interface to a local network, like an L2 Bridge. The Userspace CNI
 then processes config data intended for the container and adds that data to a
 Database the container can consume.
 
@@ -86,13 +86,15 @@ Here is an example:
    export CNI_PATH=$GOPATH/src/github.com/containernetworking/plugins/bin
 ```
 
+
 The Userspace CNI requires several files from VPP in-order to build. If VPP
-should be installed but is not installed, see [Install VPP](#install-vpp)
+should be installed but is not installed, see [Installing VPP](#installing-vpp)
 section below for instructions. If Userspace CNI is being built on a build
 server or is using OVS-DPDK (i.e. - don't want VPP installed), then follow the
-instructions below under [Building cnivpp with OVS](#Building-cnivpp-with-OVS).
+instructions below under
+[Building VPP CNI Library with OVS](#building-vpp-cni-library-with-ovs).
 
-To get and build the **UserSpace CNI** plugin:
+To get and build the Userspace CNI plugin:
 ```
    cd $GOPATH/src/
    go get github.com/intel/vhost-user-net-plugin
@@ -324,7 +326,7 @@ files must be in */usr/share/vpp/api/*).
 The Userspace CNI plugin builds the VPP CNI Library from the cnivpp
 sub-folder. In order to run with the VPP CNI Library, VPP must be installed
 on the system. If VPP should be installed but is not installed, see the
-[Install VPP](#install-vpp) section below.
+[Installing VPP](#installing-vpp) section below.
 
 If the desire is to run the OVS CNI Library with OVS (i.e. - don't want
 VPP installed), several files from a typical VPP install need to be on
@@ -349,7 +351,7 @@ packages:
 ```
    make install-dep
 ```
-**NOTE:** *make install* has been made to work for CentOSand Ubuntu based
+**NOTE:** *make install* has been made to work for CentOS and Ubuntu based
 systems. Other platforms will be made to work long term. If there is an
 immediate need for other platforms, please open an issue to expedite the
 feature (https://github.com/intel/vhost-user-net-plugin/issues).
@@ -443,7 +445,7 @@ In order to test, a container with VPP 18.04 and vpp-app has been created:
 ```
 More details on the Docker Image, how to build from scratch and other
 information, see
-[README.md](https://github.com/Billy99/user-space-net-plugin/blob/master/cnivpp/docker/vpp-centos-userspace-cni/README.md)
+[README.md](https://github.com/intel/vhost-user-net-plugin/blob/master/cnivpp/docker/vpp-centos-userspace-cni/README.md)
 in the '*./cnivpp/docker/vpp-centos-userspace-cni/*' subfolder.
 
 Setup your configuration file in your CNI directory. An example is
@@ -536,7 +538,6 @@ sockets
   0   no          /run/vpp/memif.sock
 ```
 
-### Verify Container
 After the container is started, on the host there should be an additional memif
 interface created and added to a new L2 bridge, all created by the Userspace
 CNI.
@@ -578,7 +579,7 @@ interface memif1/0
       head 0 tail 0 flags 0x0001 interrupts 0
 ```
 
-### Ping
+### Verify Container
 The container is setup to start VPP, read the config pushed by the User Space
 CNI, apply the data and then exit to bash. To verify the container config, in
 the container, run the following:
@@ -619,6 +620,7 @@ interface memif1/0
       head 1024 tail 0 flags 0x0001 interrupts 0
 ```
 
+### Ping
 If a second container is started on the same host, the two containers will have
 L3 connectivity through an L2 bridge on the host. Because the interfaces in the
 host are owned by VPP, use VPP in one of the containers to ping between the two
