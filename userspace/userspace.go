@@ -115,6 +115,8 @@ func cmdAdd(args *skel.CmdArgs) error {
 			ip.Gateway = nil
 		}
 
+	} else {
+		result = &current.Result{}
 	}
 
 	// Determine the Engine that will process the request. Default to host
