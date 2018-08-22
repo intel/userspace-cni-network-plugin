@@ -85,7 +85,6 @@ func SaveConfig(conf *usrsptypes.NetConf, containerID string, data *OvsSavedData
 
 		path := filepath.Join(sockDir, fileName)
 
-		fmt.Printf("SAVE FILE: path=%s dataBytes=%s\n", path, dataBytes)
 		return ioutil.WriteFile(path, dataBytes, 0644)
 	} else {
 		return fmt.Errorf("ERROR: serializing delegate VPP saved data: %v", err)

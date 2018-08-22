@@ -62,8 +62,6 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, containerID string, ipR
 	var err error
 	var data ovsdb.OvsSavedData
 
-	fmt.Printf("ENTER OVS CNI - ADD:\n")
-
 	//
 	// Create Local Interface
 	//
@@ -97,8 +95,6 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, containerID string, ipR
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("EXIT OVS CNI - ADD:\n")
 
 	return err
 }
@@ -145,7 +141,6 @@ func (cniOvs CniOvs) DelFromContainer(conf *usrsptypes.NetConf, containerID stri
 
 // execCommand Execute shell commands and return the output.
 func execCommand(cmd string, args []string) ([]byte, error) {
-	fmt.Printf("EXEC: %s\n", cmd)
 	return exec.Command(cmd, args...).Output()
 }
 
