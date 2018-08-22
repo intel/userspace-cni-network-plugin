@@ -23,7 +23,6 @@
             * [Verify Container](#verify-container)
             * [Ping](#ping)
             * [Debug](#debug)
-         * [Testing with Kubernetes and Multus](#testing-with-kubernetes-and-multus)
          * [Testing with DPDK Testpmd Application](#testing-with-dpdk-testpmd-application)
             * [1. Build the image to be used](#1-build-the-image-to-be-used)
             * [2. Create pod with multiple vhostuser interfaces](#2-create-pod-with-multiple-vhostuser-interfaces)
@@ -649,99 +648,6 @@ run VPP and *vpp-app* manually:
    vpp -c /etc/vpp/startup.conf &
    vpp-app
 ```
-
-
-## Testing with Kubernetes and Multus
-
-**NOTE:** This test scenario has not been tested with the latest Userspace CNI
-code and was originally based on VPP 17.01. Also, this test setup does not
-have code in the container to consume the config data.
-
-* Before the vhostuser CNI installation, create the VPP 18.04 based Docker
-image, and use sample application since it provides ping tool to check basic
-network connectivity.
-* Run 2 VPP 18.04 based pods in the same node. Highly recommend user to take
-care of it, please contact @kural or @abdul in
-[Intel-corp](https://intel-corp.herokuapp.com/) for more assistant on this. 
-* This CNI plugin moves vhostuser socket file to the */var/lib/cni/vhostuser*
-directory from ovs-vswitchd's path for vhostuser(for release version it is
-usually */var/run/openvswitch*). DPDK application inside container expects that
-it should be */vhost-user-net-plugin*. Therefore pod's yaml should contain
-mountVolume declaration to bind directories.
-* With the deployment of 2 pod A and B, following vhostuser cni content with
-pause/infra/sandbox container ID is stored in */var/lib/cni/vhostuser*.
-
-
-```
-# tree /var/lib/cni/vhostuser
-/var/lib/cni/vhostuser
-├── 4d578250ad8d760c0722be78badb4b4b6d57fed8f95dea23aaa0065aa8657b29
-│   ├── 4d578250ad8d-net1
-│   ├── 4d578250ad8d-net1-ip4.conf
-│   └── 4d578250ad8d-net1.json
-├── 65bc360690b648458b7cbad34f8f274b6028973e82a284353d9c3ca63e1ad35e
-│   ├── 65bc360690b6-net1
-│   ├── 65bc360690b6-net1-ip4.conf
-│   └── 65bc360690b6-net1.json
-```
-
-* Shows that there are two vhostuser ports, each for one container.
-** xxxxxxxxxxxx-net1: The socket file for the Vhostuser server/client communication.
-** xxxxxxxxxxxx-net1-ip4.conf: IPAM information for the Vhostuser port.
-** xxxxxxxxxxxx-net1.json: Vhostuser Port information for the management.
-
-```
-# cat 4d578250ad8d-net1-ip4.conf
-{
-        "ipAddr": "10.56.217.132/32",
-        "macAddr": "e2:52:b5:7b:58:ad",
-        "gateway": "10.56.217.1",
-        "gwMac": "02:fe:fc:89:49:d8"
-}
-```
-
-* The IPAM management configuration for the port. 
-
-```
-# cat 4d578250ad8d-net1.json
-{
-    "vhostname": "VirtualEthernet0/0/0",
-    "vhostmac": "02:fe:fc:89:49:d8",
-    "ifname": "net1",
-    "ifmac": "e2:52:b5:7b:58:ad",
-    "vhost_tool": "/path/to/vhost-user-net-plugin/tests/vpp-config.py"
-}
-```
-
-* Login the container A and run your own script to get the pause/infra/sandbox
-container ID (_here we used get-prefix.sh to get the container ID from our VPP
-docker image, highly recommend user to have their own docker image_)
-
-```
-$ /vhost-user-net-plugin/get-prefix.sh
-4d578250ad8d760c0722be78badb4b4b6d57fed8f95dea23aaa0065aa8657b29
-```
-
-* Container A should use socket file/configuration file under the folder
-/vhost-user-net-plugin/4d578250ad8d760c0722be78badb4b4b6d57fed8f95dea23aaa0065aa8657b29 .
-
-* Run the VPP(version 17.01) in a container A as follows
-
-```
-# vpp unix {log /tmp/vpp.log cli-listen 0.0.0.0:5002} api-trace { on } \
-   
-  dpdk {coremask 0x2 no-multi-seg no-pci singlefile 512 extra --vdev=virtio_user0,path=/vhost-user-net-plugin/4d578250ad8d760c0722be78badb4b4b6d57fed8f95dea23aaa0065aa8657b29/4d578250ad8d-net1,mac=e2:52:b5:7b:58:ad } cpu {skip-cores 1}
-# vppctl set int state virtio_user0 up
-# vppctl set int ip table virtio_user0 0
-```
-
-* Run the VPP(version 17.01) in another container B and ping the Container A
-
-```
-# vppctl ping 10.56.217.132
-```
-
-* If the system works well, the ping would be successful
 
 
 ## Testing with DPDK Testpmd Application
