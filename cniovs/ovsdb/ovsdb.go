@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
 
 	"github.com/intel/vhost-user-net-plugin/usrsptypes"
@@ -42,12 +43,11 @@ const defaultLocalCNIDir = "/var/run/ovs/cni/data"
 // Types
 //
 
-// This structure is a union of all the VPP data (for all types of
+// This structure is a union of all the OVS data (for all types of
 // interfaces) that need to be preserved for later use.
 type OvsSavedData struct {
 	Vhostname string `json:"vhostname"` // Vhost Port name
 	VhostMac  string `json:"vhostmac"`  // Vhost port MAC address
-	Ifname    string `json:"ifname"`    // Interface name
 	IfMac     string `json:"ifmac"`     // Interface Mac address
 }
 
@@ -63,15 +63,15 @@ type additionalData struct {
 
 // SaveConfig() - Some data needs to be saved for cmdDel().
 //  This function squirrels the data away to be retrieved later.
-func SaveConfig(conf *usrsptypes.NetConf, containerID string, data *OvsSavedData) error {
+func SaveConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
 
 	// Current implementation is to write data to a file with the name:
-	//   /var/run/ovs/cni/data/local-<ContainerId:12>-<If0name>.json
+	//   /var/run/ovs/cni/data/local-<ContainerId:12>-<IfName>.json
 
-	fileName := fmt.Sprintf("local-%s-%s.json", containerID[:12], conf.If0name)
+	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
 	if dataBytes, err := json.Marshal(data); err == nil {
 		sockDir := defaultLocalCNIDir
-		// OLD: sockDir := filepath.Join(defaultCNIDir, containerID)
+		// OLD: sockDir := filepath.Join(defaultCNIDir, args.ContainerID)
 
 		if _, err := os.Stat(sockDir); err != nil {
 			if os.IsNotExist(err) {
@@ -91,9 +91,9 @@ func SaveConfig(conf *usrsptypes.NetConf, containerID string, data *OvsSavedData
 	}
 }
 
-func LoadConfig(conf *usrsptypes.NetConf, containerID string, data *OvsSavedData) error {
+func LoadConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
 
-	fileName := fmt.Sprintf("local-%s-%s.json", containerID[:12], conf.If0name)
+	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
 	sockDir := defaultLocalCNIDir
 	path := filepath.Join(sockDir, fileName)
 

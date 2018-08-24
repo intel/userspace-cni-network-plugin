@@ -75,9 +75,9 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	// Add the requested interface and network
 	if netConf.HostConf.Engine == "vpp" {
-		err = vpp.AddOnHost(netConf, args.ContainerID, result)
+		err = vpp.AddOnHost(netConf, args, result)
 	} else if netConf.HostConf.Engine == "ovs-dpdk" {
-		err = ovs.AddOnHost(netConf, args.ContainerID, result)
+		err = ovs.AddOnHost(netConf, args, result)
 	} else {
 		return fmt.Errorf("ERROR: Unknown Host Engine:" + netConf.HostConf.Engine)
 	}
@@ -129,9 +129,9 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	// Add the requested interface and network
 	if containerEngine == "vpp" {
-		err = vpp.AddOnContainer(netConf, args.ContainerID, result)
+		err = vpp.AddOnContainer(netConf, args, result)
 	} else if containerEngine == "ovs-dpdk" {
-		err = ovs.AddOnContainer(netConf, args.ContainerID, result)
+		err = ovs.AddOnContainer(netConf, args, result)
 	} else {
 		return fmt.Errorf("ERROR: Unknown Container Engine:" + containerEngine)
 	}
@@ -161,9 +161,9 @@ func cmdDel(args *skel.CmdArgs) error {
 
 	// Delete the requested interface
 	if netConf.HostConf.Engine == "vpp" {
-		err = vpp.DelFromHost(netConf, args.ContainerID)
+		err = vpp.DelFromHost(netConf, args)
 	} else if netConf.HostConf.Engine == "ovs-dpdk" {
-		err = ovs.DelFromHost(netConf, args.ContainerID)
+		err = ovs.DelFromHost(netConf, args)
 	} else {
 		return fmt.Errorf("ERROR: Unknown Host Engine:" + netConf.HostConf.Engine)
 	}
@@ -185,9 +185,9 @@ func cmdDel(args *skel.CmdArgs) error {
 
 	// Delete the requested interface
 	if containerEngine == "vpp" {
-		err = vpp.DelFromContainer(netConf, args.ContainerID)
+		err = vpp.DelFromContainer(netConf, args)
 	} else if containerEngine == "ovs-dpdk" {
-		err = ovs.DelFromContainer(netConf, args.ContainerID)
+		err = ovs.DelFromContainer(netConf, args)
 	} else {
 		return fmt.Errorf("ERROR: Unknown Container Engine:" + containerEngine)
 	}

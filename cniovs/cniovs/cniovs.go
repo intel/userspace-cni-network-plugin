@@ -26,17 +26,15 @@ package cniovs
 
 import (
 	"crypto/rand"
-	_ "encoding/json"
 	"errors"
 	"fmt"
-	_ "io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	_ "runtime"
 	"strings"
 
+	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
 
 	"github.com/intel/vhost-user-net-plugin/cniovs/ovsdb"
@@ -58,7 +56,7 @@ type CniOvs struct {
 //
 // API Functions
 //
-func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, containerID string, ipResult *current.Result) error {
+func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
 	var err error
 	var data ovsdb.OvsSavedData
 
@@ -66,7 +64,7 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, containerID string, ipR
 	// Create Local Interface
 	//
 	if conf.HostConf.IfType == "vhostuser" {
-		err = addLocalDeviceVhost(conf, containerID, &data)
+		err = addLocalDeviceVhost(conf, args, &data)
 	} else {
 		err = errors.New("ERROR: Unknown HostConf.IfType:" + conf.HostConf.IfType)
 	}
@@ -91,7 +89,7 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, containerID string, ipR
 	//
 	// Save Config - Save Create Data for Delete
 	//
-	err = ovsdb.SaveConfig(conf, containerID, &data)
+	err = ovsdb.SaveConfig(conf, args, &data)
 	if err != nil {
 		return err
 	}
@@ -99,18 +97,18 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, containerID string, ipR
 	return err
 }
 
-func (cniOvs CniOvs) AddOnContainer(conf *usrsptypes.NetConf, containerID string, ipResult *current.Result) error {
+func (cniOvs CniOvs) AddOnContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
 	return nil
 }
 
-func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, containerID string) error {
+func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
 	var data ovsdb.OvsSavedData
 	var err error
 
 	//
 	// Load Config - Retrieved squirreled away data needed for processing delete
 	//
-	err = ovsdb.LoadConfig(conf, containerID, &data)
+	err = ovsdb.LoadConfig(conf, args, &data)
 	if err != nil {
 		return err
 	}
@@ -123,7 +121,7 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, containerID string) e
 	// Delete Local Interface
 	//
 	if conf.HostConf.IfType == "vhostuser" {
-		return delLocalDeviceVhost(conf, containerID, &data)
+		return delLocalDeviceVhost(conf, args, &data)
 	} else {
 		return errors.New("ERROR: Unknown HostConf.Type:" + conf.HostConf.IfType)
 	}
@@ -131,7 +129,7 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, containerID string) e
 	return err
 }
 
-func (cniOvs CniOvs) DelFromContainer(conf *usrsptypes.NetConf, containerID string) error {
+func (cniOvs CniOvs) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
 	return nil
 }
 
@@ -157,12 +155,12 @@ func generateRandomMacAddress() string {
 	return macAddr
 }
 
-func addLocalDeviceVhost(conf *usrsptypes.NetConf, containerID string, data *ovsdb.OvsSavedData) error {
+func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
 
-	s := []string{containerID[:12], conf.If0name}
+	s := []string{args.ContainerID[:12], args.IfName}
 	sockRef := strings.Join(s, "-")
 
-	sockDir := filepath.Join(defaultCNIDir, containerID)
+	sockDir := filepath.Join(defaultCNIDir, args.ContainerID)
 	if _, err := os.Stat(sockDir); err != nil {
 		if os.IsNotExist(err) {
 			if err := os.MkdirAll(sockDir, 0700); err != nil {
@@ -186,19 +184,18 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, containerID string, data *ovs
 		}
 
 		data.Vhostname = vhostName
-		data.Ifname = conf.If0name
 		data.IfMac = generateRandomMacAddress()
 	}
 
 	return nil
 }
 
-func delLocalDeviceVhost(conf *usrsptypes.NetConf, containerID string, data *ovsdb.OvsSavedData) error {
+func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
 
 	// ovs-vsctl --if-exists del-port
 	cmd_args := []string{"delete", data.Vhostname}
 	if _, err := execCommand(defaultOvsScript, cmd_args); err == nil {
-		path := filepath.Join(defaultCNIDir, containerID)
+		path := filepath.Join(defaultCNIDir, args.ContainerID)
 
 		folder, err := os.Open(path)
 		if err != nil {
@@ -206,7 +203,7 @@ func delLocalDeviceVhost(conf *usrsptypes.NetConf, containerID string, data *ovs
 		}
 		defer folder.Close()
 
-		fileBaseName := fmt.Sprintf("%s-%s", containerID[:12], conf.If0name)
+		fileBaseName := fmt.Sprintf("%s-%s", args.ContainerID[:12], args.IfName)
 		filesForContainerID, err := folder.Readdirnames(0)
 		if err != nil {
 			return err

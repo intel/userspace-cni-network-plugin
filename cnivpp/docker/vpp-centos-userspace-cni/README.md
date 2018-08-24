@@ -36,7 +36,7 @@ local changes that need to be tested, then build **user-space-net-plugin** to
 get the **vpp-app** binary and copy the **vpp-app** into the image directory:
 ```
    cd $GOPATH/src/github.com/intel/vhost-user-net-plugin/
-   ./build
+   make extras
    cp cnivpp/vpp-app/vpp-app cnivpp/docker/vpp-centos-userspace-cni/.
 ```
 

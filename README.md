@@ -127,6 +127,7 @@ This project currently checks in the *glide.lock* and files under the
 
 * `type` (string, required): "userspace"
 * `name` (string, required): Name of the network
+* `ifName` (string, required): Name of the interface
 * `host` (dictionary, required): Host based configurations. Contains userspace
 interface configuration data as well as host network data userspace interface
 should be injected into.
@@ -145,7 +146,7 @@ sudo cat > /etc/cni/net.d/90-userspace.conf <<EOF
 	"cniVersion": "0.3.1",
         "type": "userspace",
         "name": "memif-network",
-        "if0name": "net0",
+        "ifName": "net0",
         "host": {
                 "engine": "vpp",
                 "iftype": "memif",
@@ -222,7 +223,7 @@ details refer the link:
 		"cniVersion": "0.3.1",
 		"type": "userspace",
 		"name": "memif-network",
-		"if0name": "net1",
+		"ifName": "net1",
 		"host": {
 			"engine": "vpp",
 			"iftype": "memif",
@@ -461,7 +462,7 @@ sudo vi /etc/cni/net.d/90-userspace.conf
 	"cniVersion": "0.3.1",
         "type": "userspace",
         "name": "memif-network",
-        "if0name": "net0",
+        "ifName": "net0",
         "host": {
                 "engine": "vpp",
                 "iftype": "memif",

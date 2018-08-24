@@ -15,6 +15,7 @@
 package usrsptypes
 
 import (
+	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 )
@@ -23,10 +24,10 @@ import (
 // Exported Types
 //
 type UsrSpCni interface {
-	AddOnHost(conf *NetConf, containerID string, ipResult *current.Result) error
-	AddOnContainer(conf *NetConf, containerID string, ipResult *current.Result) error
-	DelFromHost(conf *NetConf, containerID string) error
-	DelFromContainer(conf *NetConf, containerID string) error
+	AddOnHost(conf *NetConf, args *skel.CmdArgs, ipResult *current.Result) error
+	AddOnContainer(conf *NetConf, args *skel.CmdArgs, ipResult *current.Result) error
+	DelFromHost(conf *NetConf, args *skel.CmdArgs) error
+	DelFromContainer(conf *NetConf, args *skel.CmdArgs) error
 }
 
 type MemifConf struct {
@@ -59,7 +60,6 @@ type UserSpaceConf struct {
 type NetConf struct {
 	types.NetConf
 	Name          string        `json:"name"`
-	If0name       string        `json:"if0name,omitempty"` // Interface name
 	HostConf      UserSpaceConf `json:"host,omitempty"`
 	ContainerConf UserSpaceConf `json:"container,omitempty"`
 }

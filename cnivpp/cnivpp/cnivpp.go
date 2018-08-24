@@ -30,6 +30,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
 
 	"github.com/intel/vhost-user-net-plugin/cnivpp/api/bridge"
@@ -60,7 +61,7 @@ type CniVpp struct {
 //
 // API Functions
 //
-func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, containerID string, ipResult *current.Result) error {
+func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
 	var vppCh vppinfra.ConnectionData
 	var err error
 	var data vppdb.VppSavedData
@@ -82,7 +83,7 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, containerID string, ipR
 	// Create Local Interface
 	//
 	if conf.HostConf.IfType == "memif" {
-		err = addLocalDeviceMemif(vppCh, conf, containerID, &data)
+		err = addLocalDeviceMemif(vppCh, conf, args, &data)
 	} else if conf.HostConf.IfType == "vhostuser" {
 		err = fmt.Errorf("GOOD: Found HostConf.IfType:" + conf.HostConf.IfType)
 	} else {
@@ -143,7 +144,7 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, containerID string, ipR
 	//
 	// Save Create Data for Delete
 	//
-	err = vppdb.SaveVppConfig(conf, containerID, &data)
+	err = vppdb.SaveVppConfig(conf, args, &data)
 
 	if err != nil {
 		return err
@@ -152,11 +153,11 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, containerID string, ipR
 	return err
 }
 
-func (cniVpp CniVpp) AddOnContainer(conf *usrsptypes.NetConf, containerID string, ipResult *current.Result) error {
-	return vppdb.SaveRemoteConfig(conf, ipResult, containerID)
+func (cniVpp CniVpp) AddOnContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
+	return vppdb.SaveRemoteConfig(conf, ipResult, args)
 }
 
-func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, containerID string) error {
+func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
 	var vppCh vppinfra.ConnectionData
 	var data vppdb.VppSavedData
 	var err error
@@ -169,7 +170,7 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, containerID string) e
 	defer vppinfra.VppCloseCh(vppCh)
 
 	// Retrieved squirreled away data needed for processing delete
-	err = vppdb.LoadVppConfig(conf, containerID, &data)
+	err = vppdb.LoadVppConfig(conf, args, &data)
 
 	if err != nil {
 		return err
@@ -208,7 +209,7 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, containerID string) e
 	// Delete Local Interface
 	//
 	if conf.HostConf.IfType == "memif" {
-		return delLocalDeviceMemif(vppCh, conf, containerID, &data)
+		return delLocalDeviceMemif(vppCh, conf, args, &data)
 	} else if conf.HostConf.IfType == "vhostuser" {
 		return fmt.Errorf("GOOD: Found HostConf.Type:" + conf.HostConf.IfType)
 	} else {
@@ -218,8 +219,8 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, containerID string) e
 	return err
 }
 
-func (cniVpp CniVpp) DelFromContainer(conf *usrsptypes.NetConf, containerID string) error {
-	vppdb.CleanupRemoteConfig(conf, containerID)
+func (cniVpp CniVpp) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
+	vppdb.CleanupRemoteConfig(conf, args.ContainerID)
 	return nil
 }
 
@@ -227,7 +228,7 @@ func CniContainerConfig() (bool, error) {
 
 	vpp := CniVpp{}
 
-	found, conf, ipResult, containerId, err := vppdb.FindRemoteConfig()
+	found, conf, ipResult, args, err := vppdb.FindRemoteConfig()
 
 	if err == nil {
 		if found {
@@ -236,7 +237,7 @@ func CniContainerConfig() (bool, error) {
 				fmt.Println(ipResult)
 			}
 
-			err = vpp.AddOnHost(&conf, containerId, &ipResult)
+			err = vpp.AddOnHost(&conf, &args, &ipResult)
 
 			if err != nil {
 				if dbgInterface {
@@ -279,7 +280,7 @@ func compatibilityChecks(vppCh vppinfra.ConnectionData) (err error) {
 	return
 }
 
-func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf, containerID string, data *vppdb.VppSavedData) (err error) {
+func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf, args *skel.CmdArgs, data *vppdb.VppSavedData) (err error) {
 	var ok bool
 
 	// Validate and convert input data
@@ -288,7 +289,7 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf
 	var memifMode vppmemif.MemifMode
 
 	if memifSocketFile, ok = os.LookupEnv("USERSPACE_MEMIF_SOCKFILE"); ok == false {
-		fileName := fmt.Sprintf("memif-%s-%s.sock", containerID[:12], conf.If0name)
+		fileName := fmt.Sprintf("memif-%s-%s.sock", args.ContainerID[:12], args.IfName)
 		memifSocketFile = filepath.Join(defaultVPPSocketDir, fileName)
 	}
 
@@ -336,7 +337,7 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf
 		return
 	} else {
 		if dbgInterface {
-			fmt.Println("MEMIF", data.SwIfIndex, "created", conf.If0name)
+			fmt.Println("MEMIF", data.SwIfIndex, "created", args.IfName)
 			vppmemif.DumpMemif(vppCh.Ch)
 		}
 	}
@@ -344,13 +345,13 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf
 	return
 }
 
-func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf, containerID string, data *vppdb.VppSavedData) (err error) {
+func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf, args *skel.CmdArgs, data *vppdb.VppSavedData) (err error) {
 
 	var ok bool
 	var memifSocketFile string
 
 	if memifSocketFile, ok = os.LookupEnv("USERSPACE_MEMIF_SOCKFILE"); ok == false {
-		fileName := fmt.Sprintf("memif-%s-%s.sock", containerID[:12], conf.If0name)
+		fileName := fmt.Sprintf("memif-%s-%s.sock", args.ContainerID[:12], args.IfName)
 		memifSocketFile = filepath.Join(defaultVPPSocketDir, fileName)
 	}
 
