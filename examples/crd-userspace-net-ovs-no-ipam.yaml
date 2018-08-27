@@ -1,13 +1,13 @@
 apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
 metadata:
-  name: vhostuser-networkobj
+  name: userspace-networkobj
 spec:
   config: '{
     "cniVersion": "0.3.0",
-    "type": "vhostuser",
-    "vhost": {
-      "vhost_tool": "/opt/cni/bin/ovs-config.py"
+    "type": "userspace",
+    "host": {
+      "engine": "ovs-dpdk",
+      "iftype": "vhostuser"
     }
   }'
-

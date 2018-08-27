@@ -653,14 +653,10 @@ run VPP and *vpp-app* manually:
 
 ## Testing with DPDK Testpmd Application
 
-**NOTE:** This test scenario has not been tested with the latest Userspace CNI
-code and was originally based on VPP 17.01. Also, this test setup does not
-have code in the container to consume the config data.
-
 To follow this example you should have a system with kubernetes available and
 configured to support native 1 GB hugepages. You should also have multus-cni and
-vhost-user-net-plugin up and running. See `examples/crd-vhostuser-net.yaml` for
-example config to use with multus and fix path to vhost tool. If using OVS,
+vhost-user-net-plugin up and running. See `examples/crd-userspace-net-ovs-no-ipam.yaml` for
+example config to use with multus. If using OVS,
 check that you have bridge named `br0` in your OVS with `ovs-vsctl show` and if
 not, create it with
 `ovs-vsctl add-br br0 -- set bridge br0 datapath_type=netdev`.

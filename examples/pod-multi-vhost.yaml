@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   name: multi-vhost-example
   annotations:
-    k8s.v1.cni.cncf.io/networks: vhostuser-networkobj, vhostuser-networkobj
+    k8s.v1.cni.cncf.io/networks: userspace-networkobj, userspace-networkobj
 spec:
   containers:
   - name: multi-vhost-example
