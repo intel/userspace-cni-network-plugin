@@ -6,7 +6,7 @@
          * [Work Standalone](#work-standalone)
          * [Integrated with Multus Plugin](#integrated-with-multus-plugin)
             * [Multus Configuration Details](#multus-configuration-details)
-         * [Logging Options] (#logging-options)
+         * [Logging Options](#logging-options)
             * [Writing to a Log File](#writing-to-a-log-file)
             * [Logging Level](#logging-level)
       * [OVS CNI Library Intro](#ovs-cni-library-intro)
