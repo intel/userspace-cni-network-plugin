@@ -40,6 +40,7 @@ import (
 	"github.com/intel/vhost-user-net-plugin/cnivpp/api/vhostuser"
 	"github.com/intel/vhost-user-net-plugin/cnivpp/vppdb"
 	"github.com/intel/vhost-user-net-plugin/usrsptypes"
+	"github.com/intel/vhost-user-net-plugin/logging"
 )
 
 //
@@ -65,6 +66,8 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 	var vppCh vppinfra.ConnectionData
 	var err error
 	var data vppdb.VppSavedData
+
+	logging.Debugf("VPP AddOnHost: ENTER")
 
 	// Create Channel to pass requests to VPP
 	vppCh, err = vppinfra.VppOpenCh()
@@ -154,6 +157,7 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 }
 
 func (cniVpp CniVpp) AddOnContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
+	logging.Debugf("VPP AddOnContainer: ENTER")
 	return vppdb.SaveRemoteConfig(conf, ipResult, args)
 }
 
@@ -161,6 +165,8 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 	var vppCh vppinfra.ConnectionData
 	var data vppdb.VppSavedData
 	var err error
+
+	logging.Debugf("VPP DelFromHost: ENTER")
 
 	// Create Channel to pass requests to VPP
 	vppCh, err = vppinfra.VppOpenCh()
@@ -220,6 +226,8 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 }
 
 func (cniVpp CniVpp) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
+	logging.Debugf("VPP DelFromContainer: ENTER")
+
 	vppdb.CleanupRemoteConfig(conf, args.ContainerID)
 	return nil
 }

@@ -62,4 +62,6 @@ type NetConf struct {
 	Name          string        `json:"name"`
 	HostConf      UserSpaceConf `json:"host,omitempty"`
 	ContainerConf UserSpaceConf `json:"container,omitempty"`
+	LogFile       string        `json:"logFile"`
+	LogLevel      string        `json:"logLevel"`
 }

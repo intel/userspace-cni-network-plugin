@@ -39,6 +39,7 @@ import (
 
 	"github.com/intel/vhost-user-net-plugin/cniovs/ovsdb"
 	"github.com/intel/vhost-user-net-plugin/usrsptypes"
+	"github.com/intel/vhost-user-net-plugin/logging"
 )
 
 //
@@ -59,6 +60,8 @@ type CniOvs struct {
 func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
 	var err error
 	var data ovsdb.OvsSavedData
+
+	logging.Debugf("OVS AddOnHost: ENTER")
 
 	//
 	// Create Local Interface
@@ -98,12 +101,15 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 }
 
 func (cniOvs CniOvs) AddOnContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
+	logging.Debugf("OVS AddOnContainer: ENTER")
 	return nil
 }
 
 func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
 	var data ovsdb.OvsSavedData
 	var err error
+
+	logging.Debugf("OVS DelFromHost: ENTER")
 
 	//
 	// Load Config - Retrieved squirreled away data needed for processing delete
@@ -130,6 +136,7 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 }
 
 func (cniOvs CniOvs) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
+	logging.Debugf("OVS DelFromContainer: ENTER")
 	return nil
 }
 

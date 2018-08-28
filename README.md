@@ -6,6 +6,9 @@
          * [Work Standalone](#work-standalone)
          * [Integrated with Multus Plugin](#integrated-with-multus-plugin)
             * [Multus Configuration Details](#multus-configuration-details)
+         * [Logging Options] (#logging-options)
+            * [Writing to a Log File](#writing-to-a-log-file)
+            * [Logging Level](#logging-level)
       * [OVS CNI Library Intro](#ovs-cni-library-intro)
          * [Installing OVS](#installing-ovs)
          * [Running OVS CNI Library with OVS](#running-ovs-cni-library-with-ovs)
@@ -271,6 +274,42 @@ EOF
 **Note:** The Userspace CNI supports different IPAM plugins for the IP addresses
 management. The generated IP address information will be stored in one
 configuration file.
+
+
+## Logging Options
+You may wish to enable some enhanced logging, especially to understand what is
+or isn't working with a particular configuration. Userspace CNI always log via
+`STDERR`, which is the standard method by which CNI plugins communicate errors,
+and these errors are logged by the Kubelet. This method is always enabled.
+
+### Writing to a Log File
+Optionally, Userspace CNI can log to a file on the filesystem. This file will
+be written locally on each node where CNI is executed. Configure this via the
+`LogFile` option in the CNI configuration. By default this additional logging
+to a flat file is disabled.
+
+For example in your CNI configuration, you may set:
+```
+    "LogFile": "/var/log/multus.log",
+```
+
+### Logging Level
+
+The default logging level is set as `panic` -- this will log only the most
+critical errors, and is the least verbose logging level.
+
+The available logging level values, in descreasing order of verbosity are:
+
+* `debug`
+* `error`
+* `panic`
+
+You may configure the logging level by using the `LogLevel` option in your
+CNI configuration. For example:
+
+```
+    "LogLevel": "debug",
+```
 
 
 # OVS CNI Library Intro

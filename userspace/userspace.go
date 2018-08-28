@@ -29,6 +29,7 @@ import (
 
 	"github.com/intel/vhost-user-net-plugin/cniovs/cniovs"
 	"github.com/intel/vhost-user-net-plugin/cnivpp/cnivpp"
+	"github.com/intel/vhost-user-net-plugin/logging"
 	"github.com/intel/vhost-user-net-plugin/usrsptypes"
 
 	"github.com/vishvananda/netlink"
@@ -52,6 +53,16 @@ func loadNetConf(bytes []byte) (*usrsptypes.NetConf, error) {
 		return nil, fmt.Errorf("failed to load netconf: %v", err)
 	}
 
+	//
+	// Logging
+	//
+	if n.LogFile != "" {
+		logging.SetLogFile(n.LogFile)
+	}
+	if n.LogLevel != "" {
+		logging.SetLogLevel(n.LogLevel)
+	}
+
 	return n, nil
 }
 
@@ -65,9 +76,14 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	// Convert the input bytestream into local NetConf structure
 	netConf, err := loadNetConf(args.StdinData)
+
+	logging.Debugf("cmdAdd: ENTER (AFTER LOAD) - Args=%v netConf=%v", args, netConf)
+
 	if err != nil {
+		logging.Errorf("cmdAdd: Parse NetConf - %v", err)
 		return err
 	}
+
 
 	//
 	// HOST:
@@ -79,9 +95,10 @@ func cmdAdd(args *skel.CmdArgs) error {
 	} else if netConf.HostConf.Engine == "ovs-dpdk" {
 		err = ovs.AddOnHost(netConf, args, result)
 	} else {
-		return fmt.Errorf("ERROR: Unknown Host Engine:" + netConf.HostConf.Engine)
+		err = fmt.Errorf("ERROR: Unknown Host Engine:" + netConf.HostConf.Engine)
 	}
 	if err != nil {
+		logging.Errorf("cmdAdd: Host ERROR - %v", err)
 		return err
 	}
 
@@ -95,6 +112,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		// run the IPAM plugin and get back the config to apply
 		ipamResult, err := ipam.ExecAdd(netConf.IPAM.Type, args.StdinData)
 		if err != nil {
+			logging.Errorf("cmdAdd: IPAM ERROR - %v", err)
 			return err
 		}
 
@@ -102,12 +120,15 @@ func cmdAdd(args *skel.CmdArgs) error {
 		result, err = current.NewResultFromResult(ipamResult)
 		if err != nil {
 			// TBD: CLEAN-UP
+			logging.Errorf("cmdAdd: IPAM Result ERROR - %v", err)
 			return err
 		}
 
 		if len(result.IPs) == 0 {
 			// TBD: CLEAN-UP
-			return fmt.Errorf("ERROR: Unable to get IP Address")
+			err = fmt.Errorf("ERROR: Unable to get IP Address")
+			logging.Errorf("cmdAdd: IPAM ERROR - %v", err)
+			return err
 		}
 
 		// Clear out the Gateway if set by IPAM, not being used.
@@ -133,9 +154,10 @@ func cmdAdd(args *skel.CmdArgs) error {
 	} else if containerEngine == "ovs-dpdk" {
 		err = ovs.AddOnContainer(netConf, args, result)
 	} else {
-		return fmt.Errorf("ERROR: Unknown Container Engine:" + containerEngine)
+		err = fmt.Errorf("ERROR: Unknown Container Engine:" + containerEngine)
 	}
 	if err != nil {
+		logging.Errorf("cmdAdd: Container ERROR - %v", err)
 		return err
 	}
 
@@ -151,9 +173,14 @@ func cmdDel(args *skel.CmdArgs) error {
 
 	// Convert the input bytestream into local NetConf structure
 	netConf, err := loadNetConf(args.StdinData)
+
+	logging.Debugf("cmdDel: ENTER (AFTER LOAD) - Args=%v netConf=%v", args, netConf)
+
 	if err != nil {
+		logging.Errorf("cmdDel: Parse NetConf - %v", err)
 		return err
 	}
+
 
 	//
 	// HOST:
@@ -165,9 +192,10 @@ func cmdDel(args *skel.CmdArgs) error {
 	} else if netConf.HostConf.Engine == "ovs-dpdk" {
 		err = ovs.DelFromHost(netConf, args)
 	} else {
-		return fmt.Errorf("ERROR: Unknown Host Engine:" + netConf.HostConf.Engine)
+		err = fmt.Errorf("ERROR: Unknown Host Engine:" + netConf.HostConf.Engine)
 	}
 	if err != nil {
+		logging.Errorf("cmdDel: Host ERROR - %v", err)
 		return err
 	}
 
@@ -189,9 +217,10 @@ func cmdDel(args *skel.CmdArgs) error {
 	} else if containerEngine == "ovs-dpdk" {
 		err = ovs.DelFromContainer(netConf, args)
 	} else {
-		return fmt.Errorf("ERROR: Unknown Container Engine:" + containerEngine)
+		err = fmt.Errorf("ERROR: Unknown Container Engine:" + containerEngine)
 	}
 	if err != nil {
+		logging.Errorf("cmdDel: Container ERROR - %v", err)
 		return err
 	}
 
@@ -201,6 +230,7 @@ func cmdDel(args *skel.CmdArgs) error {
 	if netConf.IPAM.Type != "" {
 		err = ipam.ExecDel(netConf.IPAM.Type, args.StdinData)
 		if err != nil {
+			logging.Errorf("cmdDel: IPAM ERROR - %v", err)
 			return err
 		}
 	}
@@ -221,11 +251,8 @@ func cmdDel(args *skel.CmdArgs) error {
 		return err
 	})
 
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 func main() {

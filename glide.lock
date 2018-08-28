@@ -1,5 +1,5 @@
 hash: 7fc378ba93d24b16dc362c7c971b1b56ab4d935ffe4c3205fe2588b1ff01f263
-updated: 2018-08-17T16:58:13.187329311-04:00
+updated: 2018-08-27T16:52:38.674369012-04:00
 imports:
 - name: git.fd.io/govpp.git
   version: e44d8c3905e22f940a100e6331a45412cba9d47e
@@ -37,6 +37,8 @@ imports:
   version: 8e484f31b1237166f00e4896d27ddde259540632
 - name: github.com/lunixbochs/struc
   version: ef56447db6a068ad9e52bc54a1aff5fb9e1ed2dd
+- name: github.com/pkg/errors
+  version: 816c9085562cd7ee03e7f8188a1cfd942858cded
 - name: github.com/sirupsen/logrus
   version: 202f25545ea4cf9b191ff7f846df5d87c9382c2b
 - name: github.com/vishvananda/netlink
