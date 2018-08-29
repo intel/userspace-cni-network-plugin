@@ -35,6 +35,9 @@ import (
 //
 // Constants
 //
+const (
+        dbgApp = false
+)
 
 //
 // Types
@@ -53,16 +56,19 @@ func main() {
 
 		found, err := cnivpp.CniContainerConfig()
 
-		if err != nil {
-			fmt.Println("ERROR returned:", err)
-		}
+		if dbgApp {
+			if err != nil {
+				fmt.Println("ERROR returned:", err)
+			}
 
-		fmt.Println("LOOP", count, " - FOUND:", found)
+			fmt.Println("LOOP", count, " - FOUND:", found)
+		}
 
 		//
 		// Once files have been found, wait 1 more loop and exit.
 		//
 		if found {
+			fmt.Println("Found Configuration and applied.")
 			processed = true
 		}
 
@@ -70,6 +76,13 @@ func main() {
 			processedCnt++
 
 			if processedCnt > 1 {
+				fmt.Println("")
+				fmt.Println("Useful VPP CLI Commands:")
+				fmt.Println(" vppctl show interface")
+				fmt.Println(" vppctl show interface addr")
+				fmt.Println(" vppctl show mode")
+				fmt.Println(" vppctl show hardware")
+				fmt.Println("")
 				fmt.Println("DONE: Exiting vpp-app")
 				break
 			}

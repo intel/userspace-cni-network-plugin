@@ -25,6 +25,7 @@ RUN yum install -y git golang make
 WORKDIR /root/go/src/github.com/intel/
 RUN git clone https://github.com/intel/vhost-user-net-plugin
 WORKDIR /root/go/src/github.com/intel/vhost-user-net-plugin
+RUN git checkout -b billy99/user-space-net-plugin origin/billy99/user-space-net-plugin
 RUN make extras
 RUN cp cnivpp/vpp-app/vpp-app /usr/sbin/vpp-app
 
