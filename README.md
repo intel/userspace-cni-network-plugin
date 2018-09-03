@@ -1,10 +1,10 @@
-# Vhostuser CNI plugin
+# Userspace CNI plugin
 
-- Vhostuser plugin is a Container Network Interface (CNI) plugin to run with OVS-DPDK and VPP along with Multus CNI plugin in Kubernetes for Bare metal container deployment model. It enhances high performance container Networking solution and Dataplane Acceleration for NFV Environment.
+- Userspace plugin is a Container Network Interface (CNI) plugin to run with OVS-DPDK and VPP along with Multus CNI plugin in Kubernetes for Bare metal container deployment model. It enhances high performance container Networking solution and Dataplane Acceleration for NFV Environment.
 
-- DPDK Vhostuser is new virtualization technology. Please refer to [here](http://dpdk.org/doc/guides/howto/virtio_user_for_container_networking.html) for more information.
+- DPDK Userspace is new virtualization technology. Please refer to [here](http://dpdk.org/doc/guides/howto/virtio_user_for_container_networking.html) for more information.
 
-![Vhostuser plugin](doc/images/Vhostuser-plugin.png)
+![Userspace plugin](doc/images/Vhostuser-plugin.png)
 
 ## Build & Clean
 
@@ -71,7 +71,7 @@ Encourage the users/developers to use Multus based Kubernetes CDR/TPR based netw
 
 Please refer the Kubernetes Network SIG - Multiple Network PoC proposal for more details refer the link - [K8s Multiple Network proposal](https://docs.google.com/document/d/1TW3P4c8auWwYy-w_5afIPDcGNLK3LZf0m14943eVfVg/edit)
 
-![Vhostuser CNI with multus](doc/images/Vhostuser-with-multus.png)
+![Userspace CNI with multus](doc/images/Vhostuser-with-multus.png)
 
 ### Configuration details
 ```
@@ -123,7 +123,7 @@ Please refer the Kubernetes Network SIG - Multiple Network PoC proposal for more
 EOF
 ```
 
-Note: The Vhostuser CNI supports different IPAM plugins for the IP addresses management. The generated IP address information will be stored in one configuration file.
+Note: The Userspace CNI supports different IPAM plugins for the IP addresses management. The generated IP address information will be stored in one configuration file.
 
 ## Installing VPP or DPDK-OVS
 Both VPP (Vector Packet Processing) and DPDK-OVS support VHOST_USER virtual ports. And it uses DPDK VIRTIO_USER as its client for the container network. Install VPP or DPDK-OVS for the Kubernetes node(s).
@@ -304,4 +304,4 @@ testpmd \
 If packets are not going through, you may need to configure direct flows to your switch between the used ports. For example, with OVS as the switch, this is done by getting the port numbers with `ovs-ofctl dump-ports br0` and configuring flow, for example, from port 1 to port 2 with `ovs-ofctl add-flow br0 in_port=1,action=output:2` and vice versa.
 
 ### Contacts
-For any questions about Vhostuser CNI, please reach out on github issue or feel free to contact the developer @Kural and @abdul in our [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
+For any questions about Userspace CNI, please reach out on github issue or feel free to contact the developer @Kural and @abdul in our [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
