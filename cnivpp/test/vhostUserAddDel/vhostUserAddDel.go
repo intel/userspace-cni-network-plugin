@@ -76,16 +76,6 @@ func main() {
 	}
 	defer vppinfra.VppCloseCh(vppCh)
 
-	// Compatibility Checks
-	err = vppbridge.BridgeCompatibilityCheck(vppCh.Ch)
-	if err != nil {
-		os.Exit(1)
-	}
-	err = vppvhostuser.VhostUserCompatibilityCheck(vppCh.Ch)
-	if err != nil {
-		os.Exit(1)
-	}
-
 	// Create Vhost-User Interface
 	swIfIndex, err = vppvhostuser.CreateVhostUserInterface(vppCh.Ch, vhostUserMode, vhostUserSocketFile)
 	if err != nil {

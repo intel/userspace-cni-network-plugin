@@ -20,7 +20,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/bennyscetbun/jsongo"
 	. "github.com/onsi/gomega"
 )
 
@@ -28,7 +27,7 @@ func TestGetInputFiles(t *testing.T) {
 	RegisterTestingT(t)
 	result, err := getInputFiles("testdata")
 	Expect(err).ShouldNot(HaveOccurred())
-	Expect(result).To(HaveLen(5))
+	Expect(result).To(HaveLen(3))
 	for _, file := range result {
 		Expect(file).To(BeAnExistingFile())
 	}
@@ -48,10 +47,10 @@ func TestGenerateFromFile(t *testing.T) {
 	defer os.RemoveAll(outDir)
 	err := generateFromFile("testdata/acl.api.json", outDir)
 	Expect(err).ShouldNot(HaveOccurred())
-	fileInfo, err := os.Stat(outDir + "/acl/acl.go")
+	fileInfo, err := os.Stat(outDir + "/acl/acl.ba.go")
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(fileInfo.IsDir()).To(BeFalse())
-	Expect(fileInfo.Name()).To(BeEquivalentTo("acl.go"))
+	Expect(fileInfo.Name()).To(BeEquivalentTo("acl.ba.go"))
 }
 
 func TestGenerateFromFileInputError(t *testing.T) {
@@ -59,7 +58,7 @@ func TestGenerateFromFileInputError(t *testing.T) {
 	outDir := "test_output_directory"
 	err := generateFromFile("testdata/nonexisting.json", outDir)
 	Expect(err).Should(HaveOccurred())
-	Expect(err.Error()).To(ContainSubstring("reading data from file failed"))
+	Expect(err.Error()).To(ContainSubstring("invalid input file name"))
 }
 
 func TestGenerateFromFileReadJsonError(t *testing.T) {
@@ -67,7 +66,7 @@ func TestGenerateFromFileReadJsonError(t *testing.T) {
 	outDir := "test_output_directory"
 	err := generateFromFile("testdata/input-read-json-error.json", outDir)
 	Expect(err).Should(HaveOccurred())
-	Expect(err.Error()).To(ContainSubstring("JSON unmarshall failed"))
+	Expect(err.Error()).To(ContainSubstring("invalid input file name"))
 }
 
 func TestGenerateFromFileGeneratePackageError(t *testing.T) {
@@ -90,7 +89,7 @@ func TestGetContext(t *testing.T) {
 	result, err := getContext("testdata/af_packet.api.json", outDir)
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(result).ToNot(BeNil())
-	Expect(result.outputFile).To(BeEquivalentTo(outDir + "/af_packet/af_packet.go"))
+	Expect(result.outputFile).To(BeEquivalentTo(outDir + "/af_packet/af_packet.ba.go"))
 }
 
 func TestGetContextNoJsonFile(t *testing.T) {
@@ -105,12 +104,11 @@ func TestGetContextNoJsonFile(t *testing.T) {
 func TestGetContextInterfaceJson(t *testing.T) {
 	RegisterTestingT(t)
 	outDir := "test_output_directory"
-	result, err := getContext("testdata/interface.json", outDir)
+	result, err := getContext("testdata/ip.api.json", outDir)
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(result).ToNot(BeNil())
 	Expect(result.outputFile)
-	Expect(result.outputFile).To(BeEquivalentTo(outDir + "/interfaces/interfaces.go"))
-
+	Expect(result.outputFile).To(BeEquivalentTo(outDir + "/ip/ip.ba.go"))
 }
 
 func TestReadJson(t *testing.T) {
@@ -129,7 +127,6 @@ func TestReadJsonError(t *testing.T) {
 	Expect(err).ShouldNot(HaveOccurred())
 	result, err := parseJSON(inputData)
 	Expect(err).Should(HaveOccurred())
-	Expect(err.Error()).To(ContainSubstring("JSON unmarshall failed"))
 	Expect(result).To(BeNil())
 }
 
@@ -143,15 +140,19 @@ func TestGeneratePackage(t *testing.T) {
 	inputData, err := readFile("testdata/ip.api.json")
 	Expect(err).ShouldNot(HaveOccurred())
 	testCtx.inputBuff = bytes.NewBuffer(inputData)
-	inFile, _ := parseJSON(inputData)
+	jsonRoot, err := parseJSON(inputData)
+	Expect(err).ShouldNot(HaveOccurred())
+	testCtx.packageData, err = parsePackage(testCtx, jsonRoot)
+	Expect(err).ShouldNot(HaveOccurred())
 	outDir := "test_output_directory"
-	outFile, _ := os.Create(outDir)
+	outFile, err := os.Create(outDir)
+	Expect(err).ShouldNot(HaveOccurred())
 	defer os.RemoveAll(outDir)
 
 	// prepare writer
 	writer := bufio.NewWriter(outFile)
 	Expect(writer.Buffered()).To(BeZero())
-	err = generatePackage(testCtx, writer, inFile)
+	err = generatePackage(testCtx, writer)
 	Expect(err).ShouldNot(HaveOccurred())
 }
 
@@ -165,31 +166,25 @@ func TestGenerateMessageType(t *testing.T) {
 	inputData, err := readFile("testdata/ip.api.json")
 	Expect(err).ShouldNot(HaveOccurred())
 	testCtx.inputBuff = bytes.NewBuffer(inputData)
-	inFile, _ := parseJSON(inputData)
+	jsonRoot, err := parseJSON(inputData)
+	Expect(err).ShouldNot(HaveOccurred())
 	outDir := "test_output_directory"
-	outFile, _ := os.Create(outDir)
+	outFile, err := os.Create(outDir)
+	Expect(err).ShouldNot(HaveOccurred())
+	testCtx.packageData, err = parsePackage(testCtx, jsonRoot)
+	Expect(err).ShouldNot(HaveOccurred())
 	defer os.RemoveAll(outDir)
 
 	// prepare writer
 	writer := bufio.NewWriter(outFile)
 
-	types := inFile.Map("types")
-	testCtx.types = map[string]string{
-		"u32": "sw_if_index",
-		"u8":  "weight",
-	}
-	Expect(types.Len()).To(BeEquivalentTo(1))
-	for i := 0; i < types.Len(); i++ {
-		typ := types.At(i)
-		Expect(writer.Buffered()).To(BeZero())
-		err := generateMessage(testCtx, writer, typ, true)
-		Expect(err).ShouldNot(HaveOccurred())
+	for _, msg := range testCtx.packageData.Messages {
+		generateMessage(testCtx, writer, &msg)
 		Expect(writer.Buffered()).ToNot(BeZero())
-
 	}
 }
 
-func TestGenerateMessageName(t *testing.T) {
+/*func TestGenerateMessageName(t *testing.T) {
 	RegisterTestingT(t)
 	// prepare context
 	testCtx := new(context)
@@ -222,10 +217,20 @@ func TestGenerateMessageName(t *testing.T) {
 
 func TestGenerateMessageFieldTypes(t *testing.T) {
 	// expected results according to acl.api.json in testdata
-	expectedTypes := []string{"\tIsPermit uint8", "\tIsIpv6 uint8", "\tSrcIPAddr []byte	`struc:\"[16]byte\"`",
-		"\tSrcIPPrefixLen uint8", "\tDstIPAddr []byte	`struc:\"[16]byte\"`", "\tDstIPPrefixLen uint8", "\tProto uint8",
-		"\tSrcportOrIcmptypeFirst uint16", "\tSrcportOrIcmptypeLast uint16", "\tDstportOrIcmpcodeFirst uint16",
-		"\tDstportOrIcmpcodeLast uint16", "\tTCPFlagsMask uint8", "\tTCPFlagsValue uint8"}
+	expectedTypes := []string{
+		"\tIsPermit uint8",
+		"\tIsIpv6 uint8",
+		"\tSrcIPAddr []byte	`struc:\"[16]byte\"`",
+		"\tSrcIPPrefixLen uint8",
+		"\tDstIPAddr []byte	`struc:\"[16]byte\"`",
+		"\tDstIPPrefixLen uint8",
+		"\tProto uint8",
+		"\tSrcportOrIcmptypeFirst uint16",
+		"\tSrcportOrIcmptypeLast uint16",
+		"\tDstportOrIcmpcodeFirst uint16",
+		"\tDstportOrIcmpcodeLast uint16",
+		"\tTCPFlagsMask uint8",
+		"\tTCPFlagsValue uint8"}
 	RegisterTestingT(t)
 	// prepare context
 	testCtx := new(context)
@@ -234,7 +239,7 @@ func TestGenerateMessageFieldTypes(t *testing.T) {
 	// prepare input/output output files
 	inputData, err := readFile("testdata/acl.api.json")
 	Expect(err).ShouldNot(HaveOccurred())
-	inFile, _ := parseJSON(inputData)
+	inFile, err := parseJSON(inputData)
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(inFile).ToNot(BeNil())
 
@@ -244,7 +249,7 @@ func TestGenerateMessageFieldTypes(t *testing.T) {
 	for i := 0; i < types.Len(); i++ {
 		for j := 0; j < types.At(i).Len(); j++ {
 			field := types.At(i).At(j)
-			if jsongo.TypeArray == field.GetType() {
+			if field.GetType() == jsongo.TypeArray {
 				err := processMessageField(testCtx, &fields, field, false)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(fields[j-1]).To(BeEquivalentTo(expectedTypes[j-1]))
@@ -277,7 +282,7 @@ func TestGenerateMessageFieldMessages(t *testing.T) {
 	for i := 0; i < messages.Len(); i++ {
 		for j := 0; j < messages.At(i).Len(); j++ {
 			field := messages.At(i).At(j)
-			if jsongo.TypeArray == field.GetType() {
+			if field.GetType() == jsongo.TypeArray {
 				specificFieldName := field.At(1).Get().(string)
 				if specificFieldName == "crc" || specificFieldName == "_vl_msg_id" ||
 					specificFieldName == "client_index" || specificFieldName == "context" {
@@ -288,7 +293,7 @@ func TestGenerateMessageFieldMessages(t *testing.T) {
 				Expect(fields[customIndex]).To(BeEquivalentTo(expectedFields[customIndex]))
 				customIndex++
 				if customIndex >= len(expectedFields) {
-					/* there is too much fields now for one UT... */
+					// there is too much fields now for one UT...
 					return
 				}
 			}
@@ -314,7 +319,7 @@ func TestGeneratePackageHeader(t *testing.T) {
 	// prepare writer
 	writer := bufio.NewWriter(outFile)
 	Expect(writer.Buffered()).To(BeZero())
-	generatePackageHeader(testCtx, writer, inFile)
+	generateHeader(testCtx, writer, inFile)
 	Expect(writer.Buffered()).ToNot(BeZero())
 }
 
@@ -393,9 +398,9 @@ func TestTranslateVppType(t *testing.T) {
 	context := new(context)
 	typesToTranslate := []string{"u8", "i8", "u16", "i16", "u32", "i32", "u64", "i64", "f64"}
 	expected := []string{"uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64", "float64"}
-	translated := []string{}
+	var translated []string
 	for _, value := range typesToTranslate {
-		translated = append(translated, translateVppType(context, value, false))
+		translated = append(translated, convertToGoType(context, value, false))
 	}
 	for index, value := range expected {
 		Expect(value).To(BeEquivalentTo(translated[index]))
@@ -406,7 +411,7 @@ func TestTranslateVppType(t *testing.T) {
 func TestTranslateVppTypeArray(t *testing.T) {
 	RegisterTestingT(t)
 	context := new(context)
-	translated := translateVppType(context, "u8", true)
+	translated := convertToGoType(context, "u8", true)
 	Expect(translated).To(BeEquivalentTo("byte"))
 }
 
@@ -417,7 +422,7 @@ func TestTranslateVppUnknownType(t *testing.T) {
 		}
 	}()
 	context := new(context)
-	translateVppType(context, "?", false)
+	convertToGoType(context, "?", false)
 }
 
 func TestCamelCase(t *testing.T) {
@@ -444,3 +449,4 @@ func TestCommonInitialisms(t *testing.T) {
 		Expect(key).ShouldNot(BeEmpty())
 	}
 }
+*/

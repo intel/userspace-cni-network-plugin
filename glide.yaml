@@ -31,5 +31,13 @@ import:
 - package: github.com/fsnotify/fsnotify
   version: 4da3e2cfbabc9f751898f250b49f2439785783a1
 - package: github.com/google/gopacket
-version: 8e484f31b1237166f00e4896d27ddde259540632
+  version: 8e484f31b1237166f00e4896d27ddde259540632
+- package: git.fd.io/govpp.git
+  version: 6b350c65fe0ec845cecf58bfb41ffc63dc9c04f7
+  subpackages:
+  - adapter
+  - adapter/vppapiclient
+  - api
+  - core
+  - core/bin_api/vpe
 

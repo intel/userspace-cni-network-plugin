@@ -20,8 +20,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
-	"sync"
 	"time"
 
 	"github.com/pkg/profile"
@@ -30,12 +28,12 @@ import (
 	"git.fd.io/govpp.git"
 	"git.fd.io/govpp.git/api"
 	"git.fd.io/govpp.git/core"
-	"git.fd.io/govpp.git/core/bin_api/vpe"
+	"git.fd.io/govpp.git/examples/bin_api/vpe"
 )
 
 const (
 	defaultSyncRequestCount  = 1000
-	defaultAsyncRequestCount = 1000000
+	defaultAsyncRequestCount = 10000
 )
 
 func main() {
@@ -43,7 +41,7 @@ func main() {
 	var sync, prof bool
 	var cnt int
 	flag.BoolVar(&sync, "sync", false, "run synchronous perf test")
-	flag.IntVar(&cnt, "cnt", 0, "count of requests to be sent to VPP")
+	flag.IntVar(&cnt, "count", 0, "count of requests to be sent to VPP")
 	flag.BoolVar(&prof, "prof", false, "generate profile data")
 	flag.Parse()
 
@@ -66,16 +64,14 @@ func main() {
 	// connect to VPP
 	conn, err := govpp.Connect("")
 	if err != nil {
-		log.Println("Error:", err)
-		os.Exit(1)
+		log.Fatalln("Error:", err)
 	}
 	defer conn.Disconnect()
 
 	// create an API channel
 	ch, err := conn.NewAPIChannelBuffered(cnt, cnt)
 	if err != nil {
-		log.Println("Error:", err)
-		os.Exit(1)
+		log.Fatalln("Error:", err)
 	}
 	defer ch.Close()
 
@@ -95,68 +91,36 @@ func main() {
 	fmt.Printf("Requests per second: %.0f\n", float64(cnt)/elapsed.Seconds())
 }
 
-func syncTest(ch *api.Channel, cnt int) {
+func syncTest(ch api.Channel, cnt int) {
 	fmt.Printf("Running synchronous perf test with %d requests...\n", cnt)
 
 	for i := 0; i < cnt; i++ {
 		req := &vpe.ControlPing{}
 		reply := &vpe.ControlPingReply{}
 
-		err := ch.SendRequest(req).ReceiveReply(reply)
-		if err != nil {
-			log.Println("Error in reply:", err)
-			os.Exit(1)
+		if err := ch.SendRequest(req).ReceiveReply(reply); err != nil {
+			log.Fatalln("Error in reply:", err)
 		}
 	}
 }
 
-func asyncTest(ch *api.Channel, cnt int) {
+func asyncTest(ch api.Channel, cnt int) {
 	fmt.Printf("Running asynchronous perf test with %d requests...\n", cnt)
 
-	// start a new go routine that reads the replies
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go readAsyncReplies(ch, cnt, &wg)
+	ctxChan := make(chan api.RequestCtx, cnt)
 
-	// send asynchronous requests
-	sendAsyncRequests(ch, cnt)
-
-	// wait until all replies are recieved
-	wg.Wait()
-}
-
-func sendAsyncRequests(ch *api.Channel, cnt int) {
-	for i := 0; i < cnt; i++ {
-		ch.ReqChan <- &api.VppRequest{
-			Message: &vpe.ControlPing{},
+	go func() {
+		for i := 0; i < cnt; i++ {
+			ctxChan <- ch.SendRequest(&vpe.ControlPing{})
 		}
-	}
-}
+		close(ctxChan)
+		fmt.Printf("Sending asynchronous requests finished\n")
+	}()
 
-func readAsyncReplies(ch *api.Channel, expectedCnt int, wg *sync.WaitGroup) {
-	cnt := 0
-
-	for {
-		// receive a reply
-		reply := <-ch.ReplyChan
-		if reply.Error != nil {
-			log.Println("Error in reply:", reply.Error)
-			os.Exit(1)
-		}
-
-		// decode the message
-		msg := &vpe.ControlPingReply{}
-		err := ch.MsgDecoder.DecodeMsg(reply.Data, msg)
-		if reply.Error != nil {
-			log.Println("Error by decoding:", err)
-			os.Exit(1)
-		}
-
-		// count and return if done
-		cnt++
-		if cnt >= expectedCnt {
-			wg.Done()
-			return
+	for ctx := range ctxChan {
+		reply := &vpe.ControlPingReply{}
+		if err := ctx.ReceiveReply(reply); err != nil {
+			log.Fatalln("Error in reply:", err)
 		}
 	}
 }

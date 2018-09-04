@@ -78,16 +78,6 @@ func main() {
 	}
 	defer vppinfra.VppCloseCh(vppCh)
 
-	// Compatibility Checks
-	err = vppbridge.BridgeCompatibilityCheck(vppCh.Ch)
-	if err != nil {
-		os.Exit(1)
-	}
-	err = vppmemif.MemifCompatibilityCheck(vppCh.Ch)
-	if err != nil {
-		os.Exit(1)
-	}
-
 	// Create Memif Socket
 	memifSocketId, err = vppmemif.CreateMemifSocket(vppCh.Ch, memifSocketFile)
 	if err != nil {

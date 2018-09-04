@@ -35,28 +35,8 @@ const debugBridge = false
 // API Functions
 //
 
-// Check whether generated API messages are compatible with the version
-// of VPP which the library is connected to.
-func BridgeCompatibilityCheck(ch *api.Channel) error {
-	err := ch.CheckMessageCompatibility(
-		&l2.BridgeDomainAddDel{},
-		&l2.BridgeDomainAddDelReply{},
-		&l2.BridgeDomainDump{},
-		&l2.BridgeDomainDetails{},
-		&l2.SwInterfaceSetL2Bridge{},
-		&l2.SwInterfaceSetL2BridgeReply{},
-	)
-	if err != nil {
-		if debugBridge {
-			fmt.Println("VPP memif failed compatibility")
-		}
-	}
-
-	return err
-}
-
 // Attempt to create a Bridge Domain.
-func CreateBridge(ch *api.Channel, bridgeDomain uint32) error {
+func CreateBridge(ch api.Channel, bridgeDomain uint32) error {
 
 	exists, _ := findBridge(ch, bridgeDomain)
 	if exists {
@@ -94,7 +74,7 @@ func CreateBridge(ch *api.Channel, bridgeDomain uint32) error {
 }
 
 // Attempt to delete a Bridge Domain.
-func DeleteBridge(ch *api.Channel, bridgeDomain uint32) error {
+func DeleteBridge(ch api.Channel, bridgeDomain uint32) error {
 
 	// Determine if bridge domain exists
 	exists, count := findBridge(ch, bridgeDomain)
@@ -123,7 +103,7 @@ func DeleteBridge(ch *api.Channel, bridgeDomain uint32) error {
 }
 
 // Attempt to add an interface to a Bridge Domain.
-func AddBridgeInterface(ch *api.Channel, bridgeDomain uint32, swIfId uint32) error {
+func AddBridgeInterface(ch api.Channel, bridgeDomain uint32, swIfId uint32) error {
 	var err error
 
 	// Determine if bridge domain exists, and if not, create it. CreateBridge()
@@ -157,7 +137,7 @@ func AddBridgeInterface(ch *api.Channel, bridgeDomain uint32, swIfId uint32) err
 }
 
 // Attempt to remove an interface from a Bridge Domain.
-func RemoveBridgeInterface(ch *api.Channel, bridgeDomain uint32, swIfId uint32) error {
+func RemoveBridgeInterface(ch api.Channel, bridgeDomain uint32, swIfId uint32) error {
 
 	// Populate the Request Structure
 	req := &l2.SwInterfaceSetL2Bridge{
@@ -191,7 +171,7 @@ func RemoveBridgeInterface(ch *api.Channel, bridgeDomain uint32, swIfId uint32) 
 
 // Dump the input Bridge data to Stdout. There is not VPP API to dump
 // all the Bridges.
-func DumpBridge(ch *api.Channel, bridgeDomain uint32) {
+func DumpBridge(ch api.Channel, bridgeDomain uint32) {
 
 	// Populate the Message Structure
 	req := &l2.BridgeDomainDump{
@@ -234,7 +214,7 @@ func DumpBridge(ch *api.Channel, bridgeDomain uint32) {
 // Determine if the input Bridge exists.
 // Return: true - Exists  false - otherwise
 //         uint32 - Number of associated interfaces
-func findBridge(ch *api.Channel, bridgeDomain uint32) (bool, uint32) {
+func findBridge(ch api.Channel, bridgeDomain uint32) (bool, uint32) {
 	var rval bool = false
 	var count uint32
 

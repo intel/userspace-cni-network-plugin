@@ -37,7 +37,7 @@ import (
 	"github.com/intel/vhost-user-net-plugin/cnivpp/api/infra"
 	"github.com/intel/vhost-user-net-plugin/cnivpp/api/interface"
 	"github.com/intel/vhost-user-net-plugin/cnivpp/api/memif"
-	"github.com/intel/vhost-user-net-plugin/cnivpp/api/vhostuser"
+	_ "github.com/intel/vhost-user-net-plugin/cnivpp/api/vhostuser"
 	"github.com/intel/vhost-user-net-plugin/cnivpp/vppdb"
 	"github.com/intel/vhost-user-net-plugin/usrsptypes"
 	"github.com/intel/vhost-user-net-plugin/logging"
@@ -75,12 +75,6 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 		return err
 	}
 	defer vppinfra.VppCloseCh(vppCh)
-
-	// Make sure version of API structs used by CNI are same as used by local VPP Instance.
-	err = compatibilityChecks(vppCh)
-	if err != nil {
-		return err
-	}
 
 	//
 	// Create Local Interface
@@ -261,32 +255,6 @@ func CniContainerConfig() (bool, error) {
 //
 // Local Functions
 //
-
-func compatibilityChecks(vppCh vppinfra.ConnectionData) (err error) {
-
-	// Compatibility Checks
-	err = vppmemif.MemifCompatibilityCheck(vppCh.Ch)
-	if err != nil {
-		return
-	}
-
-	err = vppbridge.BridgeCompatibilityCheck(vppCh.Ch)
-	if err != nil {
-		return
-	}
-
-	err = vppvhostuser.VhostUserCompatibilityCheck(vppCh.Ch)
-	if err != nil {
-		return
-	}
-
-	err = vppinterface.InterfaceCompatibilityCheck(vppCh.Ch)
-	if err != nil {
-		return
-	}
-
-	return
-}
 
 func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf, args *skel.CmdArgs, data *vppdb.VppSavedData) (err error) {
 	var ok bool

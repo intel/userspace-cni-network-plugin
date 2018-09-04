@@ -36,26 +36,9 @@ const debugInterface = false
 //
 // API Functions
 //
-// Check whether generated API messages are compatible with the version
-// of VPP which the library is connected to.
-func InterfaceCompatibilityCheck(ch *api.Channel) (err error) {
-	err = ch.CheckMessageCompatibility(
-		&interfaces.SwInterfaceSetFlags{},
-		&interfaces.SwInterfaceSetFlagsReply{},
-		&interfaces.SwInterfaceAddDelAddress{},
-		&interfaces.SwInterfaceAddDelAddressReply{},
-	)
-	if err != nil {
-		if debugInterface {
-			fmt.Println("VPP Interface failed compatibility")
-		}
-	}
-
-	return err
-}
 
 // Attempt to set an interface state. isUp (1 = up, 0 = down)
-func SetState(ch *api.Channel, swIfIndex uint32, isUp uint8) error {
+func SetState(ch api.Channel, swIfIndex uint32, isUp uint8) error {
 	// Populate the Add Structure
 	req := &interfaces.SwInterfaceSetFlags{
 		SwIfIndex: swIfIndex,
@@ -77,7 +60,7 @@ func SetState(ch *api.Channel, swIfIndex uint32, isUp uint8) error {
 	return nil
 }
 
-func AddDelIpAddress(ch *api.Channel, swIfIndex uint32, isAdd uint8, ipResult *current.Result) error {
+func AddDelIpAddress(ch api.Channel, swIfIndex uint32, isAdd uint8, ipResult *current.Result) error {
 
 	// Populate the Add Structure
 	req := &interfaces.SwInterfaceAddDelAddress{
@@ -88,12 +71,12 @@ func AddDelIpAddress(ch *api.Channel, swIfIndex uint32, isAdd uint8, ipResult *c
 
 	for _, ip := range ipResult.IPs {
 		if ip.Version == "4" {
-			req.IsIpv6 = 0
+			req.IsIPv6 = 0
 			req.Address = []byte(ip.Address.IP.To4())
 			prefix, _ := ip.Address.Mask.Size()
 			req.AddressLength = byte(prefix)
 		} else if ip.Version == "6" {
-			req.IsIpv6 = 1
+			req.IsIPv6 = 1
 			req.Address = []byte(ip.Address.IP.To16())
 			prefix, _ := ip.Address.Mask.Size()
 			req.AddressLength = byte(prefix)

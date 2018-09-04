@@ -1,12 +1,13 @@
-hash: 7fc378ba93d24b16dc362c7c971b1b56ab4d935ffe4c3205fe2588b1ff01f263
-updated: 2018-08-27T16:52:38.674369012-04:00
+hash: 753dd1d8ba1654e02093325f758c533a4eb7b118ecbd14b0e57e4cd6323bd43a
+updated: 2018-08-31T13:42:35.284102716-04:00
 imports:
 - name: git.fd.io/govpp.git
-  version: e44d8c3905e22f940a100e6331a45412cba9d47e
+  version: 6b350c65fe0ec845cecf58bfb41ffc63dc9c04f7
   subpackages:
   - adapter
   - adapter/vppapiclient
   - api
+  - codec
   - core
   - core/bin_api/vpe
 - name: github.com/bennyscetbun/jsongo

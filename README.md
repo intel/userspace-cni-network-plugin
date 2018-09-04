@@ -76,7 +76,7 @@ for more information.
 # Build & Clean
 
 This plugin is recommended to be built with Go 1.9.4 and either OVS-DPDK 2.9.0-3
-or VPP 18.04. Other versions of Go, OVS-DPDK and VPP are theoretically
+or VPP 18.07. Other versions of Go, OVS-DPDK and VPP are theoretically
 supported, but MIGHT cause unknown issue.
 
 There are a few environmental variables used in building and teating this plugin.
@@ -290,7 +290,7 @@ to a flat file is disabled.
 
 For example in your CNI configuration, you may set:
 ```
-    "LogFile": "/var/log/multus.log",
+    "LogFile": "/var/log/userspace-cni.log",
 ```
 
 ### Logging Level
@@ -396,7 +396,7 @@ feature (https://github.com/intel/vhost-user-net-plugin/issues).
 
 ## Installing VPP
 There are several ways to install VPP. This code is based on a fixed release
-VPP (VPP 18.04 initially), so it is best to install a released version (even
+VPP (VPP 18.07 initially), so it is best to install a released version (even
 though it is possible to build your own).
 
 
@@ -428,10 +428,10 @@ sudo yum install vpp*
 
 OR - To install from the VPP Nexus Repo:
 ```
-vi /etc/yum.repos.d/fdio-stable-1804.repo
-[fdio-stable-1804]
-name=fd.io stable/1804 branch latest merge
-baseurl=https://nexus.fd.io/content/repositories/fd.io.stable.1804.centos7/
+vi /etc/yum.repos.d/fdio-stable-1807.repo
+[fdio-stable-1807]
+name=fd.io stable/1807 branch latest merge
+baseurl=https://nexus.fd.io/content/repositories/fd.io.stable.1807.centos7/
 enabled=1
 gpgcheck=0
    
@@ -448,7 +448,7 @@ sudo systemctl enable vpp
 To install on Ubuntu 16.04 (Xenial) as an example to demonstrate how to install VPP from pre-build packages:
 ```
 export UBUNTU="xenial"
-export RELEASE=".stable.18.04"
+export RELEASE=".stable.18.07"
 sudo rm /etc/apt/sources.list.d/99fd.io.list
 echo "deb [trusted=yes] https://nexus.fd.io/content/repositories/fd.io$RELEASE.ubuntu.$UBUNTU.main/ ./" | sudo tee -a /etc/apt/sources.list.d/99fd.io.list
 sudo apt-get update
@@ -475,7 +475,7 @@ There are a few environmental variables used in this test. Here is an example:
 
 ```
 
-In order to test, a container with VPP 18.04 and vpp-app has been created:
+In order to test, a container with VPP 18.07 and vpp-app has been created:
 ```
   docker pull bmcfall/vpp-centos-userspace-cni:latest
 ```
@@ -599,7 +599,7 @@ sockets
   1   yes (1)     /var/run/vpp/cni/shared/memif-79b661b189b2-net0.sock
    
 interface memif1/0
-  remote-name "VPP 18.04-16~gca7a68e~b66"
+  remote-name "VPP 18.07-16~gca7a68e~b66"
   remote-interface "memif1/0"
   socket-id 1 id 0 mode ethernet
   flags admin-up connected
@@ -640,7 +640,7 @@ sockets
   1   no          /var/run/vpp/cni/shared/memif-05138381d803-net0.sock
    
 interface memif1/0
-  remote-name "VPP 18.04-rc2~11-g18bde8a"
+  remote-name "VPP 18.07-rc2~11-g18bde8a"
   remote-interface "memif1/0"
   socket-id 1 id 0 mode ethernet
   flags admin-up slave connected

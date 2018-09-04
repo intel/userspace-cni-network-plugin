@@ -6,7 +6,6 @@ build:
 
 test:
 	@cd cmd/binapi-generator && go test -cover .
-	@cd api && go test -cover ./...
 	@cd core && go test -cover .
 
 install:
@@ -15,6 +14,8 @@ install:
 extras:
 	@cd extras/libmemif/examples/raw-data && go build -v
 	@cd extras/libmemif/examples/icmp-responder && go build -v
+	@cd extras/libmemif/examples/gopacket && go build -v
+	@cd extras/libmemif/examples/jumbo-frames && go build -v
 
 clean:
 	@rm -f cmd/binapi-generator/binapi-generator
@@ -25,7 +26,6 @@ clean:
 	@rm -f extras/libmemif/examples/icmp-responder/icmp-responder
 
 generate:
-	@cd core && go generate ./...
 	@cd examples && go generate ./...
 
 lint:

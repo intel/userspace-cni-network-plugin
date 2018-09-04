@@ -46,32 +46,12 @@ var modeStr = [...]string{"client", "server"}
 // API Functions
 //
 
-// Check whether generated API messages are compatible with the version
-// of VPP which the library is connected to.
-func VhostUserCompatibilityCheck(ch *api.Channel) (err error) {
-	err = ch.CheckMessageCompatibility(
-		&vhost_user.CreateVhostUserIf{},
-		&vhost_user.CreateVhostUserIfReply{},
-		&vhost_user.DeleteVhostUserIf{},
-		&vhost_user.DeleteVhostUserIfReply{},
-		&vhost_user.SwInterfaceVhostUserDump{},
-		&vhost_user.SwInterfaceVhostUserDetails{},
-	)
-	if err != nil {
-		if debugVhost {
-			fmt.Println("VPP vhostUser failed compatibility")
-		}
-	}
-
-	return err
-}
-
 // Attempt to create a Vhost-User Interface.
 // Input:
-//   ch *api.Channel
+//   ch api.Channel
 //   mode VhostUserMode - ModeClient or ModeServer
 //   socketFile string - Directory and Filename of socket file
-func CreateVhostUserInterface(ch *api.Channel, mode VhostUserMode, socketFile string) (swIfIndex uint32, err error) {
+func CreateVhostUserInterface(ch api.Channel, mode VhostUserMode, socketFile string) (swIfIndex uint32, err error) {
 
 	// Populate the Add Structure
 	req := &vhost_user.CreateVhostUserIf{
@@ -101,7 +81,7 @@ func CreateVhostUserInterface(ch *api.Channel, mode VhostUserMode, socketFile st
 }
 
 // Attempt to delete a Vhost-User interface.
-func DeleteVhostUserInterface(ch *api.Channel, swIfIndex uint32) (err error) {
+func DeleteVhostUserInterface(ch api.Channel, swIfIndex uint32) (err error) {
 
 	// Populate the Delete Structure
 	req := &vhost_user.DeleteVhostUserIf{
@@ -123,7 +103,7 @@ func DeleteVhostUserInterface(ch *api.Channel, swIfIndex uint32) (err error) {
 }
 
 // Dump the set of existing Vhost-User interfaces to stdout.
-func DumpVhostUser(ch *api.Channel) {
+func DumpVhostUser(ch api.Channel) {
 	var count int
 
 	// Populate the Message Structure

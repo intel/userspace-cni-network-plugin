@@ -40,7 +40,7 @@ const debugInfra = false
 type ConnectionData struct {
 	conn           *core.Connection
 	disconnectFlag bool
-	Ch             *api.Channel
+	Ch             api.Channel
 	closeFlag      bool
 }
 
