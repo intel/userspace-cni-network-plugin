@@ -201,7 +201,7 @@ Please refer the Kubernetes Network SIG - Multiple Network PoC proposal for more
 details refer the link:
 [K8s Multiple Network proposal](https://docs.google.com/document/d/1TW3P4c8auWwYy-w_5afIPDcGNLK3LZf0m14943eVfVg/edit)
 
-![Vhostuser CNI with multus](doc/images/userspace-with-multus.png)
+![Userspace CNI with multus](doc/images/userspace-with-multus.png)
 
 ### Multus Configuration Details
 ```
@@ -274,7 +274,6 @@ EOF
 **Note:** The Userspace CNI supports different IPAM plugins for the IP addresses
 management. The generated IP address information will be stored in one
 configuration file.
-
 
 ## Logging Options
 You may wish to enable some enhanced logging, especially to understand what is
