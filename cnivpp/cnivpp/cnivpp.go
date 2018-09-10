@@ -33,14 +33,14 @@ import (
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
 
-	"github.com/intel/vhost-user-net-plugin/cnivpp/api/bridge"
-	"github.com/intel/vhost-user-net-plugin/cnivpp/api/infra"
-	"github.com/intel/vhost-user-net-plugin/cnivpp/api/interface"
-	"github.com/intel/vhost-user-net-plugin/cnivpp/api/memif"
-	_ "github.com/intel/vhost-user-net-plugin/cnivpp/api/vhostuser"
-	"github.com/intel/vhost-user-net-plugin/cnivpp/vppdb"
-	"github.com/intel/vhost-user-net-plugin/usrsptypes"
-	"github.com/intel/vhost-user-net-plugin/logging"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/bridge"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
+	_ "github.com/intel/userspace-cni-network-plugin/cnivpp/api/vhostuser"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/vppdb"
+	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/logging"
 )
 
 //

@@ -99,8 +99,8 @@ instructions below under
 To get and build the Userspace CNI plugin:
 ```
    cd $GOPATH/src/
-   go get github.com/intel/vhost-user-net-plugin
-   cd github.com/intel/vhost-user-net-plugin
+   go get github.com/intel/userspace-cni-network-plugin
+   cd github.com/intel/userspace-cni-network-plugin
    make
 ```
 
@@ -389,7 +389,7 @@ packages:
 **NOTE:** *make install* has been made to work for CentOS and Ubuntu based
 systems. Other platforms will be made to work long term. If there is an
 immediate need for other platforms, please open an issue to expedite the
-feature (https://github.com/intel/vhost-user-net-plugin/issues).
+feature (https://github.com/intel/userspace-cni-network-plugin/issues).
 
 
 
@@ -480,7 +480,7 @@ In order to test, a container with VPP 18.07 and vpp-app has been created:
 ```
 More details on the Docker Image, how to build from scratch and other
 information, see
-[README.md](https://github.com/intel/vhost-user-net-plugin/blob/master/cnivpp/docker/vpp-centos-userspace-cni/README.md)
+[README.md](https://github.com/intel/userspace-cni-network-plugin/blob/master/cnivpp/docker/vpp-centos-userspace-cni/README.md)
 in the '*./cnivpp/docker/vpp-centos-userspace-cni/*' subfolder.
 
 Setup your configuration file in your CNI directory. An example is
@@ -532,7 +532,7 @@ To test, currently using a local script (copied from CNI scripts:
 https://github.com/containernetworking/cni/blob/master/scripts/docker-run.sh).
 To run script:
 ```
-   cd $GOPATH/src/github.com/intel/vhost-user-net-plugin/
+   cd $GOPATH/src/github.com/intel/userspace-cni-network-plugin/
    sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/vpp-docker-run.sh -it --privileged vpp-centos-userspace-cni
 ```
 
@@ -689,7 +689,7 @@ run VPP and *vpp-app* manually:
 
 To follow this example you should have a system with kubernetes available and
 configured to support native 1 GB hugepages. You should also have multus-cni and
-vhost-user-net-plugin up and running. See `examples/crd-userspace-net-ovs-no-ipam.yaml` for
+userspace-cni-network-plugin up and running. See `examples/crd-userspace-net-ovs-no-ipam.yaml` for
 example config to use with multus. If using OVS,
 check that you have bridge named `br0` in your OVS with `ovs-vsctl show` and if
 not, create it with
@@ -715,7 +715,7 @@ docker build . -t ubuntu-dpdk
 
 ### 2. Create pod with multiple vhostuser interfaces
 
-Copy `get-prefix.sh` script from vhost-user-net-plugin repo to
+Copy `get-prefix.sh` script from userspace-cni-network-plugin repo to
 `/var/lib/cni/vhostuser/`. See `examples/pod-multi-vhost.yaml`and start the
 pod:
 

@@ -27,10 +27,10 @@ import (
 	"github.com/containernetworking/plugins/pkg/ipam"
 	"github.com/containernetworking/plugins/pkg/ns"
 
-	"github.com/intel/vhost-user-net-plugin/cniovs/cniovs"
-	"github.com/intel/vhost-user-net-plugin/cnivpp/cnivpp"
-	"github.com/intel/vhost-user-net-plugin/logging"
-	"github.com/intel/vhost-user-net-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/cniovs/cniovs"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/cnivpp"
+	"github.com/intel/userspace-cni-network-plugin/logging"
+	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 
 	"github.com/vishvananda/netlink"
 )

@@ -36,7 +36,7 @@ import (
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
 
-	"github.com/intel/vhost-user-net-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 )
 
 //

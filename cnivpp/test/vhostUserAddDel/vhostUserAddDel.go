@@ -29,9 +29,9 @@ import (
 	_ "git.fd.io/govpp.git/core"
 	_ "github.com/sirupsen/logrus"
 
-	"github.com/intel/vhost-user-net-plugin/cnivpp/api/bridge"
-	"github.com/intel/vhost-user-net-plugin/cnivpp/api/infra"
-	"github.com/intel/vhost-user-net-plugin/cnivpp/api/vhostuser"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/bridge"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/vhostuser"
 )
 
 //

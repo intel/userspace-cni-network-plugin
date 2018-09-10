@@ -5,7 +5,7 @@ This directory contains the files needed to build the docker image located in:
 This image is based on CentOS (latest) base image built with VPP 18.04 and a
 VPP User Space CNI application (vpp-app). Source code for the vpp-app is in this
 same repo:
-   https://github.com/intel/vhost-user-net-plugin
+   https://github.com/intel/userspace-cni-network-plugin
 
 The User Space CNI inconjunction with the VPP CNI Library (cnivpp) creates
 interfaces on the host, like memif or vhostuser, adds the host side of the
@@ -21,12 +21,12 @@ debugging.
 Get the **user-space-net-plugin** repo:
 ```
    cd $GOPATH/src/
-   go get github.com/intel/vhost-user-net-plugin
+   go get github.com/intel/userspace-cni-network-plugin
 ```
 
 Build the docker image:
 ```
-   cd $GOPATH/src/github.com/intel/vhost-user-net-plugin/cnivpp/docker/vpp-centos-userspace-cni/
+   cd $GOPATH/src/github.com/intel/userspace-cni-network-plugin/cnivpp/docker/vpp-centos-userspace-cni/
    docker build --rm -t vpp-centos-userspace-cni .
 ```
 
@@ -35,7 +35,7 @@ The above process pulls the **vpp-app** from the upstream source. If there are
 local changes that need to be tested, then build **user-space-net-plugin** to
 get the **vpp-app** binary and copy the **vpp-app** into the image directory:
 ```
-   cd $GOPATH/src/github.com/intel/vhost-user-net-plugin/
+   cd $GOPATH/src/github.com/intel/userspace-cni-network-plugin/
    make extras
    cp cnivpp/vpp-app/vpp-app cnivpp/docker/vpp-centos-userspace-cni/.
 ```
@@ -56,13 +56,13 @@ Build the docker image as described above.
 # To run
 Up to this point, all my testing with this container has been with the
 script from the User Space CNI:
-   github.com/intel/vhost-user-net-plugin/scripts/vpp-docker-run.sh
+   github.com/intel/userspace-cni-network-plugin/scripts/vpp-docker-run.sh
 This is a local copy of the CNI test script
 (https://github.com/containernetworking/cni/blob/master/scripts/docker-run.sh),
 with a few local changes to easy deployment
 (see [Volumes and Devices](#Volumes and Devices) below). To run:
 * Create a JSON config file as described in
-github.com/intel/vhost-user-net-plugin/README.md.
+github.com/intel/userspace-cni-network-plugin/README.md.
 * Make sure same version of VPP is running on the host.
 * user-space-net-plugin is built and copied to $CNI_PATH
 (see user-space-net-plugin).

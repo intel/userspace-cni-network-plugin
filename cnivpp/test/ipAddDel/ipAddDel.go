@@ -29,10 +29,10 @@ import (
 	_ "git.fd.io/govpp.git/core"
 	_ "github.com/sirupsen/logrus"
 
-	"github.com/intel/vhost-user-net-plugin/cnivpp/api/infra"
-	"github.com/intel/vhost-user-net-plugin/cnivpp/api/interface"
-	"github.com/intel/vhost-user-net-plugin/cnivpp/api/memif"
-	"github.com/intel/vhost-user-net-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
+	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 )
 
 //

@@ -1,4 +1,4 @@
-package: github.com/intel/vhost-user-net-plugin
+package: github.com/intel/userspace-cni-network-plugin
 ignore:
   - git.fd.io/govpp.git/core/bin_api/interfaces
   - git.fd.io/govpp.git/core/bin_api/l2

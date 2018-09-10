@@ -29,7 +29,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/intel/vhost-user-net-plugin/cnivpp/cnivpp"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/cnivpp"
 )
 
 //
