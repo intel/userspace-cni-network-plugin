@@ -1,0 +1,9 @@
+userspace/userspace
+cnivpp/test/memifAddDel/memifAddDel
+cnivpp/test/vhostUserAddDel/vhostUserAddDel
+cnivpp/test/ipAddDel/ipAddDel
+cnivpp/vpp-app/vpp-app
+cnivpp/docker/vpp-centos-userspace-cni/vpp-app
+vendor/git.fd.io/govpp.git/core/bin_api/
+vendor/git.fd.io/govpp.git/cmd/binapi-generator/binapi-generator
+

@@ -1,0 +1,5 @@
+[fdio-release]
+name=fd.io release branch latest merge
+baseurl=https://nexus.fd.io/content/repositories/fd.io.centos7/
+enabled=1
+gpgcheck=0
