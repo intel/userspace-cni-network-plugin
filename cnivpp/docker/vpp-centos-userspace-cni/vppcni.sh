@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start the first process
-/usr/bin/vpp -c /etc/vpp/startup.conf &
+/usr/bin/vpp -c /etc/vpp/startup.conf &> vppBoot.log &
 status=$?
 if [ $status -ne 0 ]; then
   echo "Failed to start VPP: $status"

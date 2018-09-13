@@ -68,6 +68,8 @@ func main() {
 		// Once files have been found, wait 1 more loop and exit.
 		//
 		if found {
+			fmt.Println("")
+			fmt.Println("")
 			fmt.Println("Found Configuration and applied.")
 			processed = true
 		}
@@ -83,11 +85,11 @@ func main() {
 				fmt.Println(" vppctl show mode")
 				fmt.Println(" vppctl show hardware")
 				fmt.Println("")
-				fmt.Println("DONE: Exiting vpp-app")
+				fmt.Println("DONE: Exiting vpp-app - Press <ENTER> to return to prompt")
 				break
 			}
 		}
 
-		time.Sleep(20 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 }
