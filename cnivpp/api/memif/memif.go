@@ -22,6 +22,8 @@ package vppmemif
 import (
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 
 	"git.fd.io/govpp.git/api"
 	"git.fd.io/govpp.git/core/bin_api/memif"
@@ -191,13 +193,34 @@ func CreateMemifSocket(ch api.Channel, socketFile string) (socketId uint32, err 
 
 	found, socketId := findMemifSocket(ch, socketFile)
 	if found {
-		fmt.Println("Socketfile already exists")
+		if debugMemif {
+			fmt.Println("Socketfile already exists")
+		}
 		return
 	}
 
 	if debugMemif {
 		fmt.Printf("Attempting to create SocketId=%d File=%s\n", socketId, socketFile)
 	}
+
+	// Determine if directory socket is created in exists. If it doesn't, create it.
+	sockDir := filepath.Dir(socketFile)
+	if _, err = os.Stat(sockDir); err != nil {
+		if os.IsNotExist(err) {
+			if err = os.MkdirAll(sockDir, 0700); err != nil {
+				if debugMemif {
+					fmt.Println("Unable to create Socketfile directory")
+				}
+				return
+			}
+		} else {
+			if debugMemif {
+				fmt.Println("Error getting status of Socketfile directory")
+			}
+			return
+		}
+	}
+
 
 	// Populate the Request Structure
 	req := &memif.MemifSocketFilenameAddDel{
