@@ -29,7 +29,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -46,7 +45,6 @@ import (
 // Constants
 //
 const defaultCNIDir = "/var/lib/cni/vhostuser"
-const defaultOvsScript = "/usr/share/openvswitch/scripts/ovs-config.py"
 
 //
 // Types
@@ -144,11 +142,6 @@ func (cniOvs CniOvs) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdAr
 // Utility Functions
 //
 
-// execCommand Execute shell commands and return the output.
-func execCommand(cmd string, args []string) ([]byte, error) {
-	return exec.Command(cmd, args...).Output()
-}
-
 func generateRandomMacAddress() string {
 	buf := make([]byte, 6)
 	if _, err := rand.Read(buf); err != nil {
@@ -178,16 +171,10 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 		}
 	}
 
-	sockPath := filepath.Join(sockDir, sockRef)
-
 	// ovs-vsctl add-port
-	cmd_args := []string{"create", sockPath}
-	if output, err := execCommand(defaultOvsScript, cmd_args); err == nil {
-		vhostName := strings.Replace(string(output), "\n", "", -1)
-
-		cmd_args = []string{"getmac", vhostName}
-		if output, err := execCommand(defaultCNIDir, cmd_args); err == nil {
-			data.VhostMac = strings.Replace(string(output), "\n", "", -1)
+	if vhostName, err := createVhostPort(sockDir, sockRef); err == nil {
+		if vhostPortMac, err := getVhostPortMac(vhostName); err == nil {
+			data.VhostMac = vhostPortMac
 		}
 
 		data.Vhostname = vhostName
@@ -200,8 +187,7 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
 
 	// ovs-vsctl --if-exists del-port
-	cmd_args := []string{"delete", data.Vhostname}
-	if _, err := execCommand(defaultOvsScript, cmd_args); err == nil {
+	if err := deleteVhostPort(data.Vhostname); err == nil {
 		path := filepath.Join(defaultCNIDir, args.ContainerID)
 
 		folder, err := os.Open(path)
