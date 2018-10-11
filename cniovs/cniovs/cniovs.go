@@ -37,8 +37,8 @@ import (
 	"github.com/containernetworking/cni/pkg/types/current"
 
 	"github.com/intel/userspace-cni-network-plugin/cniovs/ovsdb"
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 	"github.com/intel/userspace-cni-network-plugin/logging"
+	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 )
 
 //
