@@ -24,7 +24,7 @@ endif
 
 # Building the cnivpp subfolder requires VPP to be installed, or at least a
 # handful of files in the proper installed location. VPPINSTALLED indicates
-# if required VPP files are installed. 
+# if required VPP files are installed.
 # For 'make clean', VPPLCLINSTALLED indicates if 'make install' installed
 # the minimum set of files or if VPP is actually installed.
 ifeq ($(shell test -e $(VPPLIBDIR)/libvppapiclient.so && echo -n yes),yes)
@@ -37,15 +37,6 @@ endif
 else
 	VPPINSTALLED=0
 	VPPLCLINSTALLED=0
-endif
-
-#
-# OVS Variables
-#
-ifeq ($(shell test -e /usr/share/openvswitch/scripts/ovs-config.py && echo -n yes),yes)
-        OVS_PY_INSTALLED=1
-else
-        OVS_PY_INSTALLED=0
 endif
 
 
@@ -147,11 +138,6 @@ endif
 	@echo   Installed /usr/share/vpp/api/*.json
 	@rm -rf tmpvpp
 endif
-ifeq ($(OVS_PY_INSTALLED),0)
-	@echo OVS Python Script not installed. Installing now.
-	@$(SUDO) -E mkdir -p /usr/share/openvswitch/scripts/
-	@$(SUDO) -E cp ./cniovs/scripts/ovs-config.py /usr/share/openvswitch/scripts/.
-endif
 
 
 extras:
@@ -166,7 +152,7 @@ clean:
 	@rm -f cnivpp/test/memifAddDel/memifAddDel
 	@rm -f cnivpp/test/vhostUserAddDel/vhostUserAddDel
 	@rm -f cnivpp/test/ipAddDel/ipAddDel
-	@rm -f vendor/git.fd.io/govpp.git/cmd/binapi-generator/binapi-generator 
+	@rm -f vendor/git.fd.io/govpp.git/cmd/binapi-generator/binapi-generator
 	@rm -f userspace/userspace
 ifeq ($(VPPLCLINSTALLED),1)
 	@echo VPP was installed by *make install*, so cleaning up files.
