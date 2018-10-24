@@ -40,6 +40,7 @@ import (
 	_ "github.com/intel/userspace-cni-network-plugin/cnivpp/api/vhostuser"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/vppdb"
 	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 )
 
@@ -152,7 +153,7 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 
 func (cniVpp CniVpp) AddOnContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
 	logging.Debugf("VPP AddOnContainer: ENTER")
-	return vppdb.SaveRemoteConfig(conf, ipResult, args)
+	return usrspdb.SaveRemoteConfig(conf, ipResult, args)
 }
 
 func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
@@ -222,35 +223,10 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 func (cniVpp CniVpp) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
 	logging.Debugf("VPP DelFromContainer: ENTER")
 
-	vppdb.CleanupRemoteConfig(conf, args.ContainerID)
+	usrspdb.CleanupRemoteConfig(conf, args.ContainerID)
 	return nil
 }
 
-func CniContainerConfig() (bool, error) {
-
-	vpp := CniVpp{}
-
-	found, conf, ipResult, args, err := vppdb.FindRemoteConfig()
-
-	if err == nil {
-		if found {
-			if dbgInterface {
-				fmt.Println("ipResult:")
-				fmt.Println(ipResult)
-			}
-
-			err = vpp.AddOnHost(&conf, &args, &ipResult)
-
-			if err != nil {
-				if dbgInterface {
-					fmt.Println(err)
-				}
-			}
-		}
-	}
-
-	return found, err
-}
 
 //
 // Local Functions
@@ -346,7 +322,7 @@ func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf
 	}
 
 	// Remove file
-	err = vppdb.FileCleanup("", memifSocketFile)
+	err = usrspdb.FileCleanup("", memifSocketFile)
 
 	return
 }

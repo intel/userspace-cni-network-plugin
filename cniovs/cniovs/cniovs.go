@@ -39,6 +39,7 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/cniovs/ovsdb"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 )
 
 //
@@ -100,7 +101,7 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 
 func (cniOvs CniOvs) AddOnContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
 	logging.Debugf("OVS AddOnContainer: ENTER")
-	return nil
+	return usrspdb.SaveRemoteConfig(conf, ipResult, args)
 }
 
 func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
@@ -135,6 +136,8 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 
 func (cniOvs CniOvs) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
 	logging.Debugf("OVS DelFromContainer: ENTER")
+
+	usrspdb.CleanupRemoteConfig(conf, args.ContainerID)
 	return nil
 }
 

@@ -7,7 +7,7 @@
 scriptpath=$GOPATH/src/github.com/containernetworking/cni/scripts
 echo $scriptpath
 
-contid=$(docker run -d --net=none bmcfall/vpp-centos-userspace-cni:latest /bin/sleep 10000000)
+contid=$(docker run -d --net=none $@ /bin/sleep 10000000)
 pid=$(docker inspect -f '{{ .State.Pid }}' $contid)
 netnspath=/proc/$pid/ns/net
 
@@ -19,6 +19,5 @@ function cleanup() {
 }
 trap cleanup EXIT
 
-#docker run -v /var/run/vpp/:/var/run/vpp:rw --device=/dev/hugepages:/dev/hugepages --net=container:$contid $@
-docker run -v /var/run/vpp/cni/shared:/var/run/vpp/cni/shared:rw -v /var/run/vpp/cni/$contid:/var/run/vpp/cni/data:rw --device=/dev/hugepages:/dev/hugepages --net=container:$contid $@
+docker run -v /var/run/vpp/cni/shared:/var/run/vpp/cni/shared:rw -v /var/run/usrspcni/$contid:/var/run/usrspcni/data:rw --device=/dev/hugepages:/dev/hugepages --net=container:$contid $@
 

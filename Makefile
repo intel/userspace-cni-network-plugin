@@ -8,6 +8,11 @@ else ifeq ($(filter rhel centos fedora opensuse opensuse-leap opensuse-tumblewee
 	PKG=rpm
 endif
 
+ifneq ($(EUID),0)
+	ROOTUSER=1
+else
+	ROOTUSER=0
+endif
 
 #
 # VPP Variables
@@ -50,9 +55,9 @@ help:
 	@echo " make                - Build UserSpace CNI."
 	@echo " make clean          - Cleanup all build artifacts. Will remove VPP files installed from *make install*."
 	@echo " make install        - If VPP is not installed, install the minimum set of files to build."
-	@echo "                       CNI-VPP will fail because VPP is still not installed. Also install OvS Python Script."
+	@echo "                       CNI-VPP will fail because VPP is still not installed."
 	@echo " make install-dep    - Install software dependencies, currently only needed for *make install*."
-	@echo " make extras         - Build *vpp-app*, small binary to run in Docker container for testing."
+	@echo " make extras         - Build *app*, small binary to run in Docker container for testing."
 	@echo " make test           - Build test code."
 	@echo ""
 	@echo "Other:"
@@ -145,10 +150,10 @@ extras:
 	@./vendor/git.fd.io/govpp.git/cmd/binapi-generator/binapi-generator \
 		--input-dir=/usr/share/vpp/api/ \
 		--output-dir=vendor/git.fd.io/govpp.git/core/bin_api/
-	@cd cnivpp/vpp-app && go build -v
+	@cd docker/usrsp-app && go build -v
 
 clean:
-	@rm -f cnivpp/vpp-app/vpp-app
+	@rm -f docker/app/app
 	@rm -f cnivpp/test/memifAddDel/memifAddDel
 	@rm -f cnivpp/test/vhostUserAddDel/vhostUserAddDel
 	@rm -f cnivpp/test/ipAddDel/ipAddDel
