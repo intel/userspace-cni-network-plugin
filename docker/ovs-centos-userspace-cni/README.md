@@ -1,8 +1,8 @@
-#  DockerHub Image: bmcfall/vpp-centos-userspace-cni
+#  DockerHub Image: bmcfall/ovs-centos-userspace-cni
 This directory contains the files needed to build the docker image located in:
-   https://hub.docker.com/r/bmcfall/vpp-centos-userspace-cni/
+   https://hub.docker.com/r/bmcfall/ovs-centos-userspace-cni/
 
-This image is based on CentOS (latest) base image built with VPP 18.04 and a
+This image is based on CentOS (latest) base image built with OvS-DPDK and a
 VPP User Space CNI application (vpp-app). Source code for the vpp-app is in this
 same repo:
    https://github.com/intel/userspace-cni-network-plugin

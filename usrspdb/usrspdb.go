@@ -37,9 +37,10 @@ import (
 //
 // Constants
 //
-const DefaultBaseCNIDir  = "/var/run/usrspcni"
-const DefaultLocalCNIDir = "/var/run/usrspcni/data"
-const debugUsrSpDb = false
+const DefaultBaseCNIDir  = "/var/lib/cni/usrspcni"
+const DefaultLocalCNIDir = "/var/lib/cni/usrspcni/data"
+const DefaultSocketDir   = "/var/lib/cni/usrspcni/shared"
+const debugUsrSpDb = true
 
 //
 // Types

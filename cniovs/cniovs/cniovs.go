@@ -45,7 +45,7 @@ import (
 //
 // Constants
 //
-const defaultCNIDir = "/var/lib/cni/vhostuser"
+const defaultBridge = "br0"
 
 //
 // Types
@@ -61,6 +61,27 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 	var data ovsdb.OvsSavedData
 
 	logging.Debugf("OVS AddOnHost: ENTER")
+
+	//
+	// Manditory attribute of "ovs-vsctl add-port" is a BridgeName. If NetType is not
+	// set to "bridge", should request fail or added to default bridge. Existing
+	// behavior hardcoded BridgeName to "br0". So if not entered, default to "br0".
+	// Can be change later to return ERROR if needed.
+	//
+	if conf.HostConf.NetType != "bridge" {
+		conf.HostConf.NetType = "bridge"
+		conf.HostConf.BridgeConf.BridgeName = defaultBridge
+	}
+
+	//
+	// If Network Type is Bridge, Create it first before creating Interface
+	//
+	if conf.HostConf.NetType == "bridge" {
+		err = addLocalNetworkBridge(conf, args, &data)
+		if err != nil {
+			return err
+		}
+	}
 
 	//
 	// Create Local Interface
@@ -81,9 +102,7 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 	//
 	// Add Interface to Local Network
 	//
-	if conf.HostConf.NetType == "bridge" {
-		err = errors.New("ERROR: NetType bridge not currenly supported")
-	} else if conf.HostConf.NetType == "interface" {
+	if conf.HostConf.NetType == "interface" {
 		if len(ipResult.IPs) != 0 {
 		}
 	}
@@ -119,6 +138,18 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 	}
 
 	//
+	// Manditory attribute of "ovs-vsctl add-port" is a BridgeName. If NetType is not
+	// set to "bridge", should request fail or added to default bridge. Existing
+	// behavior hardcoded BrdigeName to "br0". So if not entered, default to "br0".
+	// Can be change later to return ERROR if needed.
+	//
+	if conf.HostConf.NetType != "bridge" {
+		conf.HostConf.NetType = "bridge"
+		conf.HostConf.BridgeConf.BridgeName = defaultBridge
+	}
+
+
+	//
 	// Remove Interface from Local Network
 	//
 
@@ -126,9 +157,22 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 	// Delete Local Interface
 	//
 	if conf.HostConf.IfType == "vhostuser" {
-		return delLocalDeviceVhost(conf, args, &data)
+		err = delLocalDeviceVhost(conf, args, &data)
 	} else {
-		return errors.New("ERROR: Unknown HostConf.Type:" + conf.HostConf.IfType)
+		err = errors.New("ERROR: Unknown HostConf.Type:" + conf.HostConf.IfType)
+	}
+	if err != nil {
+		return err
+	}
+
+	//
+	// Delete Bridge if empty
+	//
+	if conf.HostConf.NetType == "bridge" {
+		err = delLocalNetworkBridge(conf, args, &data)
+		if err != nil {
+			return err
+		}
 	}
 
 	return err
@@ -159,12 +203,16 @@ func generateRandomMacAddress() string {
 }
 
 func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
+	var err error
+	var vhostName string
+	var bridgeName string
 
 	s := []string{args.ContainerID[:12], args.IfName}
 	sockRef := strings.Join(s, "-")
 
-	sockDir := filepath.Join(defaultCNIDir, args.ContainerID)
-	if _, err := os.Stat(sockDir); err != nil {
+	//sockDir := filepath.Join(usrspdb.DefaultSocketDir, args.ContainerID)
+	sockDir := usrspdb.DefaultSocketDir
+	if _, err = os.Stat(sockDir); err != nil {
 		if os.IsNotExist(err) {
 			if err := os.MkdirAll(sockDir, 0700); err != nil {
 				return err
@@ -174,8 +222,17 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 		}
 	}
 
+	// Validate and convert input data
+	clientMode := false
+	if conf.HostConf.VhostConf.Mode == "Mode" {
+		clientMode = true
+	}
+	if conf.HostConf.NetType == "bridge" {
+		bridgeName = conf.HostConf.BridgeConf.BridgeName
+	}
+
 	// ovs-vsctl add-port
-	if vhostName, err := createVhostPort(sockDir, sockRef); err == nil {
+	if vhostName, err = createVhostPort(sockDir, sockRef, clientMode, bridgeName); err == nil {
 		if vhostPortMac, err := getVhostPortMac(vhostName); err == nil {
 			data.VhostMac = vhostPortMac
 		}
@@ -184,14 +241,21 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 		data.IfMac = generateRandomMacAddress()
 	}
 
-	return nil
+	return err
 }
 
 func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
+	var bridgeName string
+
+	// Validate and convert input data
+	if conf.HostConf.NetType == "bridge" {
+		bridgeName = conf.HostConf.BridgeConf.BridgeName
+	}
 
 	// ovs-vsctl --if-exists del-port
-	if err := deleteVhostPort(data.Vhostname); err == nil {
-		path := filepath.Join(defaultCNIDir, args.ContainerID)
+	if err := deleteVhostPort(data.Vhostname, bridgeName); err == nil {
+		//path := filepath.Join(usrspdb.DefaultSocketDir, args.ContainerID)
+		path := usrspdb.DefaultSocketDir
 
 		folder, err := os.Open(path)
 		if err != nil {
@@ -225,4 +289,26 @@ func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 	}
 
 	return nil
+}
+
+func addLocalNetworkBridge(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
+	var err error
+
+	if found := findBridge(conf.HostConf.BridgeConf.BridgeName); found == false {
+		if err = createBridge(conf.HostConf.BridgeConf.BridgeName); err == nil {
+			// Nothing to do at this time
+		}
+	}
+
+	return err
+}
+
+func delLocalNetworkBridge(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
+	var err error
+
+	if containInterfaces := doesBridgeContainInterfaces(conf.HostConf.BridgeConf.BridgeName); containInterfaces == false {
+		err = deleteBridge(conf.HostConf.BridgeConf.BridgeName)
+	}
+
+	return err
 }

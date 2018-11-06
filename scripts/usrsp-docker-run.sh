@@ -1,9 +1,21 @@
 #!/bin/bash
 
 # Run a docker container with network namespace set up by the
-# CNI plugins.
+# CNI plugins. This script is a copy of the following CNI script
+# with Userspace CNI specific modifications:
+#   go/src/github.com/containernetworking/cni/scripts/docker-run.sh
+#
+# VPP Example usage:
+#   cd $GOPATH/src/github.com/intel/userspace-cni-network-plugin
+#   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/usrsp-docker-run.sh -it --privileged vpp-centos-userspace-cni
+#
+# OvS Example usage:
+#   cd $GOPATH/src/github.com/intel/userspace-cni-network-plugin
+#   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/usrsp-docker-run.sh -it --privileged ovs-centos-userspace-cni
+#
+# Add DEBUG=1 for additional output.
+#
 
-# Example usage: ./docker-run.sh --rm busybox /sbin/ifconfig
 scriptpath=$GOPATH/src/github.com/containernetworking/cni/scripts
 echo $scriptpath
 
@@ -19,5 +31,9 @@ function cleanup() {
 }
 trap cleanup EXIT
 
-docker run -v /var/run/vpp/cni/shared:/var/run/vpp/cni/shared:rw -v /var/run/usrspcni/$contid:/var/run/usrspcni/data:rw --device=/dev/hugepages:/dev/hugepages --net=container:$contid $@
+docker run \
+ -v /var/lib/cni/usrspcni/shared:/var/lib/cni/usrspcni/shared:rw \
+ -v /var/lib/cni/usrspcni/$contid:/var/lib/cni/usrspcni/data:rw \
+ --device=/dev/hugepages:/dev/hugepages \
+ --net=container:$contid $@
 

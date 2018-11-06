@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
@@ -51,8 +52,6 @@ const (
 	dbgBridge    = false
 	dbgInterface = false
 )
-
-const defaultVPPSocketDir = "/var/run/vpp/cni/shared/"
 
 //
 // Types
@@ -110,7 +109,25 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 	// Add L2 Network if supplied
 	if conf.HostConf.NetType == "bridge" {
 
-		var bridgeDomain uint32 = uint32(conf.HostConf.BridgeConf.BridgeId)
+		var bridgeDomain uint32
+
+		// Check if DEPRECATED Attribute is being used.
+		if conf.HostConf.BridgeConf.BridgeId != 0 {
+			bridgeDomain = uint32(conf.HostConf.BridgeConf.BridgeId)
+		}
+
+		// Determine if BridgeName was entered
+		if conf.HostConf.BridgeConf.BridgeName != "" {
+			var tmpBridgeDomain uint64
+			tmpBridgeDomain, err = strconv.ParseUint(conf.HostConf.BridgeConf.BridgeName, 10, 32)
+			bridgeDomain = uint32(tmpBridgeDomain)
+			if err != nil {
+				if dbgBridge {
+					fmt.Println("Error - VPP BridgeName not an ID: ", err)
+				}
+				return err
+			}
+		}
 
 		// Add Interface to Bridge. If Bridge does not exist, AddBridgeInterface()
 		// will create.
@@ -242,7 +259,7 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf
 
 	if memifSocketFile, ok = os.LookupEnv("USERSPACE_MEMIF_SOCKFILE"); ok == false {
 		fileName := fmt.Sprintf("memif-%s-%s.sock", args.ContainerID[:12], args.IfName)
-		memifSocketFile = filepath.Join(defaultVPPSocketDir, fileName)
+		memifSocketFile = filepath.Join(usrspdb.DefaultSocketDir, fileName)
 	}
 
 	if conf.HostConf.MemifConf.Role == "master" {
@@ -304,7 +321,7 @@ func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf
 
 	if memifSocketFile, ok = os.LookupEnv("USERSPACE_MEMIF_SOCKFILE"); ok == false {
 		fileName := fmt.Sprintf("memif-%s-%s.sock", args.ContainerID[:12], args.IfName)
-		memifSocketFile = filepath.Join(defaultVPPSocketDir, fileName)
+		memifSocketFile = filepath.Join(usrspdb.DefaultSocketDir, fileName)
 	}
 
 	err = vppmemif.DeleteMemifInterface(vppCh.Ch, data.SwIfIndex)

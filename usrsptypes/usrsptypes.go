@@ -40,8 +40,9 @@ type VhostConf struct {
 }
 
 type BridgeConf struct {
-	BridgeId int `json:"bridgeId"`         // Bridge Id
-	VlanId   int `json:"vlanId,onitempty"` // Optional VLAN Id
+	BridgeName string `json:"bridgeName"`  // Bridge Name
+	BridgeId int `json:"bridgeId,omitempty"` // Bridge Id - Depricate in favor of BridgeName
+	VlanId   int `json:"vlanId,omitempty"` // Optional VLAN Id
 }
 
 type UserSpaceConf struct {
