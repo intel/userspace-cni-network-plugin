@@ -84,7 +84,6 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-
 	//
 	// HOST:
 	//
@@ -181,7 +180,6 @@ func cmdDel(args *skel.CmdArgs) error {
 		return err
 	}
 
-
 	//
 	// HOST:
 	//
@@ -250,7 +248,6 @@ func cmdDel(args *skel.CmdArgs) error {
 		}
 		return err
 	})
-
 
 	return err
 }

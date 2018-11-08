@@ -28,17 +28,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 	"github.com/intel/userspace-cni-network-plugin/cniovs/cniovs"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/cnivpp"
 	"github.com/intel/userspace-cni-network-plugin/logging"
+	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 )
 
 //
 // Constants
 //
 const (
-        dbgApp = true
+	dbgApp = true
 )
 
 //
@@ -76,7 +76,6 @@ func cniContainerConfig() (bool, string, error) {
 				fmt.Println("Logfile:")
 				fmt.Println(netConf.LogFile)
 			}
-
 
 			// Add the requested interface and network
 			engine = netConf.HostConf.Engine
@@ -159,5 +158,3 @@ func main() {
 		time.Sleep(3 * time.Second)
 	}
 }
-
-

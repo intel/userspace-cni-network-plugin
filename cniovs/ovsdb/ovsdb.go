@@ -22,16 +22,14 @@ package ovsdb
 import (
 	"encoding/json"
 	"fmt"
-	_ "io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/containernetworking/cni/pkg/skel"
-	_ "github.com/containernetworking/cni/pkg/types/current"
 
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
+	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 )
 
 //
@@ -108,4 +106,3 @@ func LoadConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData
 
 	return nil
 }
-

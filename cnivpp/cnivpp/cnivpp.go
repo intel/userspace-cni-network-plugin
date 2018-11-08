@@ -40,9 +40,9 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
 	_ "github.com/intel/userspace-cni-network-plugin/cnivpp/api/vhostuser"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/vppdb"
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
-	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 	"github.com/intel/userspace-cni-network-plugin/logging"
+	"github.com/intel/userspace-cni-network-plugin/usrspdb"
+	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 )
 
 //
@@ -243,7 +243,6 @@ func (cniVpp CniVpp) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdAr
 	usrspdb.CleanupRemoteConfig(conf, args.ContainerID)
 	return nil
 }
-
 
 //
 // Local Functions

@@ -221,7 +221,6 @@ func CreateMemifSocket(ch api.Channel, socketFile string) (socketId uint32, err 
 		}
 	}
 
-
 	// Populate the Request Structure
 	req := &memif.MemifSocketFilenameAddDel{
 		IsAdd:          1,

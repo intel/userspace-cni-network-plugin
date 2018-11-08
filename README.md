@@ -764,7 +764,7 @@ flow, for example, from port 1 to port 2 with
 ## Links
 Useful Links:
 * Source Code: https://github.com/intel/userspace-cni-network-plugin
-* Design Document: [Userspace Design Document](https://docs.google.com/document/d/1A0lIo2EcuWriGliebwiJYj4QSwenGx6t9sqjCjGrfuA/edit?usp=sharing) 
+* Design Document: [Userspace Design Document](https://docs.google.com/document/d/1jAFDNWhf6flTlPHmbWavlyLrkFJtAdQlcOnG3qhRYtU/edit?usp=sharing) 
 
 ## Weekly Meeting
 Weekly Meeting Details:

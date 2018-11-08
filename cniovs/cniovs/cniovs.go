@@ -38,8 +38,8 @@ import (
 
 	"github.com/intel/userspace-cni-network-plugin/cniovs/ovsdb"
 	"github.com/intel/userspace-cni-network-plugin/logging"
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
+	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 )
 
 //
@@ -147,7 +147,6 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 		conf.HostConf.NetType = "bridge"
 		conf.HostConf.BridgeConf.BridgeName = defaultBridge
 	}
-
 
 	//
 	// Remove Interface from Local Network

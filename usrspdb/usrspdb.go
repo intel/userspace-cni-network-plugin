@@ -37,9 +37,9 @@ import (
 //
 // Constants
 //
-const DefaultBaseCNIDir  = "/var/lib/cni/usrspcni"
+const DefaultBaseCNIDir = "/var/lib/cni/usrspcni"
 const DefaultLocalCNIDir = "/var/lib/cni/usrspcni/data"
-const DefaultSocketDir   = "/var/lib/cni/usrspcni/shared"
+const DefaultSocketDir = "/var/lib/cni/usrspcni/shared"
 const debugUsrSpDb = true
 
 //
@@ -56,7 +56,6 @@ type additionalData struct {
 //
 // API Functions
 //
-
 
 //
 // Functions for processing Remote Configs (configs for within a Container)
@@ -171,7 +170,6 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf, ipResult *current.Result, args *
 
 	return err
 }
-
 
 // CleanupRemoteConfig() - When a config read on the host is for a Container,
 //      the data to a file. This function cleans up the remaining files.
@@ -305,4 +303,3 @@ func findFile(filePath string) (bool, []byte, error) {
 
 	return found, nil, err
 }
-

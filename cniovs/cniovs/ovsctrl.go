@@ -52,7 +52,7 @@ func deleteVhostPort(sock_name string, bridge_name string) error {
 	return err
 }
 
-func createBridge(bridge_name string) (error) {
+func createBridge(bridge_name string) error {
 	var err error
 
 	// COMMAND: ovs-vsctl add-br <bridge_name> -- set bridge <bridge_name> datapath_type=netdev
@@ -85,7 +85,7 @@ func getVhostPortMac(sock_name string) (string, error) {
 	}
 }
 
-func findBridge(bridge_name string) (bool) {
+func findBridge(bridge_name string) bool {
 	found := false
 
 	// COMMAND: ovs-vsctl --bare --columns=name find bridge name=<bridge_name>
@@ -100,7 +100,7 @@ func findBridge(bridge_name string) (bool) {
 	return found
 }
 
-func doesBridgeContainInterfaces(bridge_name string) (bool) {
+func doesBridgeContainInterfaces(bridge_name string) bool {
 	found := false
 
 	// ovs-vsctl list-ports <bridge_name>

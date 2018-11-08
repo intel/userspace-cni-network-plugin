@@ -8,11 +8,6 @@ else ifeq ($(filter rhel centos fedora opensuse opensuse-leap opensuse-tumblewee
 	PKG=rpm
 endif
 
-ifneq ($(EUID),0)
-	ROOTUSER=1
-else
-	ROOTUSER=0
-endif
 
 #
 # VPP Variables
@@ -57,7 +52,7 @@ help:
 	@echo " make install        - If VPP is not installed, install the minimum set of files to build."
 	@echo "                       CNI-VPP will fail because VPP is still not installed."
 	@echo " make install-dep    - Install software dependencies, currently only needed for *make install*."
-	@echo " make extras         - Build *app*, small binary to run in Docker container for testing."
+	@echo " make extras         - Build *usrsp-app*, small binary to run in Docker container for testing."
 	@echo " make test           - Build test code."
 	@echo ""
 	@echo "Other:"
@@ -153,7 +148,7 @@ extras:
 	@cd docker/usrsp-app && go build -v
 
 clean:
-	@rm -f docker/app/app
+	@rm -f docker/usrsp-app/usrsp-app
 	@rm -f cnivpp/test/memifAddDel/memifAddDel
 	@rm -f cnivpp/test/vhostUserAddDel/vhostUserAddDel
 	@rm -f cnivpp/test/ipAddDel/ipAddDel
