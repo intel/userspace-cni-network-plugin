@@ -19,7 +19,7 @@
 // the 'api' library is used to send the request to the local govpp-agent,
 // which provisions the local VPP instance. If the configuration contains
 // remote data, the database library is used to store the data, which is
-// later read and processed locally by the remotes agent (vpp-app running
+// later read and processed locally by the remotes agent (usrsp-app running
 // in the container)
 //
 

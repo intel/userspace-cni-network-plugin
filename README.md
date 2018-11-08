@@ -30,7 +30,10 @@
             * [1. Build the image to be used](#1-build-the-image-to-be-used)
             * [2. Create pod with multiple vhostuser interfaces](#2-create-pod-with-multiple-vhostuser-interfaces)
             * [3. Open terminal to pod and start testpmd](#3-open-terminal-to-pod-and-start-testpmd)
-      * [Contacts](#contacts)
+      * [Reach Out](#reach-out)
+         * [Links](#links)
+         * [Weekly Meeting](#weekly-meeting)
+         * [Contacts](#contacts)
 
 
 # Userspace CNI Plugin
@@ -55,10 +58,9 @@ data into the container so the interface can be consumed.
 data is pushed into the container and consumed by the container. Current code,
 which is not the final solution, writes the data to a file, and the directory
 the file is in is mounted in the countainer. Code in the container must know
-where and how to parse this data. For VPP, the code in the container to handle
-this is currently implemented in the vpp-app piece of code
-(*./cnivpp/vpp-app/*). Because this solution is temporary, the OVS CNI Library
-has not been modified to handle pushing data into the container.  
+where and how to parse this data. Sample code to run in the container to handle
+this is currently implemented in the usrsp-app piece of code
+(*./docker/usrsp-app/*).
 
 The Userspace CNI, based on the input config data, adds interfaces (memif and/or
 vhost-user interfaces) to a local OVS-DPDK or VPP instance running on the host.
@@ -109,8 +111,8 @@ Once the binary is built, it needs to be copied to the CNI directory:
    cp userspace/userspace $CNI_PATH/.
 ```
 
-To remove the binary and temporary files generated whild building the source
-codes, perform a make clean:
+To remove the binary and temporary files generated while building the source
+code, perform a make clean:
 ```
    make clean
 ```
@@ -157,7 +159,7 @@ sudo cat > /etc/cni/net.d/90-userspace.conf <<EOF
                         "mode": "ethernet"
                 },
                 "bridge": {
-                        "bridgeId": 4
+                        "bridgeName": "4"
                 }
         },
         "container": {
@@ -233,7 +235,7 @@ details refer the link:
 				"mode": "ethernet"
 			},
 			"bridge": {
-				"bridgeId": 4
+				"bridgeName": "4"
 			}
 		},
 		"container": {
@@ -314,9 +316,8 @@ CNI configuration. For example:
 # OVS CNI Library Intro
 OVS CNI Library is written in GO and used by UserSpace CNI to interface with the
 OVS. OVS currently does not have a GO-API, though there are some external
-packages that are being explored. When the CNI is invoked, OVS CNI library calls
-into a python script which builds up an OVS CLI command (ovs-vsctl) and executes
-the request.
+packages that are being explored. When the CNI is invoked, OVS CNI library
+builds up an OVS CLI command (ovs-vsctl) and executes the request.
 
 ## Installing OVS
 To install the DPDK-OVS, the source codes contains a
@@ -373,8 +374,6 @@ the system to build. To install just these files and NOT VPP, run:
    make install
 ```
 This will install only the 5 or 6 files needed to build the VPP CNI Library.
-This command also installs the OVS python script (see
-[Running OVS CNI Library with OVS](#running-ovs-cni-library-with-ovs) for more details).
 To remove these files, run:
 ```
    make clean
@@ -390,7 +389,6 @@ packages:
 systems. Other platforms will be made to work long term. If there is an
 immediate need for other platforms, please open an issue to expedite the
 feature (https://github.com/intel/userspace-cni-network-plugin/issues).
-
 
 
 ## Installing VPP
@@ -474,14 +472,14 @@ There are a few environmental variables used in this test. Here is an example:
 
 ```
 
-In order to test, a container with VPP 18.07 and vpp-app has been created:
+In order to test, a container with VPP 18.07 and usrsp-app has been created:
 ```
   docker pull bmcfall/vpp-centos-userspace-cni:latest
 ```
 More details on the Docker Image, how to build from scratch and other
 information, see
-[README.md](https://github.com/intel/userspace-cni-network-plugin/blob/master/cnivpp/docker/vpp-centos-userspace-cni/README.md)
-in the '*./cnivpp/docker/vpp-centos-userspace-cni/*' subfolder.
+[README.md](https://github.com/intel/userspace-cni-network-plugin/blob/master/docker/vpp-centos-userspace-cni/README.md)
+in the '*./docker/vpp-centos-userspace-cni/*' subfolder.
 
 Setup your configuration file in your CNI directory. An example is
 */etc/cni/net.d/*.
@@ -506,7 +504,7 @@ sudo vi /etc/cni/net.d/90-userspace.conf
                         "mode": "ethernet"
                 },
                 "bridge": {
-                        "bridgeId": 4
+                        "bridgeName": "4"
                 }
         },
         "container": {
@@ -528,25 +526,24 @@ sudo vi /etc/cni/net.d/90-userspace.conf
 }
 ```
 
-To test, currently using a local script (copied from CNI scripts:
+To test, currently using a local script (copied from CNI scripts):
 https://github.com/containernetworking/cni/blob/master/scripts/docker-run.sh).
 To run script:
 ```
    cd $GOPATH/src/github.com/intel/userspace-cni-network-plugin/
-   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/vpp-docker-run.sh -it --privileged vpp-centos-userspace-cni
+   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/usrsp-docker-run.sh -it --privileged vpp-centos-userspace-cni
 ```
 
-**NOTE:** The *vpp-docker-run.sh* script mounts some volumes in the container. Change as needed:
-* *-v /var/run/vpp/cni/shared:/var/run/vpp/cni/shared:rw*
-  * Default location in VPP to create sockets is */var/run/vpp/*. Socket files (memif or vhost-user)
-are passed to the container through a subdirectory of this base directory..
-* *-v /var/run/vpp/cni/$contid:/var/run/vpp/cni/data:rw*
+**NOTE:** The *usrsp-docker-run.sh* script mounts some volumes in the container. Change as needed:
+* *-v /var/lib/cni/usrspcni/shared:/var/lib/cni/usrspcni/shared:rw*
+  * Socket files (memif or vhost-user) are passed to the container through a subdirectory of this base directory..
+* *-v /var/lib/cni/usrspcni/$contid:/var/lib/cni/usrspcni/data:rw*
   * Current implementation is to write the remote configuration into a file and share the directory
 with the container, which is the volume mapping. Directory is currently hard coded.
 * *--device=/dev/hugepages:/dev/hugepages*
   * VPP requires hugepages, so need to map hugepoages into container.
 
-In the container, you should see the vpp-app ouput the message sequence of
+In the container, you should see the usrsp-app ouput the message sequence of
 its communication with local VPP (VPP in the container) and some database
 dumps interleaved.
 
@@ -671,17 +668,17 @@ Statistics: 5 sent, 4 received, 20% packet loss
 
 ### Debug
 The *vpp-centos-userspace-cni* container runs a script at startup (in Dockefile
-CMD command) which starts VPP and then runs *vpp-app*. Assuming the same notes
+CMD command) which starts VPP and then runs *usrsp-app*. Assuming the same notes
 above, to see what is happening in the container, cause
 *vpp-centos-userspace-cni* container to start in bash and skip the script, then
-run VPP and *vpp-app* manually: 
+run VPP and *usrsp-app* manually: 
 ```
    cd $GOPATH/src/github.com/containernetworking/cni/scripts
-   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/vpp-docker-run.sh -it --privileged bmcfall/vpp-centos-userspace-cni:0.2.0 bash
+   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/usrsp-docker-run.sh -it --privileged bmcfall/vpp-centos-userspace-cni:0.2.0 bash
    
    /* Within Container: */
    vpp -c /etc/vpp/startup.conf &
-   vpp-app
+   usrsp-app
 ```
 
 
@@ -763,5 +760,28 @@ flow, for example, from port 1 to port 2 with
 `ovs-ofctl add-flow br0 in_port=1,action=output:2` and vice versa.
 
 
-# Contacts
-For any questions about Userspace CNI, please reach out on github issue or feel free to contact the developer @Kural, @abdul or @bmcfall in our [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
+# Reach Out
+## Links
+Useful Links:
+* Source Code: https://github.com/intel/userspace-cni-network-plugin
+* Design Document: [Userspace Design Document](https://docs.google.com/document/d/1A0lIo2EcuWriGliebwiJYj4QSwenGx6t9sqjCjGrfuA/edit?usp=sharing) 
+
+## Weekly Meeting
+Weekly Meeting Details:
+* Meeting Time: Weekly on Wednesdays at 8-9am EST
+* Meeting Bridge: ZOOM Channel request in progress
+* Meeting Minute Document: [Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
+
+Since it currently a small group, we are some what flexible and move the meeting
+time around from time to time. Any meeting time/date changes will be broadcast
+on the Intel slack channel and updated meeting times will be posted in the
+[Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
+document as soon as possible.  
+
+## Contacts
+For any questions about Userspace CNI, please reach out.
+* Report issue via Trello: [Trello: Userspace CNI](https://trello.com/b/ceXtKfBn/user-space-cni-project)
+* Contact via slack: [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
+** Feel free to contact the developer @Kural, @abdul or @bmcfall in slack
+* Contact via Google Group: https://groups.google.com/forum/#!forum/userspace-cni
+
