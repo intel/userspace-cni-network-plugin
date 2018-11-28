@@ -86,6 +86,9 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 		if len(ipResult.IPs) != 0 {
 		}
 	}
+	if err != nil {
+		return err
+	}
 
 	//
 	// Save Config - Save Create Data for Delete
