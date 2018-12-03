@@ -762,6 +762,239 @@ by getting the port numbers with `ovs-ofctl dump-ports br0` and configuring
 flow, for example, from port 1 to port 2 with
 `ovs-ofctl add-flow br0 in_port=1,action=output:2` and vice versa.
 
+## Testing with DPDK L3FWD Application
+
+To follow this example you should have a system with kubernetes available and configured to support native 1 GB hugepages. You should also have multus-cni and userspace-cni-network-plugin up and running. See `examples/crd-userspace-net-ovs-no-ipam.yaml` for example config to use with multus. If using OVS, check that you have bridge named `br0` in your OVS with `ovs-vsctl show` and if not, create it with `ovs-vsctl add-br br0 -- set bridge br0 datapath_type=netdev`.
+
+### 1. Build the images to be used
+
+Create the l3fwd Dockerfile:
+```bash
+$ cat <<EOF > l3fwd-dockerfile
+FROM ubuntu:bionic
+
+RUN apt-get update && apt-get install -y --no-install-recommends \\
+  build-essential make wget vim dpdk libnuma-dev \\
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV DPDK_VERSION=17.11.3 \\
+  RTE_SDK=/usr/src/dpdk \\
+  RTE_TARGET=x86_64-native-linuxapp-gcc
+
+RUN wget http://fast.dpdk.org/rel/dpdk-\${DPDK_VERSION}.tar.xz && tar xf dpdk-\${DPDK_VERSION}.tar.xz && \\
+  mv dpdk-stable-\${DPDK_VERSION} \${RTE_SDK}
+
+RUN sed -i s/CONFIG_RTE_EAL_IGB_UIO=y/CONFIG_RTE_EAL_IGB_UIO=n/ \${RTE_SDK}/config/common_linuxapp \\
+  && sed -i s/CONFIG_RTE_LIBRTE_KNI=y/CONFIG_RTE_LIBRTE_KNI=n/ \${RTE_SDK}/config/common_linuxapp \\
+  && sed -i s/CONFIG_RTE_KNI_KMOD=y/CONFIG_RTE_KNI_KMOD=n/ \${RTE_SDK}/config/common_linuxapp
+
+RUN cd \${RTE_SDK} && make install T=\${RTE_TARGET} && make -C examples
+
+WORKDIR \${RTE_SDK}/examples/l3fwd/\${RTE_TARGET}/app/
+EOF
+```
+
+Build the l3fwd Docker image, tag it as `dpdk-l3fwd`:
+```bash
+docker build -t dpdk-l3fwd -f l3fwd-dockerfile .
+```
+
+Create the pktgen Dockerfile:
+```bash
+$ cat <<EOF > pktgen-dockerfile
+FROM debian:jessie
+
+RUN apt-get update && apt-get install -y --no-install-recommends \\
+  gcc build-essential make wget curl git liblua5.2-dev libedit-dev libpcap-dev libncurses5-dev libncursesw5-dev pkg-config vim libnuma-dev ca-certificates \\
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV DPDK_VERSION=17.11.3 \\
+  RTE_SDK=/usr/src/dpdk \\
+  RTE_TARGET=x86_64-native-linuxapp-gcc \\
+  PKTGEN_COMMIT=pktgen-3.4.8 \\
+  PKTGEN_DIR=/usr/src/pktgen
+
+RUN wget http://fast.dpdk.org/rel/dpdk-\${DPDK_VERSION}.tar.xz && tar xf dpdk-\${DPDK_VERSION}.tar.xz && \\
+  mv dpdk-stable-\${DPDK_VERSION} \${RTE_SDK}
+
+RUN sed -i s/CONFIG_RTE_EAL_IGB_UIO=y/CONFIG_RTE_EAL_IGB_UIO=n/ \${RTE_SDK}/config/common_linuxapp \\
+  && sed -i s/CONFIG_RTE_LIBRTE_KNI=y/CONFIG_RTE_LIBRTE_KNI=n/ \${RTE_SDK}/config/common_linuxapp \\
+  && sed -i s/CONFIG_RTE_KNI_KMOD=y/CONFIG_RTE_KNI_KMOD=n/ \${RTE_SDK}/config/common_linuxapp
+
+RUN sed -i s/CONFIG_RTE_APP_TEST=y/CONFIG_RTE_APP_TEST=n/ \${RTE_SDK}/config/common_linuxapp \\
+  && sed -i s/CONFIG_RTE_TEST_PMD=y/CONFIG_RTE_TEST_PMD=n/ \${RTE_SDK}/config/common_linuxapp
+
+RUN cd \${RTE_SDK} \\
+  && make install T=\${RTE_TARGET} DESTDIR=install -j
+
+RUN git config --global user.email "root@container" \\
+  && git config --global user.name "root"
+
+RUN git clone http://dpdk.org/git/apps/pktgen-dpdk \\
+  && cd pktgen-dpdk \\
+  && git checkout \${PKTGEN_COMMIT} \\
+  && cd .. \\
+  && mv pktgen-dpdk \${PKTGEN_DIR}
+
+RUN cd \${PKTGEN_DIR} \\
+  && make -j
+
+WORKDIR \${PKTGEN_DIR}/
+EOF
+```
+
+Build the pktgen Docker image, tag it as`dpdk-pktgen`:
+```bash
+docker build -t dpdk-pktgen -f pktgen-dockerfile .
+```
+
+### 2. Create the pods to be used
+
+Create the l3fwd Pod Spec:
+```bash
+$ cat <<EOF > l3fwd-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: dpdk-l3fwd-
+  annotations:
+    k8s.v1.cni.cncf.io/networks: userspace-networkobj
+spec:
+  containers:
+  - name: dpdk-l3fwd
+    image: dpdk-l3fwd
+    imagePullPolicy: IfNotPresent
+    securityContext:
+      privileged: true
+      runAsUser: 0
+    volumeMounts:
+    - mountPath: /vhu/
+      name: socket
+    - mountPath: /dev/hugepages
+      name: hugepage
+    resources:
+      requests:
+        memory: 2Gi
+      limits:
+        hugepages-1Gi: 2Gi
+    command: ["sleep", "infinity"]
+  volumes:
+  - name: socket
+    hostPath:
+      path: /var/lib/cni/vhostuser/
+  - name: hugepage
+    emptyDir:
+      medium: HugePages
+  securityContext:
+    runAsUser: 0
+  restartPolicy: Never
+EOF
+```
+
+Create the pktgen Pod Spec:
+```bash
+$ cat <<EOF > pktgen-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: dpdk-pktgen-
+  annotations:
+    k8s.v1.cni.cncf.io/networks: userspace-networkobj
+spec:
+  containers:
+  - name: dpdk-pktgen
+    image: dpdk-pktgen
+    imagePullPolicy: IfNotPresent
+    securityContext:
+      privileged: true
+      runAsUser: 0
+    volumeMounts:
+    - mountPath: /vhu/
+      name: socket
+    - mountPath: /dev/hugepages
+      name: hugepage
+    resources:
+      requests:
+        memory: 2Gi
+      limits:
+        hugepages-1Gi: 2Gi
+    command: ["sleep", "infinity"]
+  volumes:
+  - name: socket
+    hostPath:
+      path: /var/lib/cni/vhostuser/
+  - name: hugepage
+    emptyDir:
+      medium: HugePages
+  securityContext:
+    runAsUser: 0
+  restartPolicy: Never
+EOF
+```
+
+Deploy both pods:
+```bash
+$ kubectl create -f l3fwd-pod.yaml
+$ kubectl create -f pktgen-pod.yaml
+```
+
+Verify your pods are running and note their unique name IDs:
+```bash
+$ kubectl get pods
+NAME                       READY   STATUS    RESTARTS   AGE
+dpdk-l3fwd-vj4hj      1/1        Running   0                 51s
+dpdk-pktgen-xrsz9   1/1        Running   0                 2s
+```
+
+### 3. Run L3FWD and Pktgen
+
+Using your pod ID, open a bash shell in the pktgen pod:
+```bash
+$ kubectl exec -it dpdk-pktgen-<ID> bash
+```
+
+Export the port ID prefex and start the pktgen application (adjust cores, memory, etc. to suit your system):
+```bash
+$ export ID=$(/vhu/get-prefix.sh)
+$ ./app/x86_64-native-linuxapp-gcc/pktgen -l 10,11,12 --vdev=virtio_user0,path=/vhu/${ID}/${ID:0:12}-net1 --no-pci --socket-mem=1024,1024 --master-lcore 10 -- -m 11:12.0 -P
+```
+
+The pktgen application should launch. Among the statistics, make note of the pktgen source MAC address listed as ```Src MAC Address```. For example:
+```bash
+Src MAC Address   :   f2:89:22:4e:28:3b
+```
+
+In another terminal, open a bash shell in the l3fwd pod:
+```bash
+kubectl exec -it dpdk-l3fwd-<ID> bash
+```
+
+Export the port ID prefex and start the l3fwd application. Set the destination MAC address using the ```--eth-dest``` argument. This should be the  ```Src MAC Address``` previously noted from the pktgen pod (adjust cores, memory, etc. to suit your system):
+```bash
+$ export ID=$(/vhu/get-prefix.sh)
+$ ./l3fwd -c 0x10 --vdev=virtio_user0,path=/vhu/${ID}/${ID:0:12}-net1 --no-pci --socket-mem=1024,1024 -- -p 0x1 -P --config "(0,0,4)" --eth-dest=0,<pktgen-source-mac-add> --parse-ptype
+```
+
+The l3fwd app should start up. Among the information printed to the screen will be the ```Address```. This is the MAC address of the l3fwd port, make note of it.
+
+Back on the pktgen pod, set the destination MAC address to that of the l3fwd port:
+```bash
+Pktgen:/> set 0 dst mac <l3fwd-mac-address>
+```
+
+Start traffic generation:
+```bash
+Pktgen:/> start 0
+```
+
+You should see the packet counts for Tx and Rx increase, verifying that packets are being transmitted by pktgen and are being sent back via l3fwd running in the other pod.
+
+To exit:
+```bash
+Pktgen:/> stop 0
+Pktgen:/> quit
+```
+
 
 # Contacts
 For any questions about Userspace CNI, please reach out on github issue or feel free to contact the developer @Kural, @abdul or @bmcfall in our [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
