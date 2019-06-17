@@ -240,7 +240,7 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 func (cniVpp CniVpp) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
 	logging.Debugf("VPP DelFromContainer: ENTER")
 
-	usrspdb.CleanupRemoteConfig(conf, args.ContainerID)
+	usrspdb.CleanupRemoteConfig(conf)
 	return nil
 }
 

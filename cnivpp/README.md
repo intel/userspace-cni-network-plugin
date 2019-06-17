@@ -58,7 +58,7 @@ were processed locally. Once this data is read in the container, the usrsp-app d
 the file.
 
 * **Container**:
-  * **/var/lib/cni/usrspcni/data/**: Mapped from **/var/lib/cni/usrspcni/<ContainerId>/**
+  * **/var/lib/cni/usrspcni/data/**: Mapped from **/var/lib/cni/usrspcni/container/**
 on the host.
   * **/var/lib/cni/usrspcni/shared/**: Mapped from **/var/lib/cni/usrspcni/shared/** on
 the host.

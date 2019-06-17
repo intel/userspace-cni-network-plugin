@@ -41,7 +41,7 @@ type VhostConf struct {
 
 type BridgeConf struct {
 	BridgeName string `json:"bridgeName"`         // Bridge Name
-	BridgeId   int    `json:"bridgeId,omitempty"` // Bridge Id - Depricate in favor of BridgeName
+	BridgeId   int    `json:"bridgeId,omitempty"` // Bridge Id - Deprecated in favor of BridgeName
 	VlanId     int    `json:"vlanId,omitempty"`   // Optional VLAN Id
 }
 

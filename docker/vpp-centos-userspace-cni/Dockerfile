@@ -8,10 +8,10 @@
 FROM centos
 MAINTAINER Billy McFall <bmcfall@redhat.com>
 
-# Add any additional repos to image
-COPY *.repo /etc/yum.repos.d/
 # Install VPP - Needed by CNI-VPP
-RUN yum install -y vpp-plugins vpp-devel vpp-api-python vpp-api-lua vpp-api-java; yum clean all
+RUN curl -s https://packagecloud.io/install/repositories/fdio/release/script.rpm.sh | bash
+RUN yum install -y epel-release
+RUN yum install -y epel-release vpp-plugins vpp-devel vpp-api-python vpp-api-lua; yum clean all
 
 #
 # Download and Build Container usrsp-app
@@ -33,15 +33,13 @@ RUN cp docker/usrsp-app/usrsp-app /usr/sbin/usrsp-app
 FROM centos
 
 # Install UserSpace CNI
-COPY --from=0 /usr/sbin/usrsp-app /usr/sbin/usrsp-app
-
-
-# Add any additional repos to image
-COPY *.repo /etc/yum.repos.d/
+#COPY --from=0 /usr/sbin/usrsp-app /usr/sbin/usrsp-app
 
 
 # Install VPP
-RUN yum install -y vpp-plugins vpp-devel vpp-api-python vpp-api-lua vpp-api-java; yum clean all
+RUN curl -s https://packagecloud.io/install/repositories/fdio/release/script.rpm.sh | bash
+RUN yum install -y epel-release
+RUN yum install -y vpp-plugins vpp-devel vpp-api-python vpp-api-lua; yum clean all
 
 # Overwrite VPP systemfiles
 COPY startup.conf /etc/vpp/startup.conf
@@ -62,5 +60,5 @@ COPY vppcni.sh vppcni.sh
 #COPY usrsp-app /usr/sbin/usrsp-app
 
 
-CMD bash -C './vppcni.sh';'bash'
+CMD bash -C './vppcni.sh'
 #CMD [ "./vppcni.sh" ]

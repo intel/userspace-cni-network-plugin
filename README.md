@@ -40,9 +40,7 @@
 The Userspace CNI is a Container Network Interface (CNI) plugin designed to
 implement userspace networking (as opposed to kernel space networking), like
 DPDK based applications. It is designed to run with either OVS-DPDK or VPP along
-with the [Multus CNI plugin](https://github.com/intel/multus-cni) in Kubernetes
-for Bare metal container deployment model. It enhances high performance
-container Networking solution and Dataplane Acceleration for NFV Environment.
+with the [Multus CNI plugin](https://github.com/intel/multus-cni).
 
 Userspace networking requires additional considerations. For one, the interface
 needs to be created/configured on a local vswitch (running on the host). There
@@ -78,7 +76,7 @@ for more information.
 # Build & Clean
 
 This plugin is recommended to be built with Go 1.9.4 and either OVS-DPDK 2.9.0-3
-or VPP 18.07. Other versions of Go, OVS-DPDK and VPP are theoretically
+or VPP 19.04.1. Other versions of Go, OVS-DPDK and VPP are theoretically
 supported, but MIGHT cause unknown issue.
 
 There are a few environmental variables used in building and teating this plugin.
@@ -393,7 +391,7 @@ feature (https://github.com/intel/userspace-cni-network-plugin/issues).
 
 ## Installing VPP
 There are several ways to install VPP. This code is based on a fixed release
-VPP (VPP 18.07 initially), so it is best to install a released version (even
+VPP (VPP 19.04.1 initially), so it is best to install a released version (even
 though it is possible to build your own).
 
 
@@ -417,22 +415,10 @@ containers, work still needs to be done. Set SELinux to permissive.
 
 
 ### Install on CentOS
-To install VPP on CentOS from NFV SIG:
+To install VPP on CentOS from https://packagecloud.io/fdio/ repository:
 ```
-sudo yum install centos-release-fdio
-sudo yum install vpp*
-```
-
-OR - To install from the VPP Nexus Repo:
-```
-vi /etc/yum.repos.d/fdio-stable-1807.repo
-[fdio-stable-1807]
-name=fd.io stable/1807 branch latest merge
-baseurl=https://nexus.fd.io/content/repositories/fd.io.stable.1807.centos7/
-enabled=1
-gpgcheck=0
-   
-sudo yum install vpp*
+curl -s https://packagecloud.io/install/repositories/fdio/1904/script.rpm.sh | sudo bash
+yum install -y vpp vpp-lib vpp-plugins vpp-devel vpp-api-python vpp-api-lua vpp-selinux-policy
 ```
 
 To start and enable VPP:
@@ -442,10 +428,12 @@ sudo systemctl enable vpp
 ```
 
 ### Install on Ubuntu
+**OLD - Needs to be updated!**
+
 To install on Ubuntu 16.04 (Xenial) as an example to demonstrate how to install VPP from pre-build packages:
 ```
 export UBUNTU="xenial"
-export RELEASE=".stable.18.07"
+export RELEASE=".stable.19.04.1"
 sudo rm /etc/apt/sources.list.d/99fd.io.list
 echo "deb [trusted=yes] https://nexus.fd.io/content/repositories/fd.io$RELEASE.ubuntu.$UBUNTU.main/ ./" | sudo tee -a /etc/apt/sources.list.d/99fd.io.list
 sudo apt-get update
@@ -472,7 +460,7 @@ There are a few environmental variables used in this test. Here is an example:
 
 ```
 
-In order to test, a container with VPP 18.07 and usrsp-app has been created:
+In order to test, a container with VPP 19.04.1 and usrsp-app has been created:
 ```
   docker pull bmcfall/vpp-centos-userspace-cni:latest
 ```

@@ -18,3 +18,8 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
+while :
+do
+  sleep 1000
+done
+

@@ -180,7 +180,7 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 func (cniOvs CniOvs) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
 	logging.Debugf("OVS DelFromContainer: ENTER")
 
-	usrspdb.CleanupRemoteConfig(conf, args.ContainerID)
+	usrspdb.CleanupRemoteConfig(conf)
 	return nil
 }
 

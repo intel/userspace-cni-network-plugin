@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: userspace-vpp-pod-1
+  annotations:
+    k8s.v1.cni.cncf.io/networks: userspace-vpp-net-1, userspace-vpp-net-2
+spec:
+  containers:
+  - name: multi-memif-example
+    image: vpp-centos-userspace-cni:latest
+    imagePullPolicy: Never
+    securityContext:
+      privileged: true
+    volumeMounts:
+    - mountPath: /var/lib/cni/usrspcni/shared/
+      name: socket
+    - mountPath: /var/lib/cni/usrspcni/data/
+      name: configdata
+    - mountPath: /dev/hugepages
+      name: hugepage
+    resources:
+      requests:
+        memory: 2Mi
+      limits:
+        hugepages-2Mi: 1024Mi
+  nodeSelector:
+    vswitch: vpp
+  volumes:
+  - name: socket
+    hostPath:
+      path: /var/lib/cni/usrspcni/shared/
+  - name: configdata
+    hostPath:
+      path: /var/lib/cni/usrspcni/container/
+  - name: hugepage
+    emptyDir:
+      medium: HugePages
+

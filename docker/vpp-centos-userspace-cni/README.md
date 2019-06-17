@@ -2,7 +2,7 @@
 This directory contains the files needed to build the docker image located in:
    https://hub.docker.com/r/bmcfall/vpp-centos-userspace-cni/
 
-This image is based on CentOS (latest) base image built with VPP 18.07 and a
+This image is based on CentOS (latest) base image built with VPP 19.04.1 and a
 User Space CNI application (usrsp-app). Source code for the usrsp-app is in this
 same repo:
    https://github.com/intel/userspace-cni-network-plugin
@@ -30,6 +30,7 @@ Build the docker image:
    docker build --rm -t vpp-centos-userspace-cni .
 ```
 
+
 ## Development Image
 The above process pulls the **usrsp-app** from the upstream source. If there are
 local changes that need to be tested, then build **user-space-net-plugin** to
@@ -41,78 +42,82 @@ get the **usrsp-app** binary and copy the **usrsp-app** into the image directory
 ```
 
 Update the **Dockerfile** to use the local binary by uncommenting the COPY
-command. Make sure not to check this change in.
+command. **Make sure not to check this change in.**
 ```
    vi docker/vpp-centos-userspace-cni/Dockerfile
    :
    
    # For Development, overwrite repo generated usrsp-app with local development binary.
    # Needs to be commented out before each merge.
-   #COPY usrsp-app /usr/sbin/usrsp-app
+   COPY usrsp-app /usr/sbin/usrsp-app                   <-- Uncomment
+```
+
+Depending on the state of the **usrsp-app** and the number of changes, the
+**usrsp-app** may not build from upstream, so building of **usrsp-app** in
+the container image may also need to be commented out. **Make sure not to
+check this change in.**
+```
+# Build the usrsp-app
+WORKDIR /root/go/src/github.com/intel/
+RUN git clone https://github.com/intel/userspace-cni-network-plugin
+WORKDIR /root/go/src/github.com/intel/userspace-cni-network-plugin
+#RUN make extras                                        <-- Comment out
+#RUN cp docker/usrsp-app/usrsp-app /usr/sbin/usrsp-app  <-- Comment out
 ```
 
 Build the docker image as described above.
 
 # To run
-Up to this point, all my testing with this container has been with the
-script from the User Space CNI:
-   github.com/intel/userspace-cni-network-plugin/scripts/usrsp-docker-run.sh
-This is a local copy of the CNI test script
-(https://github.com/containernetworking/cni/blob/master/scripts/docker-run.sh),
-with a few local changes to easy deployment
-(see [Volumes and Devices](#Volumes and Devices) below). To run:
-* Create a JSON config file as described in
-github.com/intel/userspace-cni-network-plugin/README.md.
-* Make sure same version of VPP is running on the host.
-* user-space-net-plugin is built and copied to $CNI_PATH
-(see user-space-net-plugin).
-* Then run:
-```
-sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/usrsp-docker-run.sh -it --privileged vpp-centos-userspace-cni
-```
+The follwing directory contains some sample yaml files that create
+two networks and creates two pods with two addtional interfaces (one
+for each network). Once created, the pods can ping each other over
+these two networks.
+'github.com/intel/userspace-cni-network-plugin/examples/vpp-memif-ping/'
 
 # vpp-centos-userspace-cni Docker Image Nuances
 Below are a couple points about the image that will probably need to change:
 
 
 ## VPP Version
-This image is based on VPP 18.07, using the *fdio-release.repo* file. The
-*Dockerfile* just copies *.repo into the */etc/yum.repos.d/*. To change the
-VPP version in the Docker image, update the *fdio-release.repo* file.
+This image is based on VPP 19.04.1, which is taken from the upstream
+https://packagecloud.io/fdio/ repository.
 
 **NOTE:** Care must be taken to ensure the same version of VPP is used to build
 the cnivpp library, the usrsp-app and the Docker Image. Otherwise there may be an
 API version mismatch.
 
-As an example, to update the version of VPP used in the Docker image to the latest
-version, update the *fdio-release.repo* file as follows:
-```
-[fdio-release]
-name=fd.io release branch latest merge
-baseurl=https://nexus.fd.io/content/repositories/fd.io.centos7/
-enabled=1
-gpgcheck=0
-```
-
-For more examples, see: https://wiki.fd.io/view/VPP/Installing_VPP_binaries_from_packages
-
 
 ## Volumes and Devices
-Inside usrsp-docker-run.sh, the script starts this image as follows:
+Inside the sample yaml files the pod is started with the following volume mounts:
 ```
-docker run \
- -v /var/lib/cni/usrspcni/shared:/var/lib/cni/usrspcni/shared:rw \
- -v /var/lib/cni/usrspcni/$contid:/var/lib/cni/usrspcni/data:rw  \
- --device=/dev/hugepages:/dev/hugepages \
- --net=container:$contid $@
+vi github.com/intel/userspace-cni-network-plugin/examples/vpp-memif-ping/userspace-vpp-pod-1.yaml
+:
+    volumeMounts:
+    - mountPath: /var/lib/cni/usrspcni/shared/
+      name: socket
+    - mountPath: /var/lib/cni/usrspcni/data/
+      name: configdata
+    - mountPath: /dev/hugepages
+      name: hugepage
+:
+  volumes:
+  - name: socket
+    hostPath:
+      path: /var/lib/cni/usrspcni/shared/
+  - name: configdata
+    hostPath:
+      path: /var/lib/cni/usrspcni/container/
+  - name: hugepage
+    emptyDir:
+      medium: HugePages
 ```
 Where:
-* **/var/lib/cni/usrspcni/shared** mapped to **/var/lib/cni/usrspcni/shared**
+* **/var/lib/cni/usrspcni/shared** is mapped to **/var/lib/cni/usrspcni/shared**
 ** This directory contains the socketfiles shared between the host and
 the container.
-* **/var/lib/cni/usrspcni/$contid** mapped to **/var/lib/cni/usrspcni/data**
+* **/var/lib/cni/usrspcni/container** is mapped to **/var/lib/cni/usrspcni/data**
 ** This directory is used by usrspdb to pass configuration data into the container.
 Longer term, this may move to some etcd DB and this mapping can be removed.
-* **device=/dev/hugepages:/dev/hugepages**
+* **device=/dev/hugepages** is mapped to **/dev/hugepages**
 ** Mapping hugepages into the Container, needed by VPP/DPDK.
 

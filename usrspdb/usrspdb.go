@@ -40,7 +40,7 @@ import (
 const DefaultBaseCNIDir = "/var/lib/cni/usrspcni"
 const DefaultLocalCNIDir = "/var/lib/cni/usrspcni/data"
 const DefaultSocketDir = "/var/lib/cni/usrspcni/shared"
-const debugUsrSpDb = true
+const debugUsrSpDb = false
 
 //
 // Types
@@ -71,10 +71,11 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf, ipResult *current.Result, args *
 	var addData additionalData
 
 	// Current implementation is to write data to a file with the name:
-	//   <DefaultBaseCNIDir>/<ContainerId>/remote-<IfName>.json
-	//   <DefaultBaseCNIDir>/<ContainerId>/addData-<IfName>.json
+	//   <DefaultBaseCNIDir>/container/remote-<IfName>.json
+	//   <DefaultBaseCNIDir>/container/addData-<IfName>.json
 
-	sockDir := filepath.Join(DefaultBaseCNIDir, args.ContainerID)
+	//sockDir := filepath.Join(DefaultBaseCNIDir, args.ContainerID)
+	sockDir := filepath.Join(DefaultBaseCNIDir, "container")
 
 	if _, err := os.Stat(sockDir); err != nil {
 		if os.IsNotExist(err) {
@@ -173,12 +174,13 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf, ipResult *current.Result, args *
 
 // CleanupRemoteConfig() - When a config read on the host is for a Container,
 //      the data to a file. This function cleans up the remaining files.
-func CleanupRemoteConfig(conf *usrsptypes.NetConf, containerID string) {
+func CleanupRemoteConfig(conf *usrsptypes.NetConf) {
 
 	// Current implementation is to write data to a file with the name:
-	//   /var/run/vpp/cni/<ContainerId>/remote-<IfName>.json
+	//   /var/run/vpp/cni/container/remote-<IfName>.json
 
-	sockDir := filepath.Join(DefaultBaseCNIDir, containerID)
+	//sockDir := filepath.Join(DefaultBaseCNIDir, containerID)
+	sockDir := filepath.Join(DefaultBaseCNIDir, "container")
 
 	if err := os.RemoveAll(sockDir); err != nil {
 		fmt.Println(err)
