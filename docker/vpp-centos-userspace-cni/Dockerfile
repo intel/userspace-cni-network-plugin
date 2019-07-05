@@ -33,7 +33,7 @@ RUN cp docker/usrsp-app/usrsp-app /usr/sbin/usrsp-app
 FROM centos
 
 # Install UserSpace CNI
-#COPY --from=0 /usr/sbin/usrsp-app /usr/sbin/usrsp-app
+COPY --from=0 /usr/sbin/usrsp-app /usr/sbin/usrsp-app
 
 
 # Install VPP
