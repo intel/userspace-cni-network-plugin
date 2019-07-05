@@ -1,40 +1,77 @@
 
+   * [Summary](#summary)
+      * [Links](#links)
+      * [Weekly Meeting](#weekly-meeting)
+      * [Contacts](#contacts)
    * [Userspace CNI plugin](#userspace-cni-plugin)
-      * [Build & Clean](#build--clean)
-         * [Update dependencies in vendor/](#update-dependencies-in-vendor)
-      * [Network Configuration Reference](#network-configuration-reference)
-         * [Work Standalone](#work-standalone)
-         * [Integrated with Multus Plugin](#integrated-with-multus-plugin)
-            * [Multus Configuration Details](#multus-configuration-details)
-         * [Logging Options](#logging-options)
-            * [Writing to a Log File](#writing-to-a-log-file)
-            * [Logging Level](#logging-level)
-      * [OVS CNI Library Intro](#ovs-cni-library-intro)
-         * [Installing OVS](#installing-ovs)
-         * [Running OVS CNI Library with OVS](#running-ovs-cni-library-with-ovs)
-         * [Configuring the System](#configuring-the-system)
-      * [VPP CNI Library Intro](#vpp-cni-library-intro)
-         * [Building VPP CNI Library with OVS](#building-vpp-cni-library-with-ovs)
-         * [Installing VPP](#installing-vpp)
-            * [Prerequisites](#prerequisites)
-            * [Install on CentOS](#install-on-centos)
-            * [Install on Ubuntu](#install-on-ubuntu)
-            * [Install on Other Distros](#install-on-other-distros)
-      * [Testing](#testing)
-         * [Testing with VPP Docker Image and CNI](#testing-with-vpp-docker-image-and-cni)
-            * [Verify Host](#verify-host)
-            * [Verify Container](#verify-container)
-            * [Ping](#ping)
-            * [Debug](#debug)
-         * [Testing with DPDK Testpmd Application](#testing-with-dpdk-testpmd-application)
-            * [1. Build the image to be used](#1-build-the-image-to-be-used)
-            * [2. Create pod with multiple vhostuser interfaces](#2-create-pod-with-multiple-vhostuser-interfaces)
-            * [3. Open terminal to pod and start testpmd](#3-open-terminal-to-pod-and-start-testpmd)
-      * [Reach Out](#reach-out)
-         * [Links](#links)
-         * [Weekly Meeting](#weekly-meeting)
-         * [Contacts](#contacts)
+   * [Build & Clean](#build--clean)
+      * [Update dependencies in vendor/](#update-dependencies-in-vendor)
+   * [Network Configuration Reference](#network-configuration-reference)
+      * [Work Standalone](#work-standalone)
+      * [Integrated with Multus Plugin](#integrated-with-multus-plugin)
+         * [Multus Configuration Details](#multus-configuration-details)
+      * [Logging Options](#logging-options)
+         * [Writing to a Log File](#writing-to-a-log-file)
+         * [Logging Level](#logging-level)
+   * [OVS CNI Library Intro](#ovs-cni-library-intro)
+      * [Installing OVS](#installing-ovs)
+      * [Running OVS CNI Library with OVS](#running-ovs-cni-library-with-ovs)
+      * [Configuring the System](#configuring-the-system)
+   * [VPP CNI Library Intro](#vpp-cni-library-intro)
+      * [Building VPP CNI Library with OVS](#building-vpp-cni-library-with-ovs)
+      * [Installing VPP](#installing-vpp)
+         * [Prerequisites](#prerequisites)
+         * [Install on CentOS](#install-on-centos)
+         * [Install on Ubuntu](#install-on-ubuntu)
+         * [Install on Other Distros](#install-on-other-distros)
+   * [Testing](#testing)
+      * [Testing with VPP Docker Image and CNI](#testing-with-vpp-docker-image-and-cni)
+         * [Verify Host](#verify-host)
+         * [Verify Container](#verify-container)
+         * [Ping](#ping)
+         * [Debug](#debug)
+      * [Testing with DPDK Testpmd Application](#testing-with-dpdk-testpmd-application)
+         * [1. Build the image to be used](#1-build-the-image-to-be-used)
+         * [2. Create pod with multiple vhostuser interfaces](#2-create-pod-with-multiple-vhostuser-interfaces)
+         * [3. Open terminal to pod and start testpmd](#3-open-terminal-to-pod-and-start-testpmd)
 
+# Summary
+The Userspace CNI is a Container Network Interface (CNI) plugin
+designed to implement userspace networking (as opposed to kernel
+space networking). An example is any DPDK based applications. It
+is designed to run with either OVS-DPDK or VPP along with the Multus
+CNI plugin in Kubernetes deployments. It enhances high performance
+container Networking solution and Data Plane Acceleration for containers.
+
+## Links
+Useful Links:
+* Source Code: https://github.com/intel/userspace-cni-network-plugin
+* Design Document: [Userspace Design Document](https://docs.google.com/document/d/1jAFDNWhf6flTlPHmbWavlyLrkFJtAdQlcOnG3qhRYtU/edit?usp=sharing) 
+
+## Weekly Meeting
+Weekly Meeting Details:
+* Meeting Time: 12:00 PM UTC every other Wednesday
+  * 8:00 AM EST / 1:00 PM GMT
+* Meeting Dates:
+  * 07/03/2019     07/17/2019     07/31/2019
+  * 08/14/2019     08/28/2019
+  * 09/11/2019     09/25/2019
+  * 10/09/2019     10/23/2019
+* Meeting Bridge: https://zoom.us/j/2392609689
+* Meeting Minute Document: [Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
+
+Since it currently a small group, we are some what flexible and move the meeting
+time around from time to time. Any meeting time/date changes will be broadcast
+on the Intel slack channel and updated meeting times will be posted in the
+[Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
+document as soon as possible.  
+
+## Contacts
+For any questions about Userspace CNI, please reach out.
+* Report issue via Trello: [Trello: Userspace CNI](https://trello.com/b/ceXtKfBn/user-space-cni-project)
+* Contact via slack: [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
+  * Feel free to contact the developer @garyloug or @bmcfall in slack
+* Contact via Google Group: https://groups.google.com/forum/#!forum/userspace-cni
 
 # Userspace CNI Plugin
 The Userspace CNI is a Container Network Interface (CNI) plugin designed to
@@ -746,30 +783,4 @@ switch between the used ports. For example, with OVS as the switch, this is done
 by getting the port numbers with `ovs-ofctl dump-ports br0` and configuring
 flow, for example, from port 1 to port 2 with
 `ovs-ofctl add-flow br0 in_port=1,action=output:2` and vice versa.
-
-
-# Reach Out
-## Links
-Useful Links:
-* Source Code: https://github.com/intel/userspace-cni-network-plugin
-* Design Document: [Userspace Design Document](https://docs.google.com/document/d/1jAFDNWhf6flTlPHmbWavlyLrkFJtAdQlcOnG3qhRYtU/edit?usp=sharing) 
-
-## Weekly Meeting
-Weekly Meeting Details:
-* Meeting Time: Weekly on Wednesdays at 8-9am EST
-* Meeting Bridge: ZOOM Channel request in progress
-* Meeting Minute Document: [Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
-
-Since it currently a small group, we are some what flexible and move the meeting
-time around from time to time. Any meeting time/date changes will be broadcast
-on the Intel slack channel and updated meeting times will be posted in the
-[Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
-document as soon as possible.  
-
-## Contacts
-For any questions about Userspace CNI, please reach out.
-* Report issue via Trello: [Trello: Userspace CNI](https://trello.com/b/ceXtKfBn/user-space-cni-project)
-* Contact via slack: [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
-** Feel free to contact the developer @Kural, @abdul or @bmcfall in slack
-* Contact via Google Group: https://groups.google.com/forum/#!forum/userspace-cni
 

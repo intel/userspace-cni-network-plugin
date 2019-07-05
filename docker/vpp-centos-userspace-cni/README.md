@@ -176,21 +176,20 @@ vi github.com/intel/userspace-cni-network-plugin/examples/vpp-memif-ping/userspa
 Where:
 * **shared-dir** maps **/var/lib/cni/usrspcni/023bcd123** on host to
 **/var/lib/cni/usrspcni** in the container.
-** This directory contains any files, like the virtio socket files, shared
+  * This directory contains any files, like the virtio socket files, shared
 between the host and the container.
-** The **023bcd123** sub-directory is intended to a be a unique folder
+  * The **023bcd123** sub-directory is intended to a be a unique folder
 per pod on the host.
-** Work is in progress for an Addmission Controller to automatically insert
+  * Work is in progress for an Addmission Controller to automatically insert
 this volume mount into the Pod Spec and generate a random sub-directory.
 * **podinfo** is a Downward API definition which maps **/etc/podinfo** into the
 container.
-** All labels are inserted into a file named **labels** into this directory by
+  * All labels are inserted into a file named **labels** into this directory by
 kubernetes.
-** All annotations are inserted into a file named **annotations** into this directory
+  * All annotations are inserted into a file named **annotations** into this directory
 by kubernetes.
-** Work is in progress for an Addmission Controller to automatically insert
+  * Work is in progress for an Addmission Controller to automatically insert
 this Downward API mount into the Pod Spec.
 * **hugepage** maps **/dev/hugepages** on the host to **/dev/hugepages** in the
 container.
-** Mapping hugepages into the Container, needed by DPDK application.
-
+  * Mapping hugepages into the Container, needed by DPDK application.
