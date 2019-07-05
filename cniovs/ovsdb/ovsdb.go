@@ -61,12 +61,11 @@ func SaveConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData
 
 	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
 	if dataBytes, err := json.Marshal(data); err == nil {
-		sockDir := usrspdb.DefaultLocalCNIDir
-		// OLD: sockDir := filepath.Join(defaultCNIDir, args.ContainerID)
+		localDir := usrspdb.DefaultLocalCNIDir
 
-		if _, err := os.Stat(sockDir); err != nil {
+		if _, err := os.Stat(localDir); err != nil {
 			if os.IsNotExist(err) {
-				if err := os.MkdirAll(sockDir, 0700); err != nil {
+				if err := os.MkdirAll(localDir, 0700); err != nil {
 					return err
 				}
 			} else {
@@ -74,7 +73,7 @@ func SaveConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData
 			}
 		}
 
-		path := filepath.Join(sockDir, fileName)
+		path := filepath.Join(localDir, fileName)
 
 		return ioutil.WriteFile(path, dataBytes, 0644)
 	} else {
@@ -85,8 +84,8 @@ func SaveConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData
 func LoadConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
 
 	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
-	sockDir := usrspdb.DefaultLocalCNIDir
-	path := filepath.Join(sockDir, fileName)
+	localDir := usrspdb.DefaultLocalCNIDir
+	path := filepath.Join(localDir, fileName)
 
 	if _, err := os.Stat(path); err == nil {
 		if dataBytes, err := ioutil.ReadFile(path); err == nil {
@@ -102,7 +101,7 @@ func LoadConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData
 	}
 
 	// Delete file (and directory if empty)
-	usrspdb.FileCleanup(sockDir, path)
+	usrspdb.FileCleanup(localDir, path)
 
 	return nil
 }

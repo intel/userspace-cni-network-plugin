@@ -67,11 +67,11 @@ func SaveVppConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *VppSavedD
 
 	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
 	if dataBytes, err := json.Marshal(data); err == nil {
-		sockDir := usrspdb.DefaultLocalCNIDir
+		localDir := usrspdb.DefaultLocalCNIDir
 
-		if _, err := os.Stat(sockDir); err != nil {
+		if _, err := os.Stat(localDir); err != nil {
 			if os.IsNotExist(err) {
-				if err := os.MkdirAll(sockDir, 0700); err != nil {
+				if err := os.MkdirAll(localDir, 0700); err != nil {
 					return err
 				}
 			} else {
@@ -79,7 +79,7 @@ func SaveVppConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *VppSavedD
 			}
 		}
 
-		path := filepath.Join(sockDir, fileName)
+		path := filepath.Join(localDir, fileName)
 
 		if debugVppDb {
 			fmt.Printf("SAVE FILE: swIfIndex=%d path=%s dataBytes=%s\n", data.SwIfIndex, path, dataBytes)
@@ -93,8 +93,8 @@ func SaveVppConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *VppSavedD
 func LoadVppConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *VppSavedData) error {
 
 	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
-	sockDir := usrspdb.DefaultLocalCNIDir
-	path := filepath.Join(sockDir, fileName)
+	localDir := usrspdb.DefaultLocalCNIDir
+	path := filepath.Join(localDir, fileName)
 
 	if _, err := os.Stat(path); err == nil {
 		if dataBytes, err := ioutil.ReadFile(path); err == nil {
@@ -110,7 +110,7 @@ func LoadVppConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *VppSavedD
 	}
 
 	// Delete file (and directory if empty)
-	usrspdb.FileCleanup(sockDir, path)
+	usrspdb.FileCleanup(localDir, path)
 
 	return nil
 }

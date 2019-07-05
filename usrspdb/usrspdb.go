@@ -21,17 +21,19 @@
 package usrspdb
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"path/filepath"
+
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
 
+	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/annotations"
+	"github.com/intel/userspace-cni-network-plugin/logging"
 )
 
 //
@@ -39,19 +41,12 @@ import (
 //
 const DefaultBaseCNIDir = "/var/lib/cni/usrspcni"
 const DefaultLocalCNIDir = "/var/lib/cni/usrspcni/data"
-const DefaultSocketDir = "/var/lib/cni/usrspcni/shared"
 const debugUsrSpDb = false
 
 //
 // Types
 //
 
-// This structure is used to pass additional data outside of the usrsptypes data into the container.
-type additionalData struct {
-	ContainerId string         `json:"containerId"` // ContainerId used locally. Used in several place, namely in the socket filenames.
-	IfName      string         `json:"ifName"`      // IfName used locally. Used in several place, namely in the socket filenames.
-	IPResult    current.Result `json:"ipResult"`    // Data structure returned from IPAM plugin.
-}
 
 //
 // API Functions
@@ -65,27 +60,15 @@ type additionalData struct {
 //      flip the location and write the data to a file. When the Container
 //      comes up, it will read the file via () and delete the file. This function
 //      writes the file.
-func SaveRemoteConfig(conf *usrsptypes.NetConf, ipResult *current.Result, args *skel.CmdArgs) error {
-
+func SaveRemoteConfig(conf *usrsptypes.NetConf,
+					  args *skel.CmdArgs,
+					  kubeClient k8sclient.KubeClient,
+					  sharedDir string,
+					  pod *v1.Pod,
+					  ipResult *current.Result) (*v1.Pod, error) {
+	var err error
 	var dataCopy usrsptypes.NetConf
-	var addData additionalData
-
-	// Current implementation is to write data to a file with the name:
-	//   <DefaultBaseCNIDir>/container/remote-<IfName>.json
-	//   <DefaultBaseCNIDir>/container/addData-<IfName>.json
-
-	//sockDir := filepath.Join(DefaultBaseCNIDir, args.ContainerID)
-	sockDir := filepath.Join(DefaultBaseCNIDir, "container")
-
-	if _, err := os.Stat(sockDir); err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(sockDir, 0700); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	}
+	var configData annotations.ConfigData
 
 	//
 	// Convert the remote configuration into a local configuration
@@ -129,60 +112,46 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf, ipResult *current.Result, args *
 		}
 	}
 
-	//
-	// Gather the additional data
-	//
-	addData.ContainerId = args.ContainerID
-	addData.IfName = args.IfName
-	addData.IPResult = *ipResult
 
 	//
-	// Marshall data and write to file
+	// Write configuration data into annotation to be consumed by container
 	//
-	fileName := fmt.Sprintf("remote-%s.json", args.IfName)
-	path := filepath.Join(sockDir, fileName)
+	logging.Debugf("SaveRemoteConfig(): Store in PodSpec")
 
-	dataBytes, err := json.Marshal(dataCopy)
+	configData.ContainerId = args.ContainerID
+	configData.IfName = args.IfName
+	configData.NetConf = dataCopy
+	configData.IPResult = *ipResult
 
-	if err == nil {
-		if debugUsrSpDb {
-			fmt.Printf("SAVE FILE: path=%s dataBytes=%s", path, dataBytes)
-		}
-		err = ioutil.WriteFile(path, dataBytes, 0644)
-	} else {
-		return fmt.Errorf("ERROR: serializing REMOTE NetConf data: %v", err)
+	pod, err = annotations.SetPodAnnotationConfigData(kubeClient, conf.KubeConfig, pod, &configData)
+	if err != nil {
+		logging.Errorf("SaveRemoteConfig: Error writing annotation configData: %v", err)
+		return pod, err
 	}
 
-	if err == nil {
-		fileName = fmt.Sprintf("addData-%s.json", args.IfName)
-		path = filepath.Join(sockDir, fileName)
-
-		dataBytes, err = json.Marshal(addData)
-
-		if err == nil {
-			if debugUsrSpDb {
-				fmt.Printf("SAVE FILE: path=%s dataBytes=%s", path, dataBytes)
-			}
-			err = ioutil.WriteFile(path, dataBytes, 0644)
-		} else {
-			return fmt.Errorf("ERROR: serializing ADDDATA NetConf data: %v", err)
-		}
+	// Retrieve the mappedSharedDir from the Containers in podSpec. Directory
+	// in container Socket Files will be fread from. Write this data back as an
+	// annotation so container knows where directory is located.
+	mappedSharedDir, err := annotations.GetPodVolumeMountHostMappedSharedDir(pod)
+	if err != nil {
+		logging.Errorf("SaveRemoteConfig: VolumeMount mappedSharedDir not provided - %v", err)
+		return pod, err
+	}
+	pod, err = annotations.SetPodAnnotationMappedDir(kubeClient, conf.KubeConfig, pod, mappedSharedDir)
+	if err != nil {
+		logging.Errorf("SaveRemoteConfig: Error writing annotation mappedSharedDir - %v", err)
+		return pod, err
 	}
 
-	return err
+	return pod, err
 }
 
-// CleanupRemoteConfig() - When a config read on the host is for a Container,
-//      the data to a file. This function cleans up the remaining files.
-func CleanupRemoteConfig(conf *usrsptypes.NetConf) {
+// CleanupRemoteConfig() - This function cleans up any remaining files
+//   in the passed in directory. Some of these files were used to squirrel
+//   data from the create so interface can be deleted properly.
+func CleanupRemoteConfig(conf *usrsptypes.NetConf, sharedDir string) {
 
-	// Current implementation is to write data to a file with the name:
-	//   /var/run/vpp/cni/container/remote-<IfName>.json
-
-	//sockDir := filepath.Join(DefaultBaseCNIDir, containerID)
-	sockDir := filepath.Join(DefaultBaseCNIDir, "container")
-
-	if err := os.RemoveAll(sockDir); err != nil {
+	if err := os.RemoveAll(sharedDir); err != nil {
 		fmt.Println(err)
 	}
 }
@@ -222,86 +191,44 @@ func FileCleanup(directory string, filepath string) (err error) {
 	return
 }
 
-func FindRemoteConfig() (bool, usrsptypes.NetConf, current.Result, skel.CmdArgs, error) {
-	var conf usrsptypes.NetConf
-	var addData additionalData
 
-	args := skel.CmdArgs{}
-
-	//
-	// Find Primary input file
-	//
-	found, dataBytes, err := findFile(filepath.Join(DefaultLocalCNIDir, "remote-*.json"))
-
-	if err == nil {
-		if found {
-			if err = json.Unmarshal(dataBytes, &conf); err != nil {
-				return found, conf, addData.IPResult, args, fmt.Errorf("failed to parse Remote config: %v", err)
-			}
-
-			//
-			// Since Primary input was found, look for Additional Data file.
-			//
-			found, dataBytes, err = findFile(filepath.Join(DefaultLocalCNIDir, "addData-*.json"))
-			if err == nil {
-				if found {
-					if err = json.Unmarshal(dataBytes, &addData); err != nil {
-						return found, conf, addData.IPResult, args, fmt.Errorf("failed to parse AddData config: %v", err)
-					}
-				} else {
-					return found, conf, addData.IPResult, args, fmt.Errorf("failed to read AddData config: %v", err)
-				}
-			}
-		} else {
-			return found, conf, addData.IPResult, args, fmt.Errorf("failed to read Remote config: %v", err)
-		}
-	}
-
-	args.ContainerID = addData.ContainerId
-	args.IfName = addData.IfName
-
-	return found, conf, addData.IPResult, args, err
+type InterfaceData struct {
+	Args      skel.CmdArgs
+	NetConf   usrsptypes.NetConf
+	IPResult  current.Result
 }
 
-func findFile(filePath string) (bool, []byte, error) {
-	var found bool = false
+func GetRemoteConfig() ([]*InterfaceData, string, error) {
+	var ifaceList []*InterfaceData
 
-	if debugUsrSpDb {
-		fmt.Println(filePath)
-	}
-	matches, err := filepath.Glob(filePath)
-
+	// Retrieve the directory that is shared between host and container.
+	// No conversion necessary
+	sharedDir, err := annotations.GetFileAnnotationMappedDir()
 	if err != nil {
-		if debugUsrSpDb {
-			fmt.Println(err)
-		}
-		return found, nil, err
+		return ifaceList, sharedDir, err
 	}
 
-	if debugUsrSpDb {
-		fmt.Println(matches)
+	// Retrieve the configuration data for each interface. This is a list of 1 to n interfaces.
+	configDataList, err := annotations.GetFileAnnotationConfigData()
+	if err != nil {
+		return ifaceList, sharedDir, err
 	}
 
-	for i := range matches {
-		if debugUsrSpDb {
-			fmt.Printf("PROCESSING FILE: path=%s\n", matches[i])
-		}
+	// Convert the data to usrsptypes.NetConf
+	for _, configData := range configDataList {
+		var ifaceData InterfaceData
 
-		found = true
+		ifaceData.NetConf = configData.NetConf
 
-		if dataBytes, err := ioutil.ReadFile(matches[i]); err == nil {
-			if debugUsrSpDb {
-				fmt.Printf("FILE DATA:\n%s\n", dataBytes)
-			}
+		ifaceData.Args = skel.CmdArgs{}
+		ifaceData.Args.ContainerID = configData.ContainerId
+		ifaceData.Args.IfName = configData.IfName
 
-			// Delete file (and directory if empty)
-			FileCleanup("", matches[i])
+		ifaceData.IPResult = configData.IPResult
 
-			return found, dataBytes, err
-		} else {
-			return found, nil, fmt.Errorf("failed to read Remote config: %v", err)
-		}
+		ifaceList = append(ifaceList, &ifaceData)
 	}
 
-	return found, nil, err
+
+	return ifaceList, sharedDir, err
 }

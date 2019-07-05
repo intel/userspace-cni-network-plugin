@@ -45,7 +45,7 @@ var _ = Describe("IPAM config", func() {
 			Name: "mynet",
 			Type: "host-local",
 			Ranges: []RangeSet{
-				RangeSet{
+				{
 					{
 						RangeStart: net.IP{10, 1, 2, 9},
 						RangeEnd:   net.IP{10, 1, 2, 20},
@@ -132,12 +132,18 @@ var _ = Describe("IPAM config", func() {
 		}))
 	})
 
-	It("Should parse a mixed config", func() {
+	It("Should parse a mixed config with runtime args", func() {
 		input := `{
 			"cniVersion": "0.3.1",
 			"name": "mynet",
 			"type": "ipvlan",
 			"master": "foo0",
+			"runtimeConfig": {
+				"irrelevant": "a",
+				"ipRanges": [
+					[{ "subnet": "12.1.3.0/24" }]
+				]
+			},
 			"ipam": {
 				"type": "host-local",
 				"subnet": "10.1.2.0/24",
@@ -162,6 +168,17 @@ var _ = Describe("IPAM config", func() {
 			Name: "mynet",
 			Type: "host-local",
 			Ranges: []RangeSet{
+				{ // The RuntimeConfig should always be first
+					{
+						RangeStart: net.IP{12, 1, 3, 1},
+						RangeEnd:   net.IP{12, 1, 3, 254},
+						Gateway:    net.IP{12, 1, 3, 1},
+						Subnet: types.IPNet{
+							IP:   net.IP{12, 1, 3, 0},
+							Mask: net.CIDRMask(24, 32),
+						},
+					},
+				},
 				{
 					{
 						RangeStart: net.IP{10, 1, 2, 9},
@@ -355,7 +372,7 @@ var _ = Describe("IPAM config", func() {
 					"type": "host-local",
 					"ranges": [
 						[{"subnet": "10.1.2.0/24"}],
-						[{"subnet": "2001:db8:1::/24"}]
+						[{"subnet": "2001:db8:1::/48"}]
 					]
 				}
 			}`

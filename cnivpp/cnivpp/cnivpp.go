@@ -27,9 +27,10 @@ package cnivpp
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
+
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
@@ -38,11 +39,13 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
-	_ "github.com/intel/userspace-cni-network-plugin/cnivpp/api/vhostuser"
+	_ "github.com/intel/userspace-cni-network-plugin/annotations"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/vppdb"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	_ "github.com/intel/userspace-cni-network-plugin/usrspcni"
+	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 )
 
 //
@@ -62,7 +65,11 @@ type CniVpp struct {
 //
 // API Functions
 //
-func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
+func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf,
+							   args *skel.CmdArgs,
+							   kubeClient k8sclient.KubeClient,
+							   sharedDir string,
+							   ipResult *current.Result) error {
 	var vppCh vppinfra.ConnectionData
 	var err error
 	var data vppdb.VppSavedData
@@ -80,7 +87,7 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 	// Create Local Interface
 	//
 	if conf.HostConf.IfType == "memif" {
-		err = addLocalDeviceMemif(vppCh, conf, args, &data)
+		err = addLocalDeviceMemif(vppCh, conf, args, sharedDir, &data)
 	} else if conf.HostConf.IfType == "vhostuser" {
 		err = fmt.Errorf("GOOD: Found HostConf.IfType:" + conf.HostConf.IfType)
 	} else {
@@ -96,9 +103,7 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 	//
 	err = vppinterface.SetState(vppCh.Ch, data.SwIfIndex, 1)
 	if err != nil {
-		if dbgInterface {
-			fmt.Println("Error bringing interface UP:", err)
-		}
+		logging.Debugf("AddOnHost(vpp): Error bringing interface UP: %v", err)
 		return err
 	}
 
@@ -122,9 +127,7 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 			tmpBridgeDomain, err = strconv.ParseUint(conf.HostConf.BridgeConf.BridgeName, 10, 32)
 			bridgeDomain = uint32(tmpBridgeDomain)
 			if err != nil {
-				if dbgBridge {
-					fmt.Println("Error - VPP BridgeName not an ID: ", err)
-				}
+				logging.Debugf("AddOnHost(vpp): Error - VPP BridgeName not an ID: %v", err)
 				return err
 			}
 		}
@@ -133,24 +136,20 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 		// will create.
 		err = vppbridge.AddBridgeInterface(vppCh.Ch, bridgeDomain, data.SwIfIndex)
 		if err != nil {
-			if dbgBridge {
-				fmt.Println("Error:", err)
-			}
+			logging.Debugf("AddOnHost(vpp): Error adding interface to bridge: %v", err)
 			return err
 		} else {
 			if dbgBridge {
-				fmt.Printf("INTERFACE %d added to BRIDGE %d\n", data.SwIfIndex, bridgeDomain)
+				logging.Debugf("INTERFACE %d added to BRIDGE %d\n", data.SwIfIndex, bridgeDomain)
 				vppbridge.DumpBridge(vppCh.Ch, bridgeDomain)
 			}
 		}
-		// Add L3 Network if supplied
+	// Add L3 Network if supplied
 	} else if conf.HostConf.NetType == "interface" {
 		if len(ipResult.IPs) != 0 {
 			err = vppinterface.AddDelIpAddress(vppCh.Ch, data.SwIfIndex, 1, ipResult)
 			if err != nil {
-				if dbgInterface {
-					fmt.Println("Error:", err)
-				}
+				logging.Debugf("AddOnHost(vpp): Error adding IP: %v", err)
 				return err
 			}
 		}
@@ -168,12 +167,17 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 	return err
 }
 
-func (cniVpp CniVpp) AddOnContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
+func (cniVpp CniVpp) AddOnContainer(conf *usrsptypes.NetConf,
+									args *skel.CmdArgs,
+									kubeClient k8sclient.KubeClient,
+									sharedDir string,
+									pod *v1.Pod,
+									ipResult *current.Result) (*v1.Pod, error) {
 	logging.Debugf("VPP AddOnContainer: ENTER")
-	return usrspdb.SaveRemoteConfig(conf, ipResult, args)
+	return usrspdb.SaveRemoteConfig(conf, args, kubeClient, sharedDir, pod, ipResult)
 }
 
-func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
+func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string) error {
 	var vppCh vppinfra.ConnectionData
 	var data vppdb.VppSavedData
 	var err error
@@ -203,7 +207,7 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 		var bridgeDomain uint32 = uint32(conf.HostConf.BridgeConf.BridgeId)
 
 		if dbgBridge {
-			fmt.Printf("INTERFACE %d retrieved from CONF - attempt to DELETE Bridge %d\n", data.SwIfIndex, bridgeDomain)
+			logging.Debugf("INTERFACE %d retrieved from CONF - attempt to DELETE Bridge %d\n", data.SwIfIndex, bridgeDomain)
 		}
 
 		// Remove MemIf from Bridge. RemoveBridgeInterface() will delete Bridge if
@@ -211,13 +215,11 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 		err = vppbridge.RemoveBridgeInterface(vppCh.Ch, bridgeDomain, data.SwIfIndex)
 
 		if err != nil {
-			if dbgBridge {
-				fmt.Println("Error:", err)
-			}
+			logging.Debugf("DelFromHost(vpp): Error removing interface from bridge: %v", err)
 			return err
 		} else {
 			if dbgBridge {
-				fmt.Printf("INTERFACE %d removed from BRIDGE %d\n", data.SwIfIndex, bridgeDomain)
+				logging.Debugf("INTERFACE %d removed from BRIDGE %d\n", data.SwIfIndex, bridgeDomain)
 				vppbridge.DumpBridge(vppCh.Ch, bridgeDomain)
 			}
 		}
@@ -227,7 +229,7 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 	// Delete Local Interface
 	//
 	if conf.HostConf.IfType == "memif" {
-		return delLocalDeviceMemif(vppCh, conf, args, &data)
+		return delLocalDeviceMemif(vppCh, conf, args, sharedDir, &data)
 	} else if conf.HostConf.IfType == "vhostuser" {
 		return fmt.Errorf("GOOD: Found HostConf.Type:" + conf.HostConf.IfType)
 	} else {
@@ -237,30 +239,34 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 	return err
 }
 
-func (cniVpp CniVpp) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
+func (cniVpp CniVpp) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, pod *v1.Pod) error {
 	logging.Debugf("VPP DelFromContainer: ENTER")
 
-	usrspdb.CleanupRemoteConfig(conf)
+	usrspdb.CleanupRemoteConfig(conf, sharedDir)
 	return nil
 }
 
 //
 // Local Functions
 //
+func getMemifSocketfileName(sharedDir string, containerID string, ifName string) (string) {
+	fileName := fmt.Sprintf("memif-%s-%s.sock", containerID[:12], ifName)
+	return filepath.Join(sharedDir, fileName)
+}
 
-func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf, args *skel.CmdArgs, data *vppdb.VppSavedData) (err error) {
-	var ok bool
-
+func addLocalDeviceMemif(vppCh vppinfra.ConnectionData,
+						 conf *usrsptypes.NetConf,
+						 args *skel.CmdArgs,
+						 sharedDir string,
+						 data *vppdb.VppSavedData) (err error) {
 	// Validate and convert input data
-	var memifSocketFile string
 	var memifRole vppmemif.MemifRole
 	var memifMode vppmemif.MemifMode
 
-	if memifSocketFile, ok = os.LookupEnv("USERSPACE_MEMIF_SOCKFILE"); ok == false {
-		fileName := fmt.Sprintf("memif-%s-%s.sock", args.ContainerID[:12], args.IfName)
-		memifSocketFile = filepath.Join(usrspdb.DefaultSocketDir, fileName)
-	}
+	// Retrieve the Socketfile name
+	memifSocketFile := getMemifSocketfileName(sharedDir, args.ContainerID, args.IfName)
 
+	// Apply default values to input configuration
 	if conf.HostConf.MemifConf.Role == "master" {
 		memifRole = vppmemif.RoleMaster
 	} else if conf.HostConf.MemifConf.Role == "slave" {
@@ -285,13 +291,11 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf
 	// Create Memif Socket
 	data.MemifSocketId, err = vppmemif.CreateMemifSocket(vppCh.Ch, memifSocketFile)
 	if err != nil {
-		if dbgInterface {
-			fmt.Println("Error:", err)
-		}
+		logging.Debugf("addLocalDeviceMemif(vpp): Error creating memif socket: %v", err)
 		return
 	} else {
 		if dbgInterface {
-			fmt.Println("MEMIF SOCKET", data.MemifSocketId, memifSocketFile, "created")
+			logging.Debugf("MEMIF SOCKET", data.MemifSocketId, memifSocketFile, "created")
 			vppmemif.DumpMemifSocket(vppCh.Ch)
 		}
 	}
@@ -299,13 +303,11 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf
 	// Create MemIf Interface
 	data.SwIfIndex, err = vppmemif.CreateMemifInterface(vppCh.Ch, data.MemifSocketId, memifRole, memifMode)
 	if err != nil {
-		if dbgInterface {
-			fmt.Println("Error:", err)
-		}
+		logging.Debugf("addLocalDeviceMemif(vpp): Error creating memif inteface: %v", err)
 		return
 	} else {
 		if dbgInterface {
-			fmt.Println("MEMIF", data.SwIfIndex, "created", args.IfName)
+			logging.Debugf("MEMIF", data.SwIfIndex, "created", args.IfName)
 			vppmemif.DumpMemif(vppCh.Ch)
 		}
 	}
@@ -313,31 +315,24 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf
 	return
 }
 
-func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf, args *skel.CmdArgs, data *vppdb.VppSavedData) (err error) {
+func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, data *vppdb.VppSavedData) (err error) {
+	// Retrieve the Socketfile name
+	memifSocketFile := getMemifSocketfileName(sharedDir, args.ContainerID, args.IfName)
 
-	var ok bool
-	var memifSocketFile string
-
-	if memifSocketFile, ok = os.LookupEnv("USERSPACE_MEMIF_SOCKFILE"); ok == false {
-		fileName := fmt.Sprintf("memif-%s-%s.sock", args.ContainerID[:12], args.IfName)
-		memifSocketFile = filepath.Join(usrspdb.DefaultSocketDir, fileName)
-	}
-
+	// Delete the memif interface
 	err = vppmemif.DeleteMemifInterface(vppCh.Ch, data.SwIfIndex)
 	if err != nil {
-		if dbgInterface {
-			fmt.Println("Error:", err)
-		}
+		logging.Debugf("delLocalDeviceMemif(vpp): Error deleting memif inteface: %v", err)
 		return
 	} else {
 		if dbgInterface {
-			fmt.Printf("INTERFACE %d deleted\n", data.SwIfIndex)
+			logging.Debugf("INTERFACE %d deleted\n", data.SwIfIndex)
 			vppmemif.DumpMemif(vppCh.Ch)
 			vppmemif.DumpMemifSocket(vppCh.Ch)
 		}
 	}
 
-	// Remove file
+	// Remove socketfile
 	err = usrspdb.FileCleanup("", memifSocketFile)
 
 	return

@@ -33,13 +33,18 @@ import (
 	"regexp"
 	"strings"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
 
 	"github.com/intel/userspace-cni-network-plugin/cniovs/ovsdb"
+	_ "github.com/intel/userspace-cni-network-plugin/annotations"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	_ "github.com/intel/userspace-cni-network-plugin/usrspcni"
+	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 )
 
 //
@@ -56,7 +61,11 @@ type CniOvs struct {
 //
 // API Functions
 //
-func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
+func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf,
+							   args *skel.CmdArgs,
+							   kubeClient k8sclient.KubeClient,
+							   sharedDir string,
+							   ipResult *current.Result) error {
 	var err error
 	var data ovsdb.OvsSavedData
 
@@ -87,7 +96,7 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 	// Create Local Interface
 	//
 	if conf.HostConf.IfType == "vhostuser" {
-		err = addLocalDeviceVhost(conf, args, &data)
+		err = addLocalDeviceVhost(conf, args, sharedDir, &data)
 	} else {
 		err = errors.New("ERROR: Unknown HostConf.IfType:" + conf.HostConf.IfType)
 	}
@@ -118,12 +127,17 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipR
 	return err
 }
 
-func (cniOvs CniOvs) AddOnContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, ipResult *current.Result) error {
+func (cniOvs CniOvs) AddOnContainer(conf *usrsptypes.NetConf,
+									args *skel.CmdArgs,
+									kubeClient k8sclient.KubeClient,
+									sharedDir string,
+									pod *v1.Pod,
+									ipResult *current.Result) (*v1.Pod, error) {
 	logging.Debugf("OVS AddOnContainer: ENTER")
-	return usrspdb.SaveRemoteConfig(conf, ipResult, args)
+	return usrspdb.SaveRemoteConfig(conf, args, kubeClient, sharedDir, pod, ipResult)
 }
 
-func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
+func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string) error {
 	var data ovsdb.OvsSavedData
 	var err error
 
@@ -156,7 +170,7 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 	// Delete Local Interface
 	//
 	if conf.HostConf.IfType == "vhostuser" {
-		err = delLocalDeviceVhost(conf, args, &data)
+		err = delLocalDeviceVhost(conf, args, sharedDir, &data)
 	} else {
 		err = errors.New("ERROR: Unknown HostConf.Type:" + conf.HostConf.IfType)
 	}
@@ -177,10 +191,10 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs) e
 	return err
 }
 
-func (cniOvs CniOvs) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs) error {
+func (cniOvs CniOvs) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, pod *v1.Pod) error {
 	logging.Debugf("OVS DelFromContainer: ENTER")
 
-	usrspdb.CleanupRemoteConfig(conf)
+	usrspdb.CleanupRemoteConfig(conf, sharedDir)
 	return nil
 }
 
@@ -201,7 +215,7 @@ func generateRandomMacAddress() string {
 	return macAddr
 }
 
-func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
+func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, data *ovsdb.OvsSavedData) error {
 	var err error
 	var vhostName string
 	var bridgeName string
@@ -209,11 +223,9 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 	s := []string{args.ContainerID[:12], args.IfName}
 	sockRef := strings.Join(s, "-")
 
-	//sockDir := filepath.Join(usrspdb.DefaultSocketDir, args.ContainerID)
-	sockDir := usrspdb.DefaultSocketDir
-	if _, err = os.Stat(sockDir); err != nil {
+	if _, err = os.Stat(sharedDir); err != nil {
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(sockDir, 0700); err != nil {
+			if err := os.MkdirAll(sharedDir, 0700); err != nil {
 				return err
 			}
 		} else {
@@ -231,7 +243,7 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 	}
 
 	// ovs-vsctl add-port
-	if vhostName, err = createVhostPort(sockDir, sockRef, clientMode, bridgeName); err == nil {
+	if vhostName, err = createVhostPort(sharedDir, sockRef, clientMode, bridgeName); err == nil {
 		if vhostPortMac, err := getVhostPortMac(vhostName); err == nil {
 			data.VhostMac = vhostPortMac
 		}
@@ -243,7 +255,7 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 	return err
 }
 
-func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
+func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, data *ovsdb.OvsSavedData) error {
 	var bridgeName string
 
 	// Validate and convert input data
@@ -253,10 +265,7 @@ func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 
 	// ovs-vsctl --if-exists del-port
 	if err := deleteVhostPort(data.Vhostname, bridgeName); err == nil {
-		//path := filepath.Join(usrspdb.DefaultSocketDir, args.ContainerID)
-		path := usrspdb.DefaultSocketDir
-
-		folder, err := os.Open(path)
+		folder, err := os.Open(sharedDir)
 		if err != nil {
 			return err
 		}
@@ -272,7 +281,7 @@ func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 		// Remove files with matching container ID and IF name
 		for _, fileName := range filesForContainerID {
 			if match, _ := regexp.MatchString(fileBaseName+".*", fileName); match == true {
-				file := filepath.Join(path, fileName)
+				file := filepath.Join(sharedDir, fileName)
 				if err = os.Remove(file); err != nil {
 					return err
 				}
@@ -281,7 +290,7 @@ func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 		}
 		// Remove folder for container ID if it's empty
 		if numDeletedFiles == len(filesForContainerID) {
-			if err = os.Remove(path); err != nil {
+			if err = os.Remove(sharedDir); err != nil {
 				return err
 			}
 		}

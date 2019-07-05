@@ -32,6 +32,7 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/cnivpp"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
+	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 )
 
 //
@@ -44,6 +45,7 @@ const (
 //
 // Types
 //
+const DefaultSharedDir = "/var/lib/cni/usrspcni/shared"
 
 //
 // API Functions
@@ -54,43 +56,41 @@ const (
 //
 func cniContainerConfig() (bool, string, error) {
 	var engine string
+	var kubeClient k8sclient.KubeClient
+	var found bool
 
 	vpp := cnivpp.CniVpp{}
 	ovs := cniovs.CniOvs{}
 
-	found, netConf, ipResult, args, err := usrspdb.FindRemoteConfig()
+	ifaceList, sharedDir, err := usrspdb.GetRemoteConfig()
+	if err != nil || len(ifaceList) == 0 {
+		return found, engine, err
+	} else {
+		found = true
+	}
 
-	if err == nil {
-		if found {
+	for i := range ifaceList {
+		if ifaceList[i].NetConf.LogFile != "" {
+			logging.SetLogFile(ifaceList[i].NetConf.LogFile)
+		}
+		if ifaceList[i].NetConf.LogLevel != "" {
+			logging.SetLogLevel(ifaceList[i].NetConf.LogLevel)
+		}
 
-			if netConf.LogFile != "" {
-				logging.SetLogFile(netConf.LogFile)
-			}
-			if netConf.LogLevel != "" {
-				logging.SetLogLevel(netConf.LogLevel)
-			}
+		logging.Debugf("USRSP_APP: iface %v - Data %v", i, ifaceList[i])
 
-			if dbgApp {
-				fmt.Println("ipResult:")
-				fmt.Println(ipResult)
-				fmt.Println("Logfile:")
-				fmt.Println(netConf.LogFile)
-			}
 
-			// Add the requested interface and network
-			engine = netConf.HostConf.Engine
-			if netConf.HostConf.Engine == "vpp" {
-				err = vpp.AddOnHost(&netConf, &args, &ipResult)
-			} else if netConf.HostConf.Engine == "ovs-dpdk" {
-				err = ovs.AddOnHost(&netConf, &args, &ipResult)
-			} else {
-				err = fmt.Errorf("ERROR: Unknown Host Engine:" + netConf.HostConf.Engine)
-			}
-			if err != nil {
-				if dbgApp {
-					fmt.Println(err)
-				}
-			}
+		// Add the requested interface and network
+		engine = ifaceList[i].NetConf.HostConf.Engine
+		if ifaceList[i].NetConf.HostConf.Engine == "vpp" {
+			err = vpp.AddOnHost(&ifaceList[i].NetConf, &ifaceList[i].Args, kubeClient, sharedDir, &ifaceList[i].IPResult)
+		} else if ifaceList[i].NetConf.HostConf.Engine == "ovs-dpdk" {
+			err = ovs.AddOnHost(&ifaceList[i].NetConf, &ifaceList[i].Args, kubeClient, sharedDir, &ifaceList[i].IPResult)
+		} else {
+			err = fmt.Errorf("ERROR: Unknown Host Engine:" + ifaceList[i].NetConf.HostConf.Engine)
+		}
+		if err != nil {
+			logging.Errorf("USRSP_APP: %v", err)
 		}
 	}
 
@@ -102,14 +102,18 @@ func cniContainerConfig() (bool, string, error) {
 //
 func main() {
 	var count int = 0
-	var processed bool = false
-	var processedCnt int = 0
 	var engine string
+	var err error
+	var found bool
+
+	// Give VPP time to come up
+	//  TBD - Look for /run/vpp-api.sock to exist or something like that
+	time.Sleep(5 * time.Second)
 
 	for {
 		count++
 
-		found, tmpEngine, err := cniContainerConfig()
+		found, engine, err = cniContainerConfig()
 
 		if dbgApp {
 			if err != nil {
@@ -126,33 +130,29 @@ func main() {
 			fmt.Println("")
 			fmt.Println("")
 			fmt.Println("Found Configuration and applied.")
-			processed = true
-			engine = tmpEngine
+
+			if engine == "vpp" {
+				fmt.Println("")
+				fmt.Println("Useful VPP CLI Commands:")
+				fmt.Println(" vppctl show interface")
+				fmt.Println(" vppctl show interface addr")
+				fmt.Println(" vppctl show mode")
+				fmt.Println(" vppctl show hardware")
+			} else if engine == "ovs-dpdk" {
+				fmt.Println("")
+				fmt.Println("Useful OvS-DPDK CLI Commands:")
+				fmt.Println(" ovs-vsctl list open_vswitch")
+				fmt.Println(" ovs-vsctl list port")
+				fmt.Println(" ovs-vsctl list bridge")
+			}
+
+			fmt.Println("")
+			fmt.Println("DONE: Exiting app - Press <ENTER> to return to prompt")
+			break
 		}
 
-		if processed {
-			processedCnt++
-
-			if processedCnt > 1 {
-				if engine == "vpp" {
-					fmt.Println("")
-					fmt.Println("Useful VPP CLI Commands:")
-					fmt.Println(" vppctl show interface")
-					fmt.Println(" vppctl show interface addr")
-					fmt.Println(" vppctl show mode")
-					fmt.Println(" vppctl show hardware")
-				} else if engine == "ovs-dpdk" {
-					fmt.Println("")
-					fmt.Println("Useful OvS-DPDK CLI Commands:")
-					fmt.Println(" ovs-vsctl list open_vswitch")
-					fmt.Println(" ovs-vsctl list port")
-					fmt.Println(" ovs-vsctl list bridge")
-				}
-
-				fmt.Println("")
-				fmt.Println("DONE: Exiting app - Press <ENTER> to return to prompt")
-				break
-			}
+		if count > 10 {
+			break
 		}
 
 		time.Sleep(3 * time.Second)
