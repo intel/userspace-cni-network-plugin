@@ -1,0 +1,44 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: userspace-ovs-net-1
+spec:
+  config: '{
+        "cniVersion": "0.3.1",
+        "type": "userspace",
+        "name": "userspace-ovs-net-1",
+        "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig",
+        "logFile": "/var/log/userspace-ovs-net-1-cni.log",
+        "logLevel": "debug",
+        "host": {
+                "engine": "ovs-dpdk",
+                "iftype": "vhostuser",
+                "netType": "bridge",
+                "vhost": {
+                        "mode": "server"
+                },
+                "bridge": {
+                        "bridgeName": "br-4"
+                }
+        },
+        "container": {
+                "engine": "ovs-dpdk",
+                "iftype": "vhostuser",
+                "netType": "interface",
+                "vhost": {
+                        "mode": "client"
+                }
+        },
+        "ipam": {
+                "type": "host-local",
+                "subnet": "10.56.217.0/24",
+                "rangeStart": "10.56.217.131",
+                "rangeEnd": "10.56.217.190",
+                "routes": [
+                        {
+                                "dst": "0.0.0.0/0"
+                        }
+                ],
+                "gateway": "10.56.217.1"
+        }
+    }'

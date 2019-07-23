@@ -53,8 +53,8 @@ import (
 const (
 	networkAttachmentAnnot       = "k8s.v1.cni.cncf.io/networks"
 	networkAttachmentStatusAnnot = "k8s.v1.cni.cncf.io/networks-status"
-	mappedDirAnnot               = "mappedDir"
-	configDataAnnot              = "configuration-data"
+	configDataAnnot              = "userspace-cni/configuration-data"
+	mappedDirAnnot               = "userspace-cni/mappedDir"
 	sharedDirVolumeName          = "shared-dir"
 )
 
@@ -91,7 +91,7 @@ func (e *NoSharedDirProvidedError) Error() string { return string(e.message) }
 func GetPodVolumeMountHostSharedDir(pod *v1.Pod) (string, error) {
 	var hostSharedDir string
 
-	logging.Debugf("GetPodVolumeMountSharedDir: type=%T Volumes=%v", pod.Spec.Volumes, pod.Spec.Volumes)
+	logging.Verbosef("GetPodVolumeMountSharedDir: type=%T Volumes=%v", pod.Spec.Volumes, pod.Spec.Volumes)
 
 	if len(pod.Spec.Volumes) == 0 {
 		return hostSharedDir, &NoSharedDirProvidedError{"Error: No Volumes. Need \"shared-dir\" in podSpec \"Volumes\""}
@@ -114,7 +114,7 @@ func GetPodVolumeMountHostSharedDir(pod *v1.Pod) (string, error) {
 func GetPodVolumeMountHostMappedSharedDir(pod *v1.Pod) (string, error) {
 	var mappedSharedDir string
 
-	logging.Debugf("GetPodVolumeMountHostMappedSharedDir: type=%T Containers=%v", pod.Spec.Containers, pod.Spec.Containers)
+	logging.Verbosef("GetPodVolumeMountHostMappedSharedDir: type=%T Containers=%v", pod.Spec.Containers, pod.Spec.Containers)
 
 	if len(pod.Spec.Containers) == 0 {
 		return mappedSharedDir, &NoSharedDirProvidedError{"Error: No Containers. Need \"shared-dir\" in podSpec \"Volumes\""}
@@ -142,7 +142,7 @@ func SetPodAnnotationMappedDir(kubeClient k8sclient.KubeClient,
 							   kubeConfig string,
 							   pod *v1.Pod,
 							   mappedDir string) (*v1.Pod, error) {
-	logging.Debugf("SetPodAnnotationMappedDir: inputMappedDir=%s Annot - type=%T mappedDir=%v", mappedDir, pod.Annotations[mappedDirAnnot], pod.Annotations[mappedDirAnnot])
+	logging.Verbosef("SetPodAnnotationMappedDir: inputMappedDir=%s Annot - type=%T mappedDir=%v", mappedDir, pod.Annotations[mappedDirAnnot], pod.Annotations[mappedDirAnnot])
 
 	// If pod annotations is empty, make sure it allocatable
 	if len(pod.Annotations) == 0 {
@@ -155,7 +155,7 @@ func SetPodAnnotationMappedDir(kubeClient k8sclient.KubeClient,
 	annotDataStr := pod.Annotations[mappedDirAnnot]
 	if len(annotDataStr) != 0 {
 		if annotDataStr == mappedDir {
-			logging.Debugf("SetPodAnnotationMappedDir: Existing matches input. Do nothing.")
+			logging.Verbosef("SetPodAnnotationMappedDir: Existing matches input. Do nothing.")
 			return pod, nil
 		} else {
 			return pod, logging.Errorf("SetPodAnnotationMappedDir: Input \"%s\" does not match existing \"%s\"", mappedDir, annotDataStr)
@@ -176,7 +176,7 @@ func SetPodAnnotationConfigData(kubeClient k8sclient.KubeClient,
 								configData *ConfigData) (*v1.Pod, error) {
 	var configDataStr []string
 
-	logging.Debugf("SetPodAnnotationConfigData: type=%T configData=%v", pod.Annotations[configDataAnnot], pod.Annotations[configDataAnnot])
+	logging.Verbosef("SetPodAnnotationConfigData: type=%T configData=%v", pod.Annotations[configDataAnnot], pod.Annotations[configDataAnnot])
 
 	// If pod annotations is empty, make sure it allocatable
 	if len(pod.Annotations) == 0 {

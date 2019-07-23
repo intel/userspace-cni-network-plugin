@@ -26,6 +26,7 @@
 package cnivpp
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -39,12 +40,10 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
-	_ "github.com/intel/userspace-cni-network-plugin/annotations"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/vppdb"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
-	_ "github.com/intel/userspace-cni-network-plugin/usrspcni"
 	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 )
 
@@ -74,7 +73,7 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf,
 	var err error
 	var data vppdb.VppSavedData
 
-	logging.Debugf("VPP AddOnHost: ENTER")
+	logging.Infof("VPP AddOnHost: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
 	// Create Channel to pass requests to VPP
 	vppCh, err = vppinfra.VppOpenCh()
@@ -88,10 +87,8 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf,
 	//
 	if conf.HostConf.IfType == "memif" {
 		err = addLocalDeviceMemif(vppCh, conf, args, sharedDir, &data)
-	} else if conf.HostConf.IfType == "vhostuser" {
-		err = fmt.Errorf("GOOD: Found HostConf.IfType:" + conf.HostConf.IfType)
 	} else {
-		err = fmt.Errorf("ERROR: Unknown HostConf.IfType:" + conf.HostConf.IfType)
+		err = errors.New("ERROR: Unknown HostConf.IfType:" + conf.HostConf.IfType)
 	}
 
 	if err != nil {
@@ -153,7 +150,12 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf,
 				return err
 			}
 		}
+	} else if conf.HostConf.NetType != "" {
+		err = errors.New("ERROR: Unknown HostConf.NetType:" + conf.HostConf.NetType)
+		logging.Debugf("AddOnHost(vpp): %v", err)
+		return err
 	}
+
 
 	//
 	// Save Create Data for Delete
@@ -173,7 +175,7 @@ func (cniVpp CniVpp) AddOnContainer(conf *usrsptypes.NetConf,
 									sharedDir string,
 									pod *v1.Pod,
 									ipResult *current.Result) (*v1.Pod, error) {
-	logging.Debugf("VPP AddOnContainer: ENTER")
+	logging.Infof("VPP AddOnContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 	return usrspdb.SaveRemoteConfig(conf, args, kubeClient, sharedDir, pod, ipResult)
 }
 
@@ -182,7 +184,7 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, s
 	var data vppdb.VppSavedData
 	var err error
 
-	logging.Debugf("VPP DelFromHost: ENTER")
+	logging.Infof("VPP DelFromHost: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
 	// Create Channel to pass requests to VPP
 	vppCh, err = vppinfra.VppOpenCh()
@@ -207,7 +209,7 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, s
 		var bridgeDomain uint32 = uint32(conf.HostConf.BridgeConf.BridgeId)
 
 		if dbgBridge {
-			logging.Debugf("INTERFACE %d retrieved from CONF - attempt to DELETE Bridge %d\n", data.SwIfIndex, bridgeDomain)
+			logging.Verbosef("INTERFACE %d retrieved from CONF - attempt to DELETE Bridge %d\n", data.SwIfIndex, bridgeDomain)
 		}
 
 		// Remove MemIf from Bridge. RemoveBridgeInterface() will delete Bridge if
@@ -219,7 +221,7 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, s
 			return err
 		} else {
 			if dbgBridge {
-				logging.Debugf("INTERFACE %d removed from BRIDGE %d\n", data.SwIfIndex, bridgeDomain)
+				logging.Verbosef("INTERFACE %d removed from BRIDGE %d\n", data.SwIfIndex, bridgeDomain)
 				vppbridge.DumpBridge(vppCh.Ch, bridgeDomain)
 			}
 		}
@@ -240,9 +242,10 @@ func (cniVpp CniVpp) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, s
 }
 
 func (cniVpp CniVpp) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, pod *v1.Pod) error {
-	logging.Debugf("VPP DelFromContainer: ENTER")
+	logging.Infof("VPP DelFromContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
-	usrspdb.CleanupRemoteConfig(conf, sharedDir)
+	usrspdb.FileCleanup(sharedDir, "")
+
 	return nil
 }
 
@@ -295,7 +298,7 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData,
 		return
 	} else {
 		if dbgInterface {
-			logging.Debugf("MEMIF SOCKET", data.MemifSocketId, memifSocketFile, "created")
+			logging.Verbosef("MEMIF SOCKET", data.MemifSocketId, memifSocketFile, "created")
 			vppmemif.DumpMemifSocket(vppCh.Ch)
 		}
 	}
@@ -307,7 +310,7 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData,
 		return
 	} else {
 		if dbgInterface {
-			logging.Debugf("MEMIF", data.SwIfIndex, "created", args.IfName)
+			logging.Verbosef("MEMIF", data.SwIfIndex, "created", args.IfName)
 			vppmemif.DumpMemif(vppCh.Ch)
 		}
 	}
@@ -326,7 +329,7 @@ func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf
 		return
 	} else {
 		if dbgInterface {
-			logging.Debugf("INTERFACE %d deleted\n", data.SwIfIndex)
+			logging.Verbosef("INTERFACE %d deleted\n", data.SwIfIndex)
 			vppmemif.DumpMemif(vppCh.Ch)
 			vppmemif.DumpMemifSocket(vppCh.Ch)
 		}

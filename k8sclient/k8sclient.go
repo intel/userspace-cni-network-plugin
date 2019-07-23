@@ -15,11 +15,7 @@
 package k8sclient
 
 import (
-	_ "encoding/json"
-	_ "fmt"
 	"os"
-	_ "regexp"
-	_ "strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,7 +60,7 @@ type KubeClient interface {
 func getK8sArgs(args *skel.CmdArgs) (*usrsptypes.K8sArgs, error) {
 	k8sArgs := &usrsptypes.K8sArgs{}
 
-	logging.Debugf("getK8sArgs: %v", args)
+	logging.Verbosef("getK8sArgs: %v", args)
 	err := cnitypes.LoadArgs(args.Args, k8sArgs)
 	if err != nil {
 		return nil, err
@@ -74,7 +70,7 @@ func getK8sArgs(args *skel.CmdArgs) (*usrsptypes.K8sArgs, error) {
 }
 
 func getK8sClient(kubeClient KubeClient, kubeConfig string) (KubeClient, error) {
-	logging.Debugf("getK8sClient: %s, %v", kubeClient, kubeConfig)
+	logging.Verbosef("getK8sClient: %s, %v", kubeClient, kubeConfig)
 	// If we get a valid kubeClient (eg from testcases) just return that
 	// one.
 	if kubeClient != nil {
@@ -118,7 +114,7 @@ func getK8sClient(kubeClient KubeClient, kubeConfig string) (KubeClient, error) 
 func GetPod(args *skel.CmdArgs, kubeClient KubeClient, kubeConfig string) (*v1.Pod, error) {
 	var err error
 
-	logging.Debugf("GetPod: ENTER - %v, %v, %v", args, kubeClient, kubeConfig)
+	logging.Verbosef("GetPod: ENTER - %v, %v, %v", args, kubeClient, kubeConfig)
 
 	// Get k8sArgs
 	k8sArgs, err := getK8sArgs(args)
@@ -146,7 +142,7 @@ func GetPod(args *skel.CmdArgs, kubeClient KubeClient, kubeConfig string) (*v1.P
 		return nil, err
 	}
 
-	logging.Debugf("pod.Annotations: %v", pod.Annotations)
+	logging.Verbosef("pod.Annotations: %v", pod.Annotations)
 
 	return pod, err
 }

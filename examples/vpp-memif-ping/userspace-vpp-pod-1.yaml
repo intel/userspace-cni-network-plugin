@@ -38,7 +38,7 @@ spec:
             fieldPath: metadata.annotations
   - name: shared-dir
     hostPath:
-      path: /var/lib/cni/usrspcni/023bcd123/
+      path: /var/run/vpp/023bcd123/
   - name: hugepage
     emptyDir:
       medium: HugePages

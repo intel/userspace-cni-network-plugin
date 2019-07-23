@@ -28,7 +28,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/intel/userspace-cni-network-plugin/cniovs/cniovs"
+	_ "github.com/intel/userspace-cni-network-plugin/cniovs/cniovs"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/cnivpp"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
@@ -60,7 +60,7 @@ func cniContainerConfig() (bool, string, error) {
 	var found bool
 
 	vpp := cnivpp.CniVpp{}
-	ovs := cniovs.CniOvs{}
+	//ovs := cniovs.CniOvs{}
 
 	ifaceList, sharedDir, err := usrspdb.GetRemoteConfig()
 	if err != nil || len(ifaceList) == 0 {
@@ -85,7 +85,8 @@ func cniContainerConfig() (bool, string, error) {
 		if ifaceList[i].NetConf.HostConf.Engine == "vpp" {
 			err = vpp.AddOnHost(&ifaceList[i].NetConf, &ifaceList[i].Args, kubeClient, sharedDir, &ifaceList[i].IPResult)
 		} else if ifaceList[i].NetConf.HostConf.Engine == "ovs-dpdk" {
-			err = ovs.AddOnHost(&ifaceList[i].NetConf, &ifaceList[i].Args, kubeClient, sharedDir, &ifaceList[i].IPResult)
+			//err = ovs.AddOnHost(&ifaceList[i].NetConf, &ifaceList[i].Args, kubeClient, sharedDir, &ifaceList[i].IPResult)
+			logging.Debugf("USRSP_APP: \"ovs-dpdk\" - Currently nothing TO DO!")
 		} else {
 			err = fmt.Errorf("ERROR: Unknown Host Engine:" + ifaceList[i].NetConf.HostConf.Engine)
 		}

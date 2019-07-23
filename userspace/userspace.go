@@ -109,7 +109,8 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 	// Convert the input bytestream into local NetConf structure
 	netConf, err := loadNetConf(args.StdinData)
 
-	logging.Debugf("cmdAdd: ENTER (AFTER LOAD) - Args=%v netConf=%v, exec=%v, kubeClient%v",
+	logging.Infof("cmdAdd: ENTER (AFTER LOAD) - Container %s Iface %s", args.ContainerID[:12], args.IfName)
+	logging.Verbosef("   Args=%v netConf=%v, exec=%v, kubeClient%v",
 		args, netConf, exec, kubeClient)
 
 	if err != nil {
@@ -212,8 +213,12 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 }
 
 func cmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClient) error {
-	logging.Debugf("cmdGet: %v, %v, %v", args, exec, kubeClient)
 	netConf, err := loadNetConf(args.StdinData)
+
+	logging.Infof("cmdGet: (AFTER LOAD) - Container %s Iface %s", args.ContainerID[:12], args.IfName)
+	logging.Verbosef("   Args=%v netConf=%v, exec=%v, kubeClient%v",
+		args, netConf, exec, kubeClient)
+
 	if err != nil {
 		return err
 	}
@@ -233,7 +238,8 @@ func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 	// Convert the input bytestream into local NetConf structure
 	netConf, err := loadNetConf(args.StdinData)
 
-	logging.Debugf("cmdDel: ENTER (AFTER LOAD) - Args=%v netConf=%v, exec=%v, kubeClient%v",
+	logging.Infof("cmdDel: ENTER (AFTER LOAD) - Container %s Iface %s", args.ContainerID[:12], args.IfName)
+	logging.Verbosef("   Args=%v netConf=%v, exec=%v, kubeClient%v",
 		args, netConf, exec, kubeClient)
 
 	if err != nil {

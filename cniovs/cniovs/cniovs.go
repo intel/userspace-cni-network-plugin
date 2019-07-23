@@ -39,11 +39,9 @@ import (
 	"github.com/containernetworking/cni/pkg/types/current"
 
 	"github.com/intel/userspace-cni-network-plugin/cniovs/ovsdb"
-	_ "github.com/intel/userspace-cni-network-plugin/annotations"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
-	_ "github.com/intel/userspace-cni-network-plugin/usrspcni"
 	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 )
 
@@ -69,27 +67,24 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf,
 	var err error
 	var data ovsdb.OvsSavedData
 
-	logging.Debugf("OVS AddOnHost: ENTER")
+	logging.Infof("OVS AddOnHost: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
 	//
-	// Manditory attribute of "ovs-vsctl add-port" is a BridgeName. If NetType is not
-	// set to "bridge", should request fail or added to default bridge. Existing
-	// behavior hardcoded BridgeName to "br0". So if not entered, default to "br0".
-	// Can be change later to return ERROR if needed.
+	// Manditory attribute of "ovs-vsctl add-port" is a BridgeName. So even if
+	// NetType is not set to "bridge", "conf.HostConf.BridgeConf.BridgeName"
+	// should be set. If it is not, set it to default value.
 	//
-	if conf.HostConf.NetType != "bridge" {
-		conf.HostConf.NetType = "bridge"
+	if conf.HostConf.BridgeConf.BridgeName == "" {
 		conf.HostConf.BridgeConf.BridgeName = defaultBridge
 	}
 
 	//
-	// If Network Type is Bridge, Create it first before creating Interface
+	// Create bridge before creating Interface
 	//
-	if conf.HostConf.NetType == "bridge" {
-		err = addLocalNetworkBridge(conf, args, &data)
-		if err != nil {
-			return err
-		}
+	err = addLocalNetworkBridge(conf, args, &data)
+	if err != nil {
+		logging.Debugf("AddOnHost(ovs): %v", err)
+		return err
 	}
 
 	//
@@ -101,6 +96,7 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf,
 		err = errors.New("ERROR: Unknown HostConf.IfType:" + conf.HostConf.IfType)
 	}
 	if err != nil {
+		logging.Debugf("AddOnHost(ovs): %v", err)
 		return err
 	}
 
@@ -112,8 +108,13 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf,
 	// Add Interface to Local Network
 	//
 	if conf.HostConf.NetType == "interface" {
-		if len(ipResult.IPs) != 0 {
-		}
+		err = errors.New("ERROR: HostConf.NetType \"interface\" not supported.")
+	} else if conf.HostConf.NetType != "bridge" && conf.HostConf.NetType != "" {
+		err = errors.New("ERROR: Unknown HostConf.NetType:" + conf.HostConf.NetType)
+	}
+	if err != nil {
+		logging.Debugf("AddOnHost(ovs): %v", err)
+		return err
 	}
 
 	//
@@ -133,7 +134,7 @@ func (cniOvs CniOvs) AddOnContainer(conf *usrsptypes.NetConf,
 									sharedDir string,
 									pod *v1.Pod,
 									ipResult *current.Result) (*v1.Pod, error) {
-	logging.Debugf("OVS AddOnContainer: ENTER")
+	logging.Infof("OVS AddOnContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 	return usrspdb.SaveRemoteConfig(conf, args, kubeClient, sharedDir, pod, ipResult)
 }
 
@@ -141,24 +142,23 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, s
 	var data ovsdb.OvsSavedData
 	var err error
 
-	logging.Debugf("OVS DelFromHost: ENTER")
+	logging.Infof("OVS DelFromHost: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
 	//
 	// Load Config - Retrieved squirreled away data needed for processing delete
 	//
 	err = ovsdb.LoadConfig(conf, args, &data)
 	if err != nil {
+		logging.Debugf("DelFromHost(ovs): %v", err)
 		return err
 	}
 
 	//
-	// Manditory attribute of "ovs-vsctl add-port" is a BridgeName. If NetType is not
-	// set to "bridge", should request fail or added to default bridge. Existing
-	// behavior hardcoded BrdigeName to "br0". So if not entered, default to "br0".
-	// Can be change later to return ERROR if needed.
+	// Manditory attribute of "ovs-vsctl add-port" is a BridgeName. So even if
+	// NetType is not set to "bridge", "conf.HostConf.BridgeConf.BridgeName"
+	// should be set. If it is not, set it to default value.
 	//
-	if conf.HostConf.NetType != "bridge" {
-		conf.HostConf.NetType = "bridge"
+	if conf.HostConf.BridgeConf.BridgeName == "" {
 		conf.HostConf.BridgeConf.BridgeName = defaultBridge
 	}
 
@@ -181,20 +181,19 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, s
 	//
 	// Delete Bridge if empty
 	//
-	if conf.HostConf.NetType == "bridge" {
-		err = delLocalNetworkBridge(conf, args, &data)
-		if err != nil {
-			return err
-		}
+	err = delLocalNetworkBridge(conf, args, &data)
+	if err != nil {
+		return err
 	}
 
 	return err
 }
 
 func (cniOvs CniOvs) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, pod *v1.Pod) error {
-	logging.Debugf("OVS DelFromContainer: ENTER")
+	logging.Infof("OVS DelFromContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
-	usrspdb.CleanupRemoteConfig(conf, sharedDir)
+	usrspdb.FileCleanup(sharedDir, "")
+
 	return nil
 }
 
@@ -218,7 +217,6 @@ func generateRandomMacAddress() string {
 func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, data *ovsdb.OvsSavedData) error {
 	var err error
 	var vhostName string
-	var bridgeName string
 
 	s := []string{args.ContainerID[:12], args.IfName}
 	sockRef := strings.Join(s, "-")
@@ -235,15 +233,12 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir
 
 	// Validate and convert input data
 	clientMode := false
-	if conf.HostConf.VhostConf.Mode == "Mode" {
+	if conf.HostConf.VhostConf.Mode == "client" {
 		clientMode = true
-	}
-	if conf.HostConf.NetType == "bridge" {
-		bridgeName = conf.HostConf.BridgeConf.BridgeName
 	}
 
 	// ovs-vsctl add-port
-	if vhostName, err = createVhostPort(sharedDir, sockRef, clientMode, bridgeName); err == nil {
+	if vhostName, err = createVhostPort(sharedDir, sockRef, clientMode, conf.HostConf.BridgeConf.BridgeName); err == nil {
 		if vhostPortMac, err := getVhostPortMac(vhostName); err == nil {
 			data.VhostMac = vhostPortMac
 		}
@@ -256,15 +251,8 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir
 }
 
 func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, data *ovsdb.OvsSavedData) error {
-	var bridgeName string
-
-	// Validate and convert input data
-	if conf.HostConf.NetType == "bridge" {
-		bridgeName = conf.HostConf.BridgeConf.BridgeName
-	}
-
 	// ovs-vsctl --if-exists del-port
-	if err := deleteVhostPort(data.Vhostname, bridgeName); err == nil {
+	if err := deleteVhostPort(data.Vhostname, conf.HostConf.BridgeConf.BridgeName); err == nil {
 		folder, err := os.Open(sharedDir)
 		if err != nil {
 			return err
@@ -303,9 +291,20 @@ func addLocalNetworkBridge(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *o
 	var err error
 
 	if found := findBridge(conf.HostConf.BridgeConf.BridgeName); found == false {
-		if err = createBridge(conf.HostConf.BridgeConf.BridgeName); err == nil {
-			// Nothing to do at this time
+		logging.Debugf("addLocalNetworkBridge(): Bridge %s not found, creating", conf.HostConf.BridgeConf.BridgeName)
+		err = createBridge(conf.HostConf.BridgeConf.BridgeName)
+
+		if err == nil {
+			// Bridge is always created because it is required for interface.
+			// If bridge type was actually called out, then set the
+			// bridge up as L2 bridge. Otherwise, a controller is
+			// responsible for writing flows to OvS.
+			if conf.HostConf.NetType == "bridge" {
+				err = configL2Bridge(conf.HostConf.BridgeConf.BridgeName)
+			}
 		}
+	} else {
+		logging.Debugf("addLocalNetworkBridge(): Bridge %s exists, skip creating", conf.HostConf.BridgeConf.BridgeName)
 	}
 
 	return err
@@ -315,7 +314,10 @@ func delLocalNetworkBridge(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *o
 	var err error
 
 	if containInterfaces := doesBridgeContainInterfaces(conf.HostConf.BridgeConf.BridgeName); containInterfaces == false {
+		logging.Debugf("delLocalNetworkBridge(): No interfaces found, deleting Bridge %s", conf.HostConf.BridgeConf.BridgeName)
 		err = deleteBridge(conf.HostConf.BridgeConf.BridgeName)
+	} else {
+		logging.Debugf("delLocalNetworkBridge(): Interfaces found, skip deleting Bridge %s", conf.HostConf.BridgeConf.BridgeName)
 	}
 
 	return err
