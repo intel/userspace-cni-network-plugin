@@ -178,10 +178,14 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovs
 	if vhostName, err := createVhostPort(sockDir, sockRef); err == nil {
 		if vhostPortMac, err := getVhostPortMac(vhostName); err == nil {
 			data.VhostMac = vhostPortMac
+		} else {
+			return err
 		}
 
 		data.Vhostname = vhostName
 		data.IfMac = generateRandomMacAddress()
+	} else {
+		return err
 	}
 
 	return nil
