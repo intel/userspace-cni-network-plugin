@@ -79,6 +79,7 @@ func loadNetConf(bytes []byte) (*usrsptypes.NetConf, error) {
 	//
 	// Parse previous result
 	//
+	/*
 	if netconf.RawPrevResult != nil {
 		resultBytes, err := json.Marshal(netconf.RawPrevResult)
 		if err != nil {
@@ -94,6 +95,7 @@ func loadNetConf(bytes []byte) (*usrsptypes.NetConf, error) {
 			return nil, logging.Errorf("could not convert result to current version: %v", err)
 		}
 	}
+	*/
 
 	return netconf, nil
 }
@@ -212,7 +214,9 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 	return cnitypes.PrintResult(result, netConf.CNIVersion)
 }
 
+
 func cmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClient) error {
+/*
 	netConf, err := loadNetConf(args.StdinData)
 
 	logging.Infof("cmdGet: (AFTER LOAD) - Container %s Iface %s", args.ContainerID[:12], args.IfName)
@@ -226,7 +230,10 @@ func cmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 	// FIXME: call all delegates
 
 	return cnitypes.PrintResult(netConf.PrevResult, netConf.CNIVersion)
+*/
+	return nil
 }
+
 
 func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClient) error {
 	var netConf *usrsptypes.NetConf

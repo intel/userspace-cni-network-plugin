@@ -88,7 +88,9 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf,
 		dataCopy.HostConf.IfType = conf.HostConf.IfType
 	}
 	if dataCopy.HostConf.NetType == "" {
-		dataCopy.HostConf.NetType = "interface"
+		if ipResult != nil {
+			dataCopy.HostConf.NetType = "interface"
+		}
 	}
 
 	if dataCopy.HostConf.IfType == "memif" {
@@ -121,7 +123,9 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf,
 	configData.ContainerId = args.ContainerID
 	configData.IfName = args.IfName
 	configData.NetConf = dataCopy
-	configData.IPResult = *ipResult
+	if ipResult != nil {
+		configData.IPResult = *ipResult
+	}
 
 	pod, err = annotations.SetPodAnnotationConfigData(kubeClient, conf.KubeConfig, pod, &configData)
 	if err != nil {

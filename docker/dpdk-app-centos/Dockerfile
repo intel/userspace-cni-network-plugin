@@ -43,6 +43,7 @@ RUN make
 RUN cp testpmd /usr/bin/dpdk-app
 
 # -------- Import stage.
+# Docker 17.05 or higher
 ##FROM centos
 
 # Install UserSpace CNI

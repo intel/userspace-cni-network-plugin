@@ -187,8 +187,12 @@ clean:
 ifeq ($(VPPLCLINSTALLED),1)
 	@echo VPP was installed by *make install*, so cleaning up files.
 	@$(SUDO) -E rm -rf /usr/include/vpp-api/
+	@$(SUDO) -E rm $(VPPLIBDIR)/libsvm.so*
+	@$(SUDO) -E rm $(VPPLIBDIR)/libvlibmemoryclient.so*
 	@$(SUDO) -E rm $(VPPLIBDIR)/libvppapiclient.so*
+	@$(SUDO) -E rm $(VPPLIBDIR)/libvppinfra.so*
 	@$(SUDO) -E rm -rf /usr/share/vpp/
+
 endif
 
 generate:

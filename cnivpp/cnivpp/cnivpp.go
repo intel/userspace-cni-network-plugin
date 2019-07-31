@@ -143,7 +143,7 @@ func (cniVpp CniVpp) AddOnHost(conf *usrsptypes.NetConf,
 		}
 	// Add L3 Network if supplied
 	} else if conf.HostConf.NetType == "interface" {
-		if len(ipResult.IPs) != 0 {
+		if ipResult != nil && len(ipResult.IPs) != 0 {
 			err = vppinterface.AddDelIpAddress(vppCh.Ch, data.SwIfIndex, 1, ipResult)
 			if err != nil {
 				logging.Debugf("AddOnHost(vpp): Error adding IP: %v", err)

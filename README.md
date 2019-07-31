@@ -68,7 +68,7 @@ document as soon as possible.
 
 ## Contacts
 For any questions about Userspace CNI, please reach out.
-* Report issue via Trello: [Trello: Userspace CNI](https://trello.com/b/ceXtKfBn/user-space-cni-project)
+* Report issue via Github: [userspace-cni-network-plugin/issues](https://github.com/intel/userspace-cni-network-plugin/issues)
 * Contact via slack: [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
   * Feel free to contact the developer @garyloug or @bmcfall in slack
 * Contact via Google Group: https://groups.google.com/forum/#!forum/userspace-cni
@@ -331,14 +331,23 @@ For example in your CNI configuration, you may set:
 
 ### Logging Level
 
-The default logging level is set as `panic` -- this will log only the most
-critical errors, and is the least verbose logging level.
+The default logging level is set as `warning` -- this will log critical errors
+and issues detect.
 
-The available logging level values, in descreasing order of verbosity are:
+The available logging level values, in increasing order of verbosity are:
 
-* `debug`
-* `error`
 * `panic`
+  * Code exiting immediately.
+* `error`
+  * Unusual event occurred (invalid input or system issue), so exiting code prematurely.
+* `warning`
+  * Unusual event occurred (invalid input or system issue), but continuing with default value.
+* `info`
+  * Basic information, indication of major code paths.
+* `debug`
+  * Additional information, indication of minor code branches.
+* `verbose`
+  * Output of larger variables in code and debug of low level functions.
 
 You may configure the logging level by using the `LogLevel` option in your
 CNI configuration. For example:

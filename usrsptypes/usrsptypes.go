@@ -18,7 +18,7 @@ import (
 	"net"
 
 	"github.com/containernetworking/cni/pkg/types"
-	"github.com/containernetworking/cni/pkg/types/current"
+	_ "github.com/containernetworking/cni/pkg/types/current"
 )
 
 //
@@ -60,9 +60,12 @@ type UserSpaceConf struct {
 type NetConf struct {
 	types.NetConf
 
+	/*
 	// Support chaining
 	RawPrevResult *map[string]interface{} `json:"prevResult"`
 	PrevResult    *current.Result         `json:"-"`
+	*/
+
 	KubeConfig    string                  `json:"kubeconfig"`
 
 	Name          string        `json:"name"`
