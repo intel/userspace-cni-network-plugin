@@ -252,9 +252,14 @@ func (cniVpp CniVpp) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdAr
 //
 // Local Functions
 //
-func getMemifSocketfileName(sharedDir string, containerID string, ifName string) (string) {
-	fileName := fmt.Sprintf("memif-%s-%s.sock", containerID[:12], ifName)
-	return filepath.Join(sharedDir, fileName)
+func getMemifSocketfileName(conf *usrsptypes.NetConf,
+			sharedDir string,
+			containerID string,
+			ifName string) (string) {
+	if conf.HostConf.MemifConf.Socketfile == "" {
+		conf.HostConf.MemifConf.Socketfile = fmt.Sprintf("memif-%s-%s.sock", containerID[:12], ifName)
+	}
+	return filepath.Join(sharedDir, conf.HostConf.MemifConf.Socketfile)
 }
 
 func addLocalDeviceMemif(vppCh vppinfra.ConnectionData,
@@ -266,8 +271,8 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData,
 	var memifRole vppmemif.MemifRole
 	var memifMode vppmemif.MemifMode
 
-	// Retrieve the Socketfile name
-	memifSocketFile := getMemifSocketfileName(sharedDir, args.ContainerID, args.IfName)
+	// Retrieve the Socketfile path
+	memifSocketPath := getMemifSocketfileName(conf, sharedDir, args.ContainerID, args.IfName)
 
 	// Apply default values to input configuration
 	if conf.HostConf.MemifConf.Role == "master" {
@@ -292,13 +297,13 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData,
 	}
 
 	// Create Memif Socket
-	data.MemifSocketId, err = vppmemif.CreateMemifSocket(vppCh.Ch, memifSocketFile)
+	data.MemifSocketId, err = vppmemif.CreateMemifSocket(vppCh.Ch, memifSocketPath)
 	if err != nil {
 		logging.Debugf("addLocalDeviceMemif(vpp): Error creating memif socket: %v", err)
 		return
 	} else {
 		if dbgInterface {
-			logging.Verbosef("MEMIF SOCKET", data.MemifSocketId, memifSocketFile, "created")
+			logging.Verbosef("MEMIF SOCKET", data.MemifSocketId, memifSocketPath, "created")
 			vppmemif.DumpMemifSocket(vppCh.Ch)
 		}
 	}
@@ -320,7 +325,7 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData,
 
 func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, data *vppdb.VppSavedData) (err error) {
 	// Retrieve the Socketfile name
-	memifSocketFile := getMemifSocketfileName(sharedDir, args.ContainerID, args.IfName)
+	memifSocketPath := getMemifSocketfileName(conf, sharedDir, args.ContainerID, args.IfName)
 
 	// Delete the memif interface
 	err = vppmemif.DeleteMemifInterface(vppCh.Ch, data.SwIfIndex)
@@ -336,7 +341,7 @@ func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *usrsptypes.NetConf
 	}
 
 	// Remove socketfile
-	err = usrspdb.FileCleanup("", memifSocketFile)
+	err = usrspdb.FileCleanup("", memifSocketPath)
 
 	return
 }

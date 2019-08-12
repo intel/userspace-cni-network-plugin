@@ -21,9 +21,12 @@
 package usrspdb
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -42,6 +45,9 @@ import (
 const DefaultBaseCNIDir = "/var/lib/cni/usrspcni"
 const DefaultLocalCNIDir = "/var/lib/cni/usrspcni/data"
 const debugUsrSpDb = false
+
+const DefaultOvsCNIDir = "/usr/local/var/run/openvswitch"
+const DefaultVppCNIDir = "/var/run/vpp"
 
 //
 // Types
@@ -67,84 +73,116 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf,
 					  pod *v1.Pod,
 					  ipResult *current.Result) (*v1.Pod, error) {
 	var err error
-	var dataCopy usrsptypes.NetConf
-	var configData annotations.ConfigData
-
-	//
-	// Convert the remote configuration into a local configuration
-	//
-	dataCopy = *conf
-	dataCopy.HostConf = dataCopy.ContainerConf
-	dataCopy.ContainerConf = usrsptypes.UserSpaceConf{}
-
-	// IPAM is processed by the host and sent to the Container. So blank out what was already processed.
-	dataCopy.IPAM.Type = ""
-
-	// Convert empty variables to valid data based on the original HostConf
-	if dataCopy.HostConf.Engine == "" {
-		dataCopy.HostConf.Engine = conf.HostConf.Engine
-	}
-	if dataCopy.HostConf.IfType == "" {
-		dataCopy.HostConf.IfType = conf.HostConf.IfType
-	}
-	if dataCopy.HostConf.NetType == "" {
-		if ipResult != nil {
-			dataCopy.HostConf.NetType = "interface"
-		}
-	}
-
-	if dataCopy.HostConf.IfType == "memif" {
-		if dataCopy.HostConf.MemifConf.Role == "" {
-			if conf.HostConf.MemifConf.Role == "master" {
-				dataCopy.HostConf.MemifConf.Role = "slave"
-			} else {
-				dataCopy.HostConf.MemifConf.Role = "master"
-			}
-		}
-		if dataCopy.HostConf.MemifConf.Mode == "" {
-			dataCopy.HostConf.MemifConf.Mode = conf.HostConf.MemifConf.Mode
-		}
-	} else if dataCopy.HostConf.IfType == "vhostuser" {
-		if dataCopy.HostConf.VhostConf.Mode == "" {
-			if conf.HostConf.VhostConf.Mode == "client" {
-				dataCopy.HostConf.VhostConf.Mode = "server"
-			} else {
-				dataCopy.HostConf.VhostConf.Mode = "client"
-			}
-		}
-	}
-
-
-	//
-	// Write configuration data into annotation to be consumed by container
-	//
-	logging.Debugf("SaveRemoteConfig(): Store in PodSpec")
+	var configData usrsptypes.ConfigurationData
+	var modifiedConfig bool
+	var modifiedMappedDir bool
 
 	configData.ContainerId = args.ContainerID
 	configData.IfName = args.IfName
-	configData.NetConf = dataCopy
+	configData.Name = conf.Name
+	configData.Config = conf.ContainerConf
+
 	if ipResult != nil {
 		configData.IPResult = *ipResult
 	}
 
-	pod, err = annotations.SetPodAnnotationConfigData(kubeClient, conf.KubeConfig, pod, &configData)
-	if err != nil {
-		logging.Errorf("SaveRemoteConfig: Error writing annotation configData: %v", err)
-		return pod, err
+	// Convert empty variables to valid data based on the original HostConf
+	if configData.Config.IfType == "" {
+		configData.Config.IfType = conf.HostConf.IfType
+	}
+	if configData.Config.NetType == "" {
+		if ipResult != nil {
+			configData.Config.NetType = "interface"
+		}
 	}
 
-	// Retrieve the mappedSharedDir from the Containers in podSpec. Directory
-	// in container Socket Files will be fread from. Write this data back as an
-	// annotation so container knows where directory is located.
-	mappedSharedDir, err := annotations.GetPodVolumeMountHostMappedSharedDir(pod)
-	if err != nil {
-		logging.Errorf("SaveRemoteConfig: VolumeMount mappedSharedDir not provided - %v", err)
-		return pod, err
+	if configData.Config.IfType == "memif" {
+		if configData.Config.MemifConf.Role == "" {
+			if conf.HostConf.MemifConf.Role == "master" {
+				configData.Config.MemifConf.Role = "slave"
+			} else {
+				configData.Config.MemifConf.Role = "master"
+			}
+		}
+		if configData.Config.MemifConf.Mode == "" {
+			configData.Config.MemifConf.Mode = conf.HostConf.MemifConf.Mode
+		}
+		configData.Config.MemifConf.Socketfile = conf.HostConf.MemifConf.Socketfile
+	} else if configData.Config.IfType == "vhostuser" {
+		if configData.Config.VhostConf.Mode == "" {
+			if conf.HostConf.VhostConf.Mode == "client" {
+				configData.Config.VhostConf.Mode = "server"
+			} else {
+				configData.Config.VhostConf.Mode = "client"
+			}
+		}
+		configData.Config.VhostConf.Socketfile = conf.HostConf.VhostConf.Socketfile
 	}
-	pod, err = annotations.SetPodAnnotationMappedDir(kubeClient, conf.KubeConfig, pod, mappedSharedDir)
-	if err != nil {
-		logging.Errorf("SaveRemoteConfig: Error writing annotation mappedSharedDir - %v", err)
-		return pod, err
+
+
+	//
+	// Write configuration data that will be consumed by container
+	//
+	if kubeClient != nil {
+		//
+		// Write configuration data into annotation
+		//
+		logging.Debugf("SaveRemoteConfig(): Store in PodSpec")
+
+		modifiedConfig, err = annotations.SetPodAnnotationConfigData(kubeClient, conf.KubeConfig, pod, &configData)
+		if err != nil {
+			logging.Errorf("SaveRemoteConfig: Error formatting annotation configData: %v", err)
+			return pod, err
+		}
+
+		// Retrieve the mappedSharedDir from the Containers in podSpec. Directory
+		// in container Socket Files will be read from. Write this data back as an
+		// annotation so container knows where directory is located.
+		mappedSharedDir, err := annotations.GetPodVolumeMountHostMappedSharedDir(pod)
+		if err != nil {
+			mappedSharedDir = DefaultBaseCNIDir
+			logging.Warningf("SaveRemoteConfig: Error reading VolumeMount: %v", err)
+			logging.Warningf("SaveRemoteConfig: VolumeMount \"shared-dir\" not provided, defaulting to: %s", mappedSharedDir)
+			err = nil
+		}
+		modifiedMappedDir, err = annotations.SetPodAnnotationMappedDir(kubeClient, conf.KubeConfig, pod, mappedSharedDir)
+		if err != nil {
+			logging.Errorf("SaveRemoteConfig: Error formatting annotation mappedSharedDir - %v", err)
+			return pod, err
+		}
+
+		if modifiedConfig == true || modifiedMappedDir == true {
+			pod, err = annotations.WritePodAnnotation(kubeClient, conf.KubeConfig, pod)
+			if err != nil {
+				logging.Errorf("SaveRemoteConfig: Error writing annotations - %v", err)
+				return pod, err
+			}
+		}
+	} else {
+		//
+		// Write configuration data into file
+		//
+
+		// Make sure directory exists
+		if _, err := os.Stat(sharedDir); err != nil {
+			if os.IsNotExist(err) {
+				if err := os.MkdirAll(sharedDir, 0700); err != nil {
+					return pod, err
+				}
+			} else {
+				return pod, err
+			}
+		}
+
+		fileName := fmt.Sprintf("configData-%s-%s.json", args.ContainerID[:12], args.IfName)
+		path := filepath.Join(sharedDir, fileName)
+
+		dataBytes, err := json.Marshal(configData)
+		if err == nil {
+			err = ioutil.WriteFile(path, dataBytes, 0644)
+		} else {
+			return pod, fmt.Errorf("ERROR: serializing REMOTE NetConf data: %v", err)
+		}		
 	}
 
 	return pod, err
@@ -222,7 +260,9 @@ func GetRemoteConfig() ([]*InterfaceData, string, error) {
 	for _, configData := range configDataList {
 		var ifaceData InterfaceData
 
-		ifaceData.NetConf = configData.NetConf
+		ifaceData.NetConf = usrsptypes.NetConf{}
+		ifaceData.NetConf.Name = configData.Name
+		ifaceData.NetConf.HostConf = configData.Config
 
 		ifaceData.Args = skel.CmdArgs{}
 		ifaceData.Args.ContainerID = configData.ContainerId

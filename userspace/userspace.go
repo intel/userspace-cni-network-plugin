@@ -20,6 +20,8 @@ import (
 	"runtime"
 	_ "flag"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/containernetworking/cni/pkg/invoke"
 	"github.com/containernetworking/cni/pkg/skel"
 	cnitypes "github.com/containernetworking/cni/pkg/types"
@@ -35,6 +37,7 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/annotations"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 
 	_ "github.com/vishvananda/netlink"
 )
@@ -100,8 +103,71 @@ func loadNetConf(bytes []byte) (*usrsptypes.NetConf, error) {
 	return netconf, nil
 }
 
+func getPodAndSharedDir(netConf *usrsptypes.NetConf,
+						args *skel.CmdArgs,
+						kubeClient k8sclient.KubeClient) (k8sclient.KubeClient, *v1.Pod, string, error) {
+
+	var found bool
+	var pod *v1.Pod
+	var sharedDir string
+	var err error
+
+	if netConf.KubeConfig != "" {
+		kubeClient, err = k8sclient.GetK8sClient(kubeClient, netConf.KubeConfig)
+		if err != nil {
+			logging.Debugf("getPodAndSharedDir: Failure to retrieve kubeClient - %v", err)
+		}
+		
+		if err == nil {
+			// Retrieve pod so any annotations from the podSpec can be inspected
+			pod, err = k8sclient.GetPod(args, kubeClient, netConf.KubeConfig)
+			if err != nil {
+				logging.Debugf("getPodAndSharedDir: Failure to retrieve pod - %v", err)
+			}
+		}
+
+		// Retrieve the sharedDir from the Volumes in podSpec. Directory Socket
+		// Files will be written to on host.
+		if err == nil {
+			sharedDir, err = annotations.GetPodVolumeMountHostSharedDir(pod)
+			if err != nil {
+				logging.Infof("getPodAndSharedDir: VolumeMount \"shared-dir\" not provided - %v", err)
+			} else {
+				found = true
+			}
+		}
+
+		err = nil
+	}
+
+	if found == false {
+		if netConf.SharedDir != "" {
+			if netConf.SharedDir[len(netConf.SharedDir)-1:] == "/" {
+				sharedDir = netConf.SharedDir
+			} else {
+				sharedDir = netConf.SharedDir + "/"
+			}
+		} else {
+			if netConf.HostConf.Engine == "vpp" {
+				sharedDir = fmt.Sprintf("%s/%s", usrspdb.DefaultVppCNIDir, args.ContainerID[:12])
+			} else if netConf.HostConf.Engine == "ovs-dpdk" {
+				sharedDir = fmt.Sprintf("%s/%s", usrspdb.DefaultOvsCNIDir, args.ContainerID[:12])
+			} else {
+				sharedDir = fmt.Sprintf("%s/%s", usrspdb.DefaultBaseCNIDir, args.ContainerID[:12])
+			}
+
+			if netConf.KubeConfig == "" {
+				logging.Warningf("getPodAndSharedDir: Neither \"KubeConfig\" nor \"SharedDir\" provided, defaulting to %s", sharedDir)
+			} else {
+				logging.Warningf("getPodAndSharedDir: \"KubeConfig\" invalid and \"SharedDir\" not provided, defaulting to %s", sharedDir)
+			}	
+		}
+	}
+
+	return kubeClient, pod, sharedDir, err
+}
+
 func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClient) error {
-	var result *current.Result
 	var netConf *usrsptypes.NetConf
 	var containerEngine string
 
@@ -120,20 +186,31 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 		return err
 	}
 
-	// Retrieve pod so any annotations from the podSpec can be inspected
-	pod, err := k8sclient.GetPod(args, kubeClient, netConf.KubeConfig)
+	// Initialize returned Result
+
+	// Multus will only copy Interface (i.e. ifName) into NetworkStatus
+	// on Pod with Sandbox configured. Get Netns and populate in results.
+	netns, err := ns.GetNS(args.Netns)
 	if err != nil {
-		logging.Errorf("cmdAdd: Failure to retrieve pod - %v", err)
+		return fmt.Errorf("failed to open netns %q: %v", netns, err)
+	}
+	defer netns.Close()
+
+	result := &current.Result{}
+	result.Interfaces = []*current.Interface{{
+		Name:    args.IfName,
+		Sandbox: netns.Path(),
+	}}
+
+
+	// Retrieve the "SharedDir", directory to create the socketfile in.
+	// Save off kubeClient and pod for later use if needed.
+	kubeClient, pod, sharedDir, err := getPodAndSharedDir(netConf, args, kubeClient)
+	if err != nil {
+		logging.Errorf("cmdAdd: Unable to determine \"SharedDir\" - %v", err)
 		return err
 	}
 
-	// Retrieve the sharedDir from the Volumes in podSpec. Directory Socket
-	// Files will be written to on host.
-	sharedDir, err := annotations.GetPodVolumeMountHostSharedDir(pod)
-	if err != nil {
-		logging.Errorf("cmdAdd: VolumeMount sharedDir not provided - %v", err)
-		return err
-	}
 
 	//
 	// HOST:
@@ -167,27 +244,29 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 		}
 
 		// Convert whatever the IPAM result was into the current Result type
-		result, err = current.NewResultFromResult(ipamResult)
+		newResult, err := current.NewResultFromResult(ipamResult)
 		if err != nil {
 			// TBD: CLEAN-UP
 			logging.Errorf("cmdAdd: IPAM Result ERROR - %v", err)
 			return err
 		}
 
-		if len(result.IPs) == 0 {
+		if len(newResult.IPs) == 0 {
 			// TBD: CLEAN-UP
 			err = fmt.Errorf("ERROR: Unable to get IP Address")
 			logging.Errorf("cmdAdd: IPAM ERROR - %v", err)
 			return err
 		}
 
+		newResult.Interfaces = result.Interfaces
+		//newResult.Interfaces[0].Mac = macAddr
+
 		// Clear out the Gateway if set by IPAM, not being used.
-		for _, ip := range result.IPs {
+		for _, ip := range newResult.IPs {
 			ip.Gateway = nil
 		}
 
-	} else {
-		result = &current.Result{}
+		result = newResult
 	}
 
 	// Determine the Engine that will process the request. Default to host
@@ -211,7 +290,7 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 		return err
 	}
 
-	return cnitypes.PrintResult(result, netConf.CNIVersion)
+	return cnitypes.PrintResult(result, current.ImplementedSpecVersion)
 }
 
 
@@ -254,16 +333,12 @@ func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 		return err
 	}
 
-	// Retrieve pod so any annotaions from the podSpec can be inspected
-	pod, err := k8sclient.GetPod(args, kubeClient, netConf.KubeConfig)
-	if err != nil {
-		logging.Errorf("cmdDel: Failure to retrieve pod - %v", err)
-		return err
-	}
 
-	sharedDir, err := annotations.GetPodVolumeMountHostSharedDir(pod)
+	// Retrieve the "SharedDir", directory to create the socketfile in.
+	// Save off kubeClient and pod for later use if needed.
+	kubeClient, pod, sharedDir, err := getPodAndSharedDir(netConf, args, kubeClient)
 	if err != nil {
-		logging.Errorf("cmdDel: VolumeMount sharedDir not provided - %v", err)
+		logging.Errorf("cmdAdd: Unable to determine \"SharedDir\" - %v", err)
 		return err
 	}
 

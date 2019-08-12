@@ -1,16 +1,5 @@
-// Copyright (c) 2018 Red Hat.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at:
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
+// Copyright(c) 2018 Red Hat, Inc.
 
 //
 // This module provides the library functions to implement the
@@ -34,8 +23,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/containernetworking/cni/pkg/types/current"
-
 	"github.com/go-logfmt/logfmt"
 
 	"github.com/intel/userspace-cni-network-plugin/logging"
@@ -51,35 +38,14 @@ import (
 
 // List of Annotations supported in the podSpec
 const (
-	networkAttachmentAnnot       = "k8s.v1.cni.cncf.io/networks"
-	networkAttachmentStatusAnnot = "k8s.v1.cni.cncf.io/networks-status"
-	configDataAnnot              = "userspace-cni/configuration-data"
-	mappedDirAnnot               = "userspace-cni/mappedDir"
-	sharedDirVolumeName          = "shared-dir"
+	annotKeyNetwork = "k8s.v1.cni.cncf.io/networks"
+	annotKeyNetworkStatus = "k8s.v1.cni.cncf.io/networks-status"
+	annotKeyUsrspConfigData = "userspace-cni/configuration-data"
+	annotKeyUsrspMappedDir = "userspace-cni/mapped-dir"
+	volMntKeySharedDir = "shared-dir"
 )
 
 
-// configDataAnnot
-// Used by CNI to pass configuration data to a container. 
-// Populated by CNI.
-// Example:
-//  configData: '{
-//        "container": {
-//                "engine": "vpp",
-//                "iftype": "memif",
-//                "netType": "interface",
-//                "memif": {
-//                        "role": "slave",
-//                        "mode": "ethernet"
-//                }
-//        }
-//    }'
-type ConfigData struct {
-	ContainerId   string                   `json:"containerId"` // From args.ContainerId, used locally. Used in several place, namely in the socket filenames.
-	IfName        string                   `json:"ifName"`      // From args.IfName, used locally. Used in several place, namely in the socket filenames.
-	NetConf       usrsptypes.NetConf       `json:"config"`
-	IPResult      current.Result           `json:"ipResult"`    // Network Status also has IP, but wrong format
-}
 
 // Errors returned from this module
 type NoSharedDirProvidedError struct {
@@ -98,7 +64,7 @@ func GetPodVolumeMountHostSharedDir(pod *v1.Pod) (string, error) {
 	}
 
 	for _, volumeMount := range pod.Spec.Volumes {
-		if volumeMount.Name == sharedDirVolumeName {
+		if volumeMount.Name == volMntKeySharedDir {
 			hostSharedDir = volumeMount.HostPath.Path
 			break
 		}
@@ -123,7 +89,7 @@ func GetPodVolumeMountHostMappedSharedDir(pod *v1.Pod) (string, error) {
 	for _, container := range pod.Spec.Containers {
 		if len(container.VolumeMounts) != 0 {
 			for _, volumeMount := range container.VolumeMounts {
-				if volumeMount.Name == sharedDirVolumeName {
+				if volumeMount.Name == volMntKeySharedDir {
 					mappedSharedDir = volumeMount.MountPath
 					break
 				}
@@ -141,8 +107,10 @@ func GetPodVolumeMountHostMappedSharedDir(pod *v1.Pod) (string, error) {
 func SetPodAnnotationMappedDir(kubeClient k8sclient.KubeClient,
 							   kubeConfig string,
 							   pod *v1.Pod,
-							   mappedDir string) (*v1.Pod, error) {
-	logging.Verbosef("SetPodAnnotationMappedDir: inputMappedDir=%s Annot - type=%T mappedDir=%v", mappedDir, pod.Annotations[mappedDirAnnot], pod.Annotations[mappedDirAnnot])
+							   mappedDir string) (bool, error) {
+	var modified bool
+
+	logging.Verbosef("SetPodAnnotationMappedDir: inputMappedDir=%s Annot - type=%T mappedDir=%v", mappedDir, pod.Annotations[annotKeyUsrspMappedDir], pod.Annotations[annotKeyUsrspMappedDir])
 
 	// If pod annotations is empty, make sure it allocatable
 	if len(pod.Annotations) == 0 {
@@ -152,31 +120,32 @@ func SetPodAnnotationMappedDir(kubeClient k8sclient.KubeClient,
 	// Get current data, if any. The current data is a string containing the
 	// directory in the container to find shared files. If the data already exists,
 	// it should be the same as the input data.
-	annotDataStr := pod.Annotations[mappedDirAnnot]
+	annotDataStr := pod.Annotations[annotKeyUsrspMappedDir]
 	if len(annotDataStr) != 0 {
 		if annotDataStr == mappedDir {
 			logging.Verbosef("SetPodAnnotationMappedDir: Existing matches input. Do nothing.")
-			return pod, nil
+			return modified, nil
 		} else {
-			return pod, logging.Errorf("SetPodAnnotationMappedDir: Input \"%s\" does not match existing \"%s\"", mappedDir, annotDataStr)
+			return modified, logging.Errorf("SetPodAnnotationMappedDir: Input \"%s\" does not match existing \"%s\"", mappedDir, annotDataStr)
 		}
 	}
 
 	// Append the just converted JSON string to any existing strings and
 	// store in the annotation in the pod.
-	pod.Annotations[mappedDirAnnot] = mappedDir
+	pod.Annotations[annotKeyUsrspMappedDir] = mappedDir
+	modified = true
 
-	// Write the annotation back to the pod.
-	return k8sclient.WritePodAnnotation(kubeClient, kubeConfig, pod)
+	return modified, nil
 }
 
 func SetPodAnnotationConfigData(kubeClient k8sclient.KubeClient,
 								kubeConfig string,
 								pod *v1.Pod,
-								configData *ConfigData) (*v1.Pod, error) {
+								configData *usrsptypes.ConfigurationData) (bool, error) {
 	var configDataStr []string
+	var modified bool
 
-	logging.Verbosef("SetPodAnnotationConfigData: type=%T configData=%v", pod.Annotations[configDataAnnot], pod.Annotations[configDataAnnot])
+	logging.Verbosef("SetPodAnnotationConfigData: type=%T configData=%v", pod.Annotations[annotKeyUsrspConfigData], pod.Annotations[annotKeyUsrspConfigData])
 
 	// If pod annotations is empty, make sure it allocatable
 	if len(pod.Annotations) == 0 {
@@ -187,7 +156,7 @@ func SetPodAnnotationConfigData(kubeClient k8sclient.KubeClient,
 	// data for multiple interfaces appended together. A given container can have
 	// multiple interfaces, added one at a time. So existing data may be empty if
 	// this is the first interface, or already contain data.
-	annotDataStr := pod.Annotations[configDataAnnot]
+	annotDataStr := pod.Annotations[annotKeyUsrspConfigData]
 	if len(annotDataStr) != 0 {
 		// Strip wrapping [], will be added back around entire field.
 		annotDataStr = strings.TrimLeft(annotDataStr, "[")
@@ -200,15 +169,22 @@ func SetPodAnnotationConfigData(kubeClient k8sclient.KubeClient,
 	// Marshal the input config data struct into a JSON string.
 	data, err := json.MarshalIndent(configData, "", "    ")
 	if err != nil {
-		return pod, logging.Errorf("SetPodAnnotationConfigData: error with Marshal Indent: %v", err)
+		return modified, logging.Errorf("SetPodAnnotationConfigData: error with Marshal Indent: %v", err)
 	}
 	configDataStr = append(configDataStr, string(data))
 
 	// Append the just converted JSON string to any existing strings and
 	// store in the annotation in the pod.
-	pod.Annotations[configDataAnnot] = fmt.Sprintf("[%s]", strings.Join(configDataStr, ","))
+	pod.Annotations[annotKeyUsrspConfigData] = fmt.Sprintf("[%s]", strings.Join(configDataStr, ","))
+	modified = true
 
-	// Write the annotation back to the pod.
+	return modified, err
+}
+
+func WritePodAnnotation(kubeClient k8sclient.KubeClient,
+						kubeConfig string,
+						pod *v1.Pod) (*v1.Pod, error) {
+	// Write the modified data back to the pod.
 	return k8sclient.WritePodAnnotation(kubeClient, kubeConfig, pod)
 }
 
@@ -246,7 +222,7 @@ func getFileAnnotation(annotIndex string) ([]byte, error) {
 }
 
 func GetFileAnnotationMappedDir() (string, error) {
-	rawData, err := getFileAnnotation(mappedDirAnnot)
+	rawData, err := getFileAnnotation(annotKeyUsrspMappedDir)
 	if err != nil {
 		return "", err
 	}
@@ -254,13 +230,13 @@ func GetFileAnnotationMappedDir() (string, error) {
 	return string(rawData), err	
 }
 
-func GetFileAnnotationConfigData() ([]*ConfigData, error) {
-	var configDataList []*ConfigData
+func GetFileAnnotationConfigData() ([]*usrsptypes.ConfigurationData, error) {
+	var configDataList []*usrsptypes.ConfigurationData
 
 	// Remove
 	logging.Debugf("GetFileAnnotationConfigData: ENTER")
 
-	rawData, err := getFileAnnotation(configDataAnnot)
+	rawData, err := getFileAnnotation(annotKeyUsrspConfigData)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +259,7 @@ func GetFileAnnotationConfigData() ([]*ConfigData, error) {
 //	// Remove
 //	logging.Debugf("GetFileAnnotationNetworksStatus: ENTER")
 //
-//	rawData, err := getFileAnnotation(networkAttachmentStatusAnnot)
+//	rawData, err := getFileAnnotation(annotKeyNetworkStatus)
 //	if err != nil {
 //		return nil, err
 //	}

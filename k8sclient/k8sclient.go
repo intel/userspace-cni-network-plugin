@@ -69,8 +69,8 @@ func getK8sArgs(args *skel.CmdArgs) (*usrsptypes.K8sArgs, error) {
 	return k8sArgs, nil
 }
 
-func getK8sClient(kubeClient KubeClient, kubeConfig string) (KubeClient, error) {
-	logging.Verbosef("getK8sClient: %s, %v", kubeClient, kubeConfig)
+func GetK8sClient(kubeClient KubeClient, kubeConfig string) (KubeClient, error) {
+	logging.Verbosef("GetK8sClient: %s, %v", kubeClient, kubeConfig)
 	// If we get a valid kubeClient (eg from testcases) just return that
 	// one.
 	if kubeClient != nil {
@@ -85,7 +85,7 @@ func getK8sClient(kubeClient KubeClient, kubeConfig string) (KubeClient, error) 
 		// uses the current context in kubeConfig
 		config, err = clientcmd.BuildConfigFromFlags("", kubeConfig)
 		if err != nil {
-			return nil, logging.Errorf("getK8sClient: failed to get context for the kubeConfig %v, refer Multus README.md for the usage guide: %v", kubeConfig, err)
+			return nil, logging.Errorf("GetK8sClient: failed to get context for the kubeConfig %v, refer Multus README.md for the usage guide: %v", kubeConfig, err)
 		}
 	} else if os.Getenv("KUBERNETES_SERVICE_HOST") != "" && os.Getenv("KUBERNETES_SERVICE_PORT") != "" {
 		// Try in-cluster config where multus might be running in a kubernetes pod
@@ -124,7 +124,7 @@ func GetPod(args *skel.CmdArgs, kubeClient KubeClient, kubeConfig string) (*v1.P
 	}
 
 	// Get kubeClient. If passed in, GetK8sClient() will just return it back.
-	kubeClient, err = getK8sClient(kubeClient, kubeConfig)
+	kubeClient, err = GetK8sClient(kubeClient, kubeConfig)
 	if err != nil {
 		logging.Errorf("GetPod: Err in getting kubeClient: %v", err)
 		return nil, err
@@ -150,8 +150,8 @@ func GetPod(args *skel.CmdArgs, kubeClient KubeClient, kubeConfig string) (*v1.P
 func WritePodAnnotation(kubeClient KubeClient, kubeConfig string, pod *v1.Pod) (*v1.Pod, error) {
 	var err error
 
-	// Get kubeClient. If passed in, getK8sClient() will just return it back.
-	kubeClient, err = getK8sClient(kubeClient, kubeConfig)
+	// Get kubeClient. If passed in, GetK8sClient() will just return it back.
+	kubeClient, err = GetK8sClient(kubeClient, kubeConfig)
 	if err != nil {
 		logging.Errorf("WritePodAnnotation: Err in getting kubeClient: %v", err)
 		return pod, err

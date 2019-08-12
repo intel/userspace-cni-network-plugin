@@ -31,7 +31,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -218,8 +217,9 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir
 	var err error
 	var vhostName string
 
-	s := []string{args.ContainerID[:12], args.IfName}
-	sockRef := strings.Join(s, "-")
+	if conf.HostConf.VhostConf.Socketfile == "" {
+		conf.HostConf.VhostConf.Socketfile = fmt.Sprintf("%s-%s", args.ContainerID[:12], args.IfName)
+	}
 
 	if _, err = os.Stat(sharedDir); err != nil {
 		if os.IsNotExist(err) {
@@ -238,7 +238,10 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir
 	}
 
 	// ovs-vsctl add-port
-	if vhostName, err = createVhostPort(sharedDir, sockRef, clientMode, conf.HostConf.BridgeConf.BridgeName); err == nil {
+	if vhostName, err = createVhostPort(sharedDir,
+							conf.HostConf.VhostConf.Socketfile,
+							clientMode,
+							conf.HostConf.BridgeConf.BridgeName); err == nil {
 		if vhostPortMac, err := getVhostPortMac(vhostName); err == nil {
 			data.VhostMac = vhostPortMac
 		}
@@ -266,14 +269,28 @@ func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir
 		}
 		numDeletedFiles := 0
 
-		// Remove files with matching container ID and IF name
+		// Remove files with matching container ID and IfName
 		for _, fileName := range filesForContainerID {
-			if match, _ := regexp.MatchString(fileBaseName+".*", fileName); match == true {
+			if match, _ := regexp.MatchString(fileBaseName+"*", fileName); match == true {
+				logging.Debugf("OVS DelFromContainer: %s matches file %s", fileBaseName, fileName)
 				file := filepath.Join(sharedDir, fileName)
 				if err = os.Remove(file); err != nil {
 					return err
 				}
 				numDeletedFiles++
+			} else {
+				logging.Debugf("OVS DelFromContainer: %s does NOT match file %s", fileBaseName, fileName)
+			}
+
+			// In case the Socketfile name was passed in:
+			if conf.HostConf.VhostConf.Socketfile != fileBaseName {
+				if match, _ := regexp.MatchString(conf.HostConf.VhostConf.Socketfile+"*", fileName); match == true {
+					file := filepath.Join(sharedDir, fileName)
+					if err = os.Remove(file); err != nil {
+						return err
+					}
+					numDeletedFiles++
+				}
 			}
 		}
 		// Remove folder for container ID if it's empty

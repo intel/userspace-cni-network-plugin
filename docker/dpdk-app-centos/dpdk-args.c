@@ -8,34 +8,75 @@
 #include <signal.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 #define DPDK_ARGS_MAX_ARGS (30)
 #define DPDK_ARGS_MAX_ARG_STRLEN (100)
 char myArgsArray[DPDK_ARGS_MAX_ARGS][DPDK_ARGS_MAX_ARG_STRLEN];
 char* myArgv[DPDK_ARGS_MAX_ARGS];
 
+#define DPDK_ARGS_MAX_NUM_DIR (30)
+static const char DEFAULT_DIR[] = "/var/lib/cni/";
+
 extern char** GetArgs(int *pArgc);
 
+
 static int getInterfaces(int argc) {
-    DIR *d;
-    struct dirent *dir;
-    int i = 0;
+	DIR *d;
+	struct dirent *dir;
+	int i = 0;
+	int currIndex = 0;
+	int freeIndex = 0;
+	char* dirList[DPDK_ARGS_MAX_NUM_DIR];
+	char* fileExt;
 
-    d = opendir("/var/lib/cni/usrspcni/");
-    if (d)
-    {
-        while ((dir = readdir(d)) != NULL)
-        {
-        	if ((dir->d_name) && (dir->d_name[0] != '.')) {
-	            snprintf(&myArgsArray[argc++][0], DPDK_ARGS_MAX_ARG_STRLEN-1,
-    	        	"--vdev=virtio_user%d,path=/var/lib/cni/usrspcni/%s", i, dir->d_name);
-	            i++;
-	        }
-        }
-        closedir(d);
-    }
+	memset(dirList, 0, sizeof(char*)*DPDK_ARGS_MAX_NUM_DIR);
 
-    return(argc);
+	dirList[freeIndex] = malloc(sizeof(char) * (strlen(DEFAULT_DIR)+1));
+	strcpy(dirList[freeIndex++], DEFAULT_DIR);
+
+	while (dirList[currIndex] != NULL) {
+		printf("  Directory:%s\n", dirList[currIndex]);
+		d = opendir(dirList[currIndex]);
+		if (d)
+		{
+			while ((dir = readdir(d)) != NULL)
+			{
+				if ((dir->d_name) &&
+					(strcmp(dir->d_name, ".") != 0) &&
+					(strcmp(dir->d_name, "..") != 0))
+				{
+					printf("  Name:%s %d\n", dir->d_name, dir->d_type);
+					if (dir->d_type == DT_DIR) {
+						printf("    Add to Dir List:%s\n", dir->d_name);
+						dirList[freeIndex] = malloc(sizeof(char) * (strlen(DEFAULT_DIR)+strlen(dir->d_name)+1));
+						sprintf(dirList[freeIndex++], "%s%s/", DEFAULT_DIR, dir->d_name);
+					}
+					else
+					{
+						if (strstr(dir->d_name, "net") != NULL)
+						{
+							fileExt = strrchr(dir->d_name, '.');
+							if ((fileExt == NULL) || (strcmp(fileExt, ".json") != 0)) {
+								printf("    Adding to vdev list:%s\n", dir->d_name);
+								snprintf(&myArgsArray[argc++][0], DPDK_ARGS_MAX_ARG_STRLEN-1,
+										 "--vdev=virtio_user%d,path=%s%s", i, dirList[currIndex], dir->d_name);
+								i++;
+							}
+							else {
+								printf("    Invalid FileExt\n");
+							}
+						}
+					}
+				}
+			}
+			closedir(d);
+		}
+		free(dirList[currIndex]);
+		currIndex++;
+	}
+
+	return(argc);
 }
 
 char** GetArgs(int *pArgc)

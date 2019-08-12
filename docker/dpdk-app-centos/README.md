@@ -40,14 +40,14 @@ then uncomment the following lines (those with **##**) in the Dockerfile:
 :
 ```
 
-**NOTE:** Need to verify this works as designed. System currenlty has older
+**NOTE:** Need to verify this works as designed. System currently has older
 version of Docker and haven't been able to verify. May need to add an
 additional package or two to the image after the import stage.
 
 
 # Docker Image Details
-This Docker Image is downloading DPDK. The (version is not important,
-using 19.02) and building it. Once built, changing into the DPDK `testpmd`
+This Docker Image is downloading DPDK (version 19.02, but the version is
+not important) and building it. Once built, changing into the DPDK `testpmd`
 directory (${DPDK_DIR}/app/test-pmd) and building it.
 
 `testpmd` is a sample DPDK application that comes with DPDK. Typically,
@@ -143,12 +143,12 @@ OvS have the label `vswitch=ovs` applied. For example, for the node
 The files in this subdirectory are used to create two networks:
 * userspace-ovs-net-1
   * Creates bridge `br-4` on the local OvS instance
-    * Adds vhost interface <ContainerId:12>-net<instance> (i.e. 8a0dd2a77c59-net1)
+    * Adds vhost interface [ContainerId:12]-net[instance] (i.e. 8a0dd2a77c59-net1)
     	to the bridge on the local OvS instance.
     * Adds IP in the 10.56.217.0/24 subnet to the vhost interface in the container.
 * userspace-ovs-net-2
   * Creates bridge `br-5` on the local OvS instance
-    * Adds vhost interface <ContainerId:12>-net<instance> (i.e. 8a0dd2a77c59-net2)
+    * Adds vhost interface [ContainerId:12]-net[instance] (i.e. 8a0dd2a77c59-net2)
     	to the bridge on the local OvS instance.
     * Adds IP in the 10.77.217.0/24 subnet to the vhost interface in container.
 
