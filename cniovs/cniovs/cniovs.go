@@ -115,6 +115,9 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf,
 		logging.Debugf("AddOnHost(ovs): %v", err)
 		return err
 	}
+	if err != nil {
+		return err
+	}
 
 	//
 	// Save Config - Save Create Data for Delete
@@ -244,10 +247,14 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir
 							conf.HostConf.BridgeConf.BridgeName); err == nil {
 		if vhostPortMac, err := getVhostPortMac(vhostName); err == nil {
 			data.VhostMac = vhostPortMac
+		} else {
+			return err
 		}
 
 		data.Vhostname = vhostName
 		data.IfMac = generateRandomMacAddress()
+	} else {
+		return err
 	}
 
 	return err
