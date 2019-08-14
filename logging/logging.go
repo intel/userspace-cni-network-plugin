@@ -26,10 +26,23 @@ import (
 // Level type
 type Level uint32
 
+// Common use of different level:
+// "panic": Code crash.
+// "error": Unusual event occurred (invalid input or system issue),
+//    so exiting code prematurely.
+// "warning":  Unusual event occurred (invalid input or system issue),
+//    but continuing.
+// "info": Basic information, indication of major code paths.
+// "debug": Additional information, indication of minor code branches.
+// "verbose": Output of larger variables in code and debug of low level
+//    functions.
 const (
 	PanicLevel Level = iota
 	ErrorLevel
+	WarningLevel
+	InfoLevel
 	DebugLevel
+	VerboseLevel
 	MaxLevel
 	UnknownLevel
 )
@@ -46,8 +59,14 @@ func (l Level) String() string {
 		return "panic"
 	case ErrorLevel:
 		return "error"
+	case WarningLevel:
+		return "warning"
+	case InfoLevel:
+		return "info"
 	case DebugLevel:
 		return "debug"
+	case VerboseLevel:
+		return "verbose"
 	}
 	return "unknown"
 }
@@ -72,8 +91,20 @@ func Printf(level Level, format string, a ...interface{}) {
 	}
 }
 
+func Verbosef(format string, a ...interface{}) {
+	Printf(VerboseLevel, format, a...)
+}
+
 func Debugf(format string, a ...interface{}) {
 	Printf(DebugLevel, format, a...)
+}
+
+func Infof(format string, a ...interface{}) {
+	Printf(InfoLevel, format, a...)
+}
+
+func Warningf(format string, a ...interface{}) {
+	Printf(WarningLevel, format, a...)
 }
 
 func Errorf(format string, a ...interface{}) error {
@@ -90,8 +121,14 @@ func Panicf(format string, a ...interface{}) {
 
 func GetLoggingLevel(levelStr string) Level {
 	switch strings.ToLower(levelStr) {
+	case "verbose":
+		return VerboseLevel
 	case "debug":
 		return DebugLevel
+	case "info":
+		return InfoLevel
+	case "warning":
+		return WarningLevel
 	case "error":
 		return ErrorLevel
 	case "panic":
@@ -128,5 +165,5 @@ func SetLogFile(filename string) {
 func init() {
 	loggingStderr = true
 	loggingFp = nil
-	loggingLevel = PanicLevel
+	loggingLevel = WarningLevel
 }

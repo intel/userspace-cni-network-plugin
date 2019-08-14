@@ -22,22 +22,19 @@ package ovsdb
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/containernetworking/cni/pkg/skel"
-	"github.com/containernetworking/cni/pkg/types/current"
 
+	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 )
 
 //
 // Constants
 //
-const defaultBaseCNIDir = "/var/run/ovs/cni"
-const defaultLocalCNIDir = "/var/run/ovs/cni/data"
 
 //
 // Types
@@ -49,12 +46,6 @@ type OvsSavedData struct {
 	Vhostname string `json:"vhostname"` // Vhost Port name
 	VhostMac  string `json:"vhostmac"`  // Vhost port MAC address
 	IfMac     string `json:"ifmac"`     // Interface Mac address
-}
-
-// This structure is used to pass additional data outside of the usrsptypes date into the container.
-type additionalData struct {
-	ContainerId string         `json:"containerId"` // ContainerId used locally. Used in several place, namely in the socket filenames.
-	IPResult    current.Result `json:"ipResult"`    // Data structure returned from IPAM plugin.
 }
 
 //
@@ -70,12 +61,11 @@ func SaveConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData
 
 	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
 	if dataBytes, err := json.Marshal(data); err == nil {
-		sockDir := defaultLocalCNIDir
-		// OLD: sockDir := filepath.Join(defaultCNIDir, args.ContainerID)
+		localDir := usrspdb.DefaultLocalCNIDir
 
-		if _, err := os.Stat(sockDir); err != nil {
+		if _, err := os.Stat(localDir); err != nil {
 			if os.IsNotExist(err) {
-				if err := os.MkdirAll(sockDir, 0700); err != nil {
+				if err := os.MkdirAll(localDir, 0700); err != nil {
 					return err
 				}
 			} else {
@@ -83,7 +73,7 @@ func SaveConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData
 			}
 		}
 
-		path := filepath.Join(sockDir, fileName)
+		path := filepath.Join(localDir, fileName)
 
 		return ioutil.WriteFile(path, dataBytes, 0644)
 	} else {
@@ -94,8 +84,8 @@ func SaveConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData
 func LoadConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
 
 	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
-	sockDir := defaultLocalCNIDir
-	path := filepath.Join(sockDir, fileName)
+	localDir := usrspdb.DefaultLocalCNIDir
+	path := filepath.Join(localDir, fileName)
 
 	if _, err := os.Stat(path); err == nil {
 		if dataBytes, err := ioutil.ReadFile(path); err == nil {
@@ -111,38 +101,7 @@ func LoadConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData
 	}
 
 	// Delete file (and directory if empty)
-	fileCleanup(sockDir, path)
+	usrspdb.FileCleanup(localDir, path)
 
 	return nil
-}
-
-// This function deletes the input file (if provided) and the associated
-// directory (if provided) if the directory is empty.
-//  directory string - Directory file is located in, Use "" if directory
-//    should remain unchanged.
-//  filepath string - File (including directory) to be deleted. Use "" if
-//    only the directory should be deleted.
-func fileCleanup(directory string, filepath string) (err error) {
-
-	// If File is provided, delete it.
-	if filepath != "" {
-		err = os.Remove(filepath)
-		if err != nil {
-			return fmt.Errorf("ERROR: Failed to delete file: %v", err)
-		}
-	}
-
-	// If Directory is provided and it is empty, delete it.
-	if directory != "" {
-		f, dirErr := os.Open(directory)
-		if dirErr == nil {
-			_, dirErr = f.Readdir(1)
-			if dirErr == io.EOF {
-				err = os.Remove(directory)
-			}
-		}
-		f.Close()
-	}
-
-	return
 }

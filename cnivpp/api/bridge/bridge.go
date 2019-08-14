@@ -118,7 +118,7 @@ func AddBridgeInterface(ch api.Channel, bridgeDomain uint32, swIfId uint32) erro
 		BdID:        bridgeDomain,
 		RxSwIfIndex: swIfId,
 		Shg:         0,
-		Bvi:         0,
+		PortType:    l2.L2_API_PORT_TYPE_NORMAL,
 		Enable:      1,
 	}
 
@@ -144,7 +144,7 @@ func RemoveBridgeInterface(ch api.Channel, bridgeDomain uint32, swIfId uint32) e
 		BdID:        bridgeDomain,
 		RxSwIfIndex: swIfId,
 		Shg:         0,
-		Bvi:         0,
+		PortType:    l2.L2_API_PORT_TYPE_NORMAL,
 		Enable:      0,
 	}
 

@@ -6,22 +6,41 @@ ignore:
   - git.fd.io/govpp.git/core/bin_api/vhost_user
 import:
 - package: github.com/containernetworking/cni
-  version: v0.6.0
+  version: v0.7.0
   subpackages:
   - pkg/skel
   - pkg/types
+  - pkg/version
 - package: github.com/containernetworking/plugins
-  version: v0.6.0
+  version: v0.8.0
   subpackages:
   - pkg/ip
   - pkg/ipam
   - pkg/ns
 - package: github.com/vishvananda/netlink
   version: 6e453822d85ef5721799774b654d4d02fed62afb
+- package: k8s.io/apimachinery
+  version: kubernetes-1.11.1
+- package: k8s.io/api
+  version: kubernetes-1.11.1
+  subpackages:
+  - core/v1
+- package: k8s.io/client-go
+  version: kubernetes-1.11.1
+  subpackages:
+  - kubernetes
+  - tools/clientcmd
+  - util/retry
+- package: k8s.io/kubernetes
+  version: v1.13.0
+  subpackages:
+  - pkg/kubelet/apis/podresources
+  - pkg/kubelet/apis/podresources/v1alpha1
+  - pkg/kubelet/util
 - package: github.com/coreos/go-iptables
   version: v0.3.0
 - package: golang.org/x/sys
-  version: 076b546753157f758b316e59bcb51e6807c04057
+  version: 3b5209105503
 - package: github.com/sirupsen/logrus
   version: v1.0.0
 - package: github.com/bennyscetbun/jsongo
@@ -33,7 +52,7 @@ import:
 - package: github.com/google/gopacket
   version: 8e484f31b1237166f00e4896d27ddde259540632
 - package: git.fd.io/govpp.git
-  version: 6b350c65fe0ec845cecf58bfb41ffc63dc9c04f7
+  version: 682250e328472e855a4c59e9e5f004473b6af0d3
   subpackages:
   - adapter
   - adapter/vppapiclient

@@ -12,9 +12,18 @@ endif
 #
 # VPP Variables
 #
+VPPGPG=ge4a0f9f~b72
+VPPMAJOR=19
+VPPMINOR=04
+VPPDOTRL=1
 
-VPPVERSION=1807
-VPPDOTVERSION=18.07
+VPPVERSION=$(VPPMAJOR)$(VPPMINOR)
+VPPDOTVERSION=$(VPPMAJOR).$(VPPMINOR).$(VPPDOTRL)
+ifeq ($(VPPDOTRL),0)
+	VPPDOTVERSION=$(VPPMAJOR).$(VPPMINOR)
+else
+	VVPPDOTVERSION=$(VPPMAJOR).$(VPPMINOR).$(VPPDOTRL)
+endif
 
 ifeq ($(PKG),rpm)
 	VPPLIBDIR=/usr/lib64
@@ -50,9 +59,9 @@ help:
 	@echo " make                - Build UserSpace CNI."
 	@echo " make clean          - Cleanup all build artifacts. Will remove VPP files installed from *make install*."
 	@echo " make install        - If VPP is not installed, install the minimum set of files to build."
-	@echo "                       CNI-VPP will fail because VPP is still not installed. Also install OvS Python Script."
+	@echo "                       CNI-VPP will fail because VPP is still not installed."
 	@echo " make install-dep    - Install software dependencies, currently only needed for *make install*."
-	@echo " make extras         - Build *vpp-app*, small binary to run in Docker container for testing."
+	@echo " make extras         - Build *usrsp-app*, small binary to run in Docker container for testing."
 	@echo " make test           - Build test code."
 	@echo ""
 	@echo "Other:"
@@ -94,13 +103,16 @@ ifeq ($(VPPINSTALLED),0)
 	@echo VPP not installed, installing required files. Run *sudo make clean* to remove installed files.
 	@mkdir -p tmpvpp/
 ifeq ($(PKG),rpm)
-	@cd tmpvpp && wget http://cbs.centos.org/kojifiles/packages/vpp/$(VPPDOTVERSION)/1/x86_64/vpp-lib-$(VPPDOTVERSION)-1.x86_64.rpm
-	@cd tmpvpp && wget http://cbs.centos.org/kojifiles/packages/vpp/$(VPPDOTVERSION)/1/x86_64/vpp-devel-$(VPPDOTVERSION)-1.x86_64.rpm
-	@cd tmpvpp && rpm2cpio ./vpp-devel-$(VPPDOTVERSION)-1.x86_64.rpm | cpio -ivd \
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/$(VPPVERSION)/packages/el/7/vpp-lib-$(VPPDOTVERSION)-1~$(VPPGPG).x86_64.rpm/download.rpm
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/$(VPPVERSION)/packages/el/7/vpp-devel-$(VPPDOTVERSION)-1~$(VPPGPG).x86_64.rpm/download.rpm
+	@cd tmpvpp && rpm2cpio ./vpp-devel-$(VPPDOTVERSION)-1~$(VPPGPG).x86_64.rpm | cpio -ivd \
 		./usr/include/vpp-api/client/vppapiclient.h
-	@cd tmpvpp && rpm2cpio ./vpp-lib-$(VPPDOTVERSION)-1.x86_64.rpm | cpio -ivd \
-		./usr/lib64/libvppapiclient.so.0.0.0
-	@cd tmpvpp && rpm2cpio ./vpp-lib-$(VPPDOTVERSION)-1.x86_64.rpm | cpio -ivd \
+	@cd tmpvpp && rpm2cpio ./vpp-lib-$(VPPDOTVERSION)-1~$(VPPGPG).x86_64.rpm | cpio -ivd \
+		./usr/lib64/libsvm.so.$(VPPDOTVERSION) \
+		./usr/lib64/libvlibmemoryclient.so.$(VPPDOTVERSION) \
+		./usr/lib64/libvppapiclient.so.$(VPPDOTVERSION) \
+		./usr/lib64/libvppinfra.so.$(VPPDOTVERSION)
+	@cd tmpvpp && rpm2cpio ./vpp-lib-$(VPPDOTVERSION)-1~$(VPPGPG).x86_64.rpm | cpio -ivd \
 		./usr/share/vpp/api/interface.api.json \
 		./usr/share/vpp/api/l2.api.json \
 		./usr/share/vpp/api/memif.api.json \
@@ -127,11 +139,29 @@ endif
 	@$(SUDO) -E cp tmpvpp/usr/include/vpp-api/client/vppapiclient.h /usr/include/vpp-api/client/.
 	@$(SUDO) -E chown -R bin:bin /usr/include/vpp-api/
 	@echo   Installed /usr/include/vpp-api/client/vppapiclient.h
-	@$(SUDO) -E cp tmpvpp$(VPPLIBDIR)/libvppapiclient.so.0.0.0 $(VPPLIBDIR)/.
-	@$(SUDO) -E ln -s $(VPPLIBDIR)/libvppapiclient.so.0.0.0 $(VPPLIBDIR)/libvppapiclient.so
-	@$(SUDO) -E ln -s $(VPPLIBDIR)/libvppapiclient.so.0.0.0 $(VPPLIBDIR)/libvppapiclient.so.0
+	@$(SUDO) -E cp tmpvpp$(VPPLIBDIR)/libsvm.so.$(VPPDOTVERSION) $(VPPLIBDIR)/.
+	@$(SUDO) -E cp tmpvpp$(VPPLIBDIR)/libvlibmemoryclient.so.$(VPPDOTVERSION) $(VPPLIBDIR)/.
+	@$(SUDO) -E cp tmpvpp$(VPPLIBDIR)/libvppapiclient.so.$(VPPDOTVERSION) $(VPPLIBDIR)/.
+	@$(SUDO) -E cp tmpvpp$(VPPLIBDIR)/libvppinfra.so.$(VPPDOTVERSION) $(VPPLIBDIR)/.
+ifneq ($(VPPDOTRL),0)
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libsvm.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libsvm.so.$(VPPMAJOR).$(VPPMINOR)
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libvlibmemoryclient.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libvlibmemoryclient.so.$(VPPMAJOR).$(VPPMINOR)
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libvppapiclient.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libvppapiclient.so.$(VPPMAJOR).$(VPPMINOR)
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libvppinfra.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libvppinfra.so.$(VPPMAJOR).$(VPPMINOR)
+endif
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libsvm.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libsvm.so.$(VPPMAJOR)
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libvlibmemoryclient.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libvlibmemoryclient.so.$(VPPMAJOR)
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libvppapiclient.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libvppapiclient.so.$(VPPMAJOR)
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libvppinfra.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libvppinfra.so.$(VPPMAJOR)
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libsvm.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libsvm.so
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libvlibmemoryclient.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libvlibmemoryclient.so
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libvppapiclient.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libvppapiclient.so
+	@$(SUDO) -E ln -s $(VPPLIBDIR)/libvppinfra.so.$(VPPDOTVERSION) $(VPPLIBDIR)/libvppinfra.so
+	@$(SUDO) -E chown -R bin:bin $(VPPLIBDIR)/libsvm.so*
+	@$(SUDO) -E chown -R bin:bin $(VPPLIBDIR)/libvlibmemoryclient.so*
 	@$(SUDO) -E chown -R bin:bin $(VPPLIBDIR)/libvppapiclient.so*
-	@echo   Installed $(VPPLIBDIR)/libvppapiclient.so
+	@$(SUDO) -E chown -R bin:bin $(VPPLIBDIR)/libvppinfra.so*
+	@echo   Installed  $(VPPLIBDIR)/libsvm.so $(VPPLIBDIR)/libvlibmemoryclient.so $(VPPLIBDIR)/libvppapiclient.so $(VPPLIBDIR)/libvppinfra.so
 	@$(SUDO) -E mkdir -p /usr/share/vpp/api/
 	@$(SUDO) -E cp tmpvpp/usr/share/vpp/api/*.json /usr/share/vpp/api/.
 	@$(SUDO) -E chown -R bin:bin /usr/share/vpp/
@@ -145,10 +175,10 @@ extras:
 	@./vendor/git.fd.io/govpp.git/cmd/binapi-generator/binapi-generator \
 		--input-dir=/usr/share/vpp/api/ \
 		--output-dir=vendor/git.fd.io/govpp.git/core/bin_api/
-	@cd cnivpp/vpp-app && go build -v
+	@cd docker/usrsp-app && go build -v
 
 clean:
-	@rm -f cnivpp/vpp-app/vpp-app
+	@rm -f docker/usrsp-app/usrsp-app
 	@rm -f cnivpp/test/memifAddDel/memifAddDel
 	@rm -f cnivpp/test/vhostUserAddDel/vhostUserAddDel
 	@rm -f cnivpp/test/ipAddDel/ipAddDel
@@ -157,8 +187,12 @@ clean:
 ifeq ($(VPPLCLINSTALLED),1)
 	@echo VPP was installed by *make install*, so cleaning up files.
 	@$(SUDO) -E rm -rf /usr/include/vpp-api/
+	@$(SUDO) -E rm $(VPPLIBDIR)/libsvm.so*
+	@$(SUDO) -E rm $(VPPLIBDIR)/libvlibmemoryclient.so*
 	@$(SUDO) -E rm $(VPPLIBDIR)/libvppapiclient.so*
+	@$(SUDO) -E rm $(VPPLIBDIR)/libvppinfra.so*
 	@$(SUDO) -E rm -rf /usr/share/vpp/
+
 endif
 
 generate:

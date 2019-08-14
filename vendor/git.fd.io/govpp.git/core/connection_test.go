@@ -21,8 +21,7 @@ import (
 	"git.fd.io/govpp.git/api"
 	"git.fd.io/govpp.git/codec"
 	"git.fd.io/govpp.git/core"
-	"git.fd.io/govpp.git/examples/bin_api/interfaces"
-	"git.fd.io/govpp.git/examples/binapi/stats"
+	"git.fd.io/govpp.git/examples/binapi/interfaces"
 	"git.fd.io/govpp.git/examples/binapi/vpe"
 	. "github.com/onsi/gomega"
 )
@@ -74,22 +73,12 @@ func TestNilConnection(t *testing.T) {
 	Expect(err.Error()).To(ContainSubstring("nil"))
 }
 
-func TestDoubleConnection(t *testing.T) {
-	ctx := setupTest(t, false)
-	defer ctx.teardownTest()
-
-	conn, err := core.Connect(ctx.mockVpp)
-	Expect(err).Should(HaveOccurred())
-	Expect(err.Error()).To(ContainSubstring("only one connection per process"))
-	Expect(conn).Should(BeNil())
-}
-
 func TestAsyncConnection(t *testing.T) {
 	ctx := setupTest(t, false)
 	defer ctx.teardownTest()
 
 	ctx.conn.Disconnect()
-	conn, statusChan, err := core.AsyncConnect(ctx.mockVpp)
+	conn, statusChan, err := core.AsyncConnect(ctx.mockVpp, core.DefaultMaxReconnectAttempts, core.DefaultReconnectInterval)
 	ctx.conn = conn
 
 	Expect(err).ShouldNot(HaveOccurred())
@@ -123,16 +112,6 @@ func TestCodec(t *testing.T) {
 	err = msgCodec.DecodeMsg(data, msg2)
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(msg2.Retval).To(BeEquivalentTo(55))
-
-	// other
-	data, err = msgCodec.EncodeMsg(&stats.VnetIP4FibCounters{VrfID: 77}, 33)
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(data).ShouldNot(BeEmpty())
-
-	msg3 := &stats.VnetIP4FibCounters{}
-	err = msgCodec.DecodeMsg(data, msg3)
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(msg3.VrfID).To(BeEquivalentTo(77))
 }
 
 func TestCodecNegative(t *testing.T) {

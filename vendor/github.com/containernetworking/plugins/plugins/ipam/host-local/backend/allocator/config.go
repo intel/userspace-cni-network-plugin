@@ -20,15 +20,19 @@ import (
 	"net"
 
 	"github.com/containernetworking/cni/pkg/types"
-	types020 "github.com/containernetworking/cni/pkg/types/020"
+	"github.com/containernetworking/cni/pkg/types/020"
 )
 
-// The top-level network config, just so we can get the IPAM block
+// The top-level network config - IPAM plugins are passed the full configuration
+// of the calling plugin, not just the IPAM section.
 type Net struct {
-	Name       string      `json:"name"`
-	CNIVersion string      `json:"cniVersion"`
-	IPAM       *IPAMConfig `json:"ipam"`
-	Args       *struct {
+	Name          string      `json:"name"`
+	CNIVersion    string      `json:"cniVersion"`
+	IPAM          *IPAMConfig `json:"ipam"`
+	RuntimeConfig struct {    // The capability arg
+		IPRanges []RangeSet `json:"ipRanges,omitempty"`
+	} `json:"runtimeConfig,omitempty"`
+	Args *struct {
 		A *IPAMArgs `json:"cni"`
 	} `json:"args"`
 }
@@ -93,7 +97,7 @@ func LoadIPAMConfig(bytes []byte, envArgs string) (*IPAMConfig, string, error) {
 		n.IPAM.IPArgs = append(n.IPAM.IPArgs, n.Args.A.IPs...)
 	}
 
-	for idx, _ := range n.IPAM.IPArgs {
+	for idx := range n.IPAM.IPArgs {
 		if err := canonicalizeIP(&n.IPAM.IPArgs[idx]); err != nil {
 			return nil, "", fmt.Errorf("cannot understand ip: %v", err)
 		}
@@ -106,6 +110,11 @@ func LoadIPAMConfig(bytes []byte, envArgs string) (*IPAMConfig, string, error) {
 	}
 	n.IPAM.Range = nil
 
+	// If a range is supplied as a runtime config, prepend it to the Ranges
+	if len(n.RuntimeConfig.IPRanges) > 0 {
+		n.IPAM.Ranges = append(n.RuntimeConfig.IPRanges, n.IPAM.Ranges...)
+	}
+
 	if len(n.IPAM.Ranges) == 0 {
 		return nil, "", fmt.Errorf("no IP ranges specified")
 	}
@@ -113,7 +122,7 @@ func LoadIPAMConfig(bytes []byte, envArgs string) (*IPAMConfig, string, error) {
 	// Validate all ranges
 	numV4 := 0
 	numV6 := 0
-	for i, _ := range n.IPAM.Ranges {
+	for i := range n.IPAM.Ranges {
 		if err := n.IPAM.Ranges[i].Canonicalize(); err != nil {
 			return nil, "", fmt.Errorf("invalid range set %d: %s", i, err)
 		}

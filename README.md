@@ -1,45 +1,83 @@
 
-   * [Userspace CNI plugin](#userspace-cni-plugin)
-      * [Build & Clean](#build--clean)
-         * [Update dependencies in vendor/](#update-dependencies-in-vendor)
-      * [Network Configuration Reference](#network-configuration-reference)
-         * [Work Standalone](#work-standalone)
-         * [Integrated with Multus Plugin](#integrated-with-multus-plugin)
-            * [Multus Configuration Details](#multus-configuration-details)
-         * [Logging Options](#logging-options)
-            * [Writing to a Log File](#writing-to-a-log-file)
-            * [Logging Level](#logging-level)
-      * [OVS CNI Library Intro](#ovs-cni-library-intro)
-         * [Installing OVS](#installing-ovs)
-         * [Running OVS CNI Library with OVS](#running-ovs-cni-library-with-ovs)
-         * [Configuring the System](#configuring-the-system)
-      * [VPP CNI Library Intro](#vpp-cni-library-intro)
-         * [Building VPP CNI Library with OVS](#building-vpp-cni-library-with-ovs)
-         * [Installing VPP](#installing-vpp)
-            * [Prerequisites](#prerequisites)
-            * [Install on CentOS](#install-on-centos)
-            * [Install on Ubuntu](#install-on-ubuntu)
-            * [Install on Other Distros](#install-on-other-distros)
-      * [Testing](#testing)
-         * [Testing with VPP Docker Image and CNI](#testing-with-vpp-docker-image-and-cni)
-            * [Verify Host](#verify-host)
-            * [Verify Container](#verify-container)
-            * [Ping](#ping)
-            * [Debug](#debug)
-         * [Testing with DPDK Testpmd Application](#testing-with-dpdk-testpmd-application)
-            * [1. Build the image to be used](#1-build-the-image-to-be-used)
-            * [2. Create pod with multiple vhostuser interfaces](#2-create-pod-with-multiple-vhostuser-interfaces)
-            * [3. Open terminal to pod and start testpmd](#3-open-terminal-to-pod-and-start-testpmd)
+   * [Summary](#summary)
+      * [Links](#links)
+      * [Weekly Meeting](#weekly-meeting)
       * [Contacts](#contacts)
+   * [Userspace CNI plugin](#userspace-cni-plugin)
+   * [Build & Clean](#build--clean)
+      * [Update dependencies in vendor/](#update-dependencies-in-vendor)
+   * [Network Configuration Reference](#network-configuration-reference)
+      * [Work Standalone](#work-standalone)
+      * [Integrated with Multus Plugin](#integrated-with-multus-plugin)
+         * [Multus Configuration Details](#multus-configuration-details)
+      * [Logging Options](#logging-options)
+         * [Writing to a Log File](#writing-to-a-log-file)
+         * [Logging Level](#logging-level)
+   * [OVS CNI Library Intro](#ovs-cni-library-intro)
+      * [Installing OVS](#installing-ovs)
+      * [Running OVS CNI Library with OVS](#running-ovs-cni-library-with-ovs)
+      * [Configuring the System](#configuring-the-system)
+   * [VPP CNI Library Intro](#vpp-cni-library-intro)
+      * [Building VPP CNI Library with OVS](#building-vpp-cni-library-with-ovs)
+      * [Installing VPP](#installing-vpp)
+         * [Prerequisites](#prerequisites)
+         * [Install on CentOS](#install-on-centos)
+         * [Install on Ubuntu](#install-on-ubuntu)
+         * [Install on Other Distros](#install-on-other-distros)
+   * [Testing](#testing)
+      * [Testing with VPP Docker Image and CNI](#testing-with-vpp-docker-image-and-cni)
+         * [Verify Host](#verify-host)
+         * [Verify Container](#verify-container)
+         * [Ping](#ping)
+         * [Debug](#debug)
+      * [Testing with DPDK Testpmd Application](#testing-with-dpdk-testpmd-application)
+         * [1. Build the image to be used](#1-build-the-image-to-be-used)
+         * [2. Create pod with multiple vhostuser interfaces](#2-create-pod-with-multiple-vhostuser-interfaces)
+         * [3. Open terminal to pod and start testpmd](#3-open-terminal-to-pod-and-start-testpmd)
 
+# Summary
+The Userspace CNI is a Container Network Interface (CNI) plugin
+designed to implement userspace networking (as opposed to kernel
+space networking). An example is any DPDK based applications. It
+is designed to run with either OVS-DPDK or VPP along with the Multus
+CNI plugin in Kubernetes deployments. It enhances high performance
+container Networking solution and Data Plane Acceleration for containers.
+
+## Links
+Useful Links:
+* Source Code: https://github.com/intel/userspace-cni-network-plugin
+* Design Document: [Userspace Design Document](https://docs.google.com/document/d/1jAFDNWhf6flTlPHmbWavlyLrkFJtAdQlcOnG3qhRYtU/edit?usp=sharing) 
+
+## Weekly Meeting
+Weekly Meeting Details:
+* Meeting Time: 12:00 PM UTC every other Wednesday
+  * 8:00 AM EST / 1:00 PM GMT
+* Meeting Dates:
+  * 07/03/2019     07/17/2019     07/31/2019
+  * 08/14/2019     08/28/2019
+  * 09/11/2019     09/25/2019
+  * 10/09/2019     10/23/2019
+* Meeting Bridge: https://zoom.us/j/2392609689
+* Meeting Minute Document: [Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
+
+Since it currently a small group, we are some what flexible and move the meeting
+time around from time to time. Any meeting time/date changes will be broadcast
+on the Intel slack channel and updated meeting times will be posted in the
+[Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
+document as soon as possible.  
+
+## Contacts
+For any questions about Userspace CNI, please reach out.
+* Report issue via Github: [userspace-cni-network-plugin/issues](https://github.com/intel/userspace-cni-network-plugin/issues)
+* Contact via slack: [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
+  * Feel free to contact the developer @garyloug or @bmcfall in slack
+* Contact via Google Group: https://groups.google.com/forum/#!forum/userspace-cni
 
 # Userspace CNI Plugin
 The Userspace CNI is a Container Network Interface (CNI) plugin designed to
 implement userspace networking (as opposed to kernel space networking), like
 DPDK based applications. It is designed to run with either OVS-DPDK or VPP along
-with the [Multus CNI plugin](https://github.com/intel/multus-cni) in Kubernetes
-for Bare metal container deployment model. It enhances high performance
-container Networking solution and Dataplane Acceleration for NFV Environment.
+with the [Multus CNI plugin](https://github.com/intel/multus-cni).
 
 Userspace networking requires additional considerations. For one, the interface
 needs to be created/configured on a local vswitch (running on the host). There
@@ -55,10 +93,9 @@ data into the container so the interface can be consumed.
 data is pushed into the container and consumed by the container. Current code,
 which is not the final solution, writes the data to a file, and the directory
 the file is in is mounted in the countainer. Code in the container must know
-where and how to parse this data. For VPP, the code in the container to handle
-this is currently implemented in the vpp-app piece of code
-(*./cnivpp/vpp-app/*). Because this solution is temporary, the OVS CNI Library
-has not been modified to handle pushing data into the container.  
+where and how to parse this data. Sample code to run in the container to handle
+this is currently implemented in the usrsp-app piece of code
+(*./docker/usrsp-app/*).
 
 The Userspace CNI, based on the input config data, adds interfaces (memif and/or
 vhost-user interfaces) to a local OVS-DPDK or VPP instance running on the host.
@@ -76,7 +113,7 @@ for more information.
 # Build & Clean
 
 This plugin is recommended to be built with Go 1.9.4 and either OVS-DPDK 2.9.0-3
-or VPP 18.07. Other versions of Go, OVS-DPDK and VPP are theoretically
+or VPP 19.04.1. Other versions of Go, OVS-DPDK and VPP are theoretically
 supported, but MIGHT cause unknown issue.
 
 There are a few environmental variables used in building and teating this plugin.
@@ -109,8 +146,8 @@ Once the binary is built, it needs to be copied to the CNI directory:
    cp userspace/userspace $CNI_PATH/.
 ```
 
-To remove the binary and temporary files generated whild building the source
-codes, perform a make clean:
+To remove the binary and temporary files generated while building the source
+code, perform a make clean:
 ```
    make clean
 ```
@@ -157,7 +194,7 @@ sudo cat > /etc/cni/net.d/90-userspace.conf <<EOF
                         "mode": "ethernet"
                 },
                 "bridge": {
-                        "bridgeId": 4
+                        "bridgeName": "4"
                 }
         },
         "container": {
@@ -233,7 +270,7 @@ details refer the link:
 				"mode": "ethernet"
 			},
 			"bridge": {
-				"bridgeId": 4
+				"bridgeName": "4"
 			}
 		},
 		"container": {
@@ -294,14 +331,23 @@ For example in your CNI configuration, you may set:
 
 ### Logging Level
 
-The default logging level is set as `panic` -- this will log only the most
-critical errors, and is the least verbose logging level.
+The default logging level is set as `warning` -- this will log critical errors
+and issues detect.
 
-The available logging level values, in descreasing order of verbosity are:
+The available logging level values, in increasing order of verbosity are:
 
-* `debug`
-* `error`
 * `panic`
+  * Code exiting immediately.
+* `error`
+  * Unusual event occurred (invalid input or system issue), so exiting code prematurely.
+* `warning`
+  * Unusual event occurred (invalid input or system issue), but continuing with default value.
+* `info`
+  * Basic information, indication of major code paths.
+* `debug`
+  * Additional information, indication of minor code branches.
+* `verbose`
+  * Output of larger variables in code and debug of low level functions.
 
 You may configure the logging level by using the `LogLevel` option in your
 CNI configuration. For example:
@@ -314,9 +360,8 @@ CNI configuration. For example:
 # OVS CNI Library Intro
 OVS CNI Library is written in GO and used by UserSpace CNI to interface with the
 OVS. OVS currently does not have a GO-API, though there are some external
-packages that are being explored. When the CNI is invoked, OVS CNI library calls
-into a python script which builds up an OVS CLI command (ovs-vsctl) and executes
-the request.
+packages that are being explored. When the CNI is invoked, OVS CNI library
+builds up an OVS CLI command (ovs-vsctl) and executes the request.
 
 ## Installing OVS
 To install the DPDK-OVS, the source codes contains a
@@ -373,8 +418,6 @@ the system to build. To install just these files and NOT VPP, run:
    make install
 ```
 This will install only the 5 or 6 files needed to build the VPP CNI Library.
-This command also installs the OVS python script (see
-[Running OVS CNI Library with OVS](#running-ovs-cni-library-with-ovs) for more details).
 To remove these files, run:
 ```
    make clean
@@ -392,10 +435,9 @@ immediate need for other platforms, please open an issue to expedite the
 feature (https://github.com/intel/userspace-cni-network-plugin/issues).
 
 
-
 ## Installing VPP
 There are several ways to install VPP. This code is based on a fixed release
-VPP (VPP 18.07 initially), so it is best to install a released version (even
+VPP (VPP 19.04.1 initially), so it is best to install a released version (even
 though it is possible to build your own).
 
 
@@ -419,22 +461,10 @@ containers, work still needs to be done. Set SELinux to permissive.
 
 
 ### Install on CentOS
-To install VPP on CentOS from NFV SIG:
+To install VPP on CentOS from https://packagecloud.io/fdio/ repository:
 ```
-sudo yum install centos-release-fdio
-sudo yum install vpp*
-```
-
-OR - To install from the VPP Nexus Repo:
-```
-vi /etc/yum.repos.d/fdio-stable-1807.repo
-[fdio-stable-1807]
-name=fd.io stable/1807 branch latest merge
-baseurl=https://nexus.fd.io/content/repositories/fd.io.stable.1807.centos7/
-enabled=1
-gpgcheck=0
-   
-sudo yum install vpp*
+curl -s https://packagecloud.io/install/repositories/fdio/1904/script.rpm.sh | sudo bash
+yum install -y vpp vpp-lib vpp-plugins vpp-devel vpp-api-python vpp-api-lua vpp-selinux-policy
 ```
 
 To start and enable VPP:
@@ -444,10 +474,12 @@ sudo systemctl enable vpp
 ```
 
 ### Install on Ubuntu
+**OLD - Needs to be updated!**
+
 To install on Ubuntu 16.04 (Xenial) as an example to demonstrate how to install VPP from pre-build packages:
 ```
 export UBUNTU="xenial"
-export RELEASE=".stable.18.07"
+export RELEASE=".stable.19.04.1"
 sudo rm /etc/apt/sources.list.d/99fd.io.list
 echo "deb [trusted=yes] https://nexus.fd.io/content/repositories/fd.io$RELEASE.ubuntu.$UBUNTU.main/ ./" | sudo tee -a /etc/apt/sources.list.d/99fd.io.list
 sudo apt-get update
@@ -474,14 +506,14 @@ There are a few environmental variables used in this test. Here is an example:
 
 ```
 
-In order to test, a container with VPP 18.07 and vpp-app has been created:
+In order to test, a container with VPP 19.04.1 and usrsp-app has been created:
 ```
   docker pull bmcfall/vpp-centos-userspace-cni:latest
 ```
 More details on the Docker Image, how to build from scratch and other
 information, see
-[README.md](https://github.com/intel/userspace-cni-network-plugin/blob/master/cnivpp/docker/vpp-centos-userspace-cni/README.md)
-in the '*./cnivpp/docker/vpp-centos-userspace-cni/*' subfolder.
+[README.md](https://github.com/intel/userspace-cni-network-plugin/blob/master/docker/vpp-centos-userspace-cni/README.md)
+in the '*./docker/vpp-centos-userspace-cni/*' subfolder.
 
 Setup your configuration file in your CNI directory. An example is
 */etc/cni/net.d/*.
@@ -506,7 +538,7 @@ sudo vi /etc/cni/net.d/90-userspace.conf
                         "mode": "ethernet"
                 },
                 "bridge": {
-                        "bridgeId": 4
+                        "bridgeName": "4"
                 }
         },
         "container": {
@@ -528,25 +560,24 @@ sudo vi /etc/cni/net.d/90-userspace.conf
 }
 ```
 
-To test, currently using a local script (copied from CNI scripts:
+To test, currently using a local script (copied from CNI scripts):
 https://github.com/containernetworking/cni/blob/master/scripts/docker-run.sh).
 To run script:
 ```
    cd $GOPATH/src/github.com/intel/userspace-cni-network-plugin/
-   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/vpp-docker-run.sh -it --privileged vpp-centos-userspace-cni
+   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/usrsp-docker-run.sh -it --privileged vpp-centos-userspace-cni
 ```
 
-**NOTE:** The *vpp-docker-run.sh* script mounts some volumes in the container. Change as needed:
-* *-v /var/run/vpp/cni/shared:/var/run/vpp/cni/shared:rw*
-  * Default location in VPP to create sockets is */var/run/vpp/*. Socket files (memif or vhost-user)
-are passed to the container through a subdirectory of this base directory..
-* *-v /var/run/vpp/cni/$contid:/var/run/vpp/cni/data:rw*
+**NOTE:** The *usrsp-docker-run.sh* script mounts some volumes in the container. Change as needed:
+* *-v /var/lib/cni/usrspcni/shared:/var/lib/cni/usrspcni/shared:rw*
+  * Socket files (memif or vhost-user) are passed to the container through a subdirectory of this base directory..
+* *-v /var/lib/cni/usrspcni/$contid:/var/lib/cni/usrspcni/data:rw*
   * Current implementation is to write the remote configuration into a file and share the directory
 with the container, which is the volume mapping. Directory is currently hard coded.
 * *--device=/dev/hugepages:/dev/hugepages*
   * VPP requires hugepages, so need to map hugepoages into container.
 
-In the container, you should see the vpp-app ouput the message sequence of
+In the container, you should see the usrsp-app ouput the message sequence of
 its communication with local VPP (VPP in the container) and some database
 dumps interleaved.
 
@@ -671,17 +702,17 @@ Statistics: 5 sent, 4 received, 20% packet loss
 
 ### Debug
 The *vpp-centos-userspace-cni* container runs a script at startup (in Dockefile
-CMD command) which starts VPP and then runs *vpp-app*. Assuming the same notes
+CMD command) which starts VPP and then runs *usrsp-app*. Assuming the same notes
 above, to see what is happening in the container, cause
 *vpp-centos-userspace-cni* container to start in bash and skip the script, then
-run VPP and *vpp-app* manually: 
+run VPP and *usrsp-app* manually: 
 ```
    cd $GOPATH/src/github.com/containernetworking/cni/scripts
-   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/vpp-docker-run.sh -it --privileged bmcfall/vpp-centos-userspace-cni:0.2.0 bash
+   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/usrsp-docker-run.sh -it --privileged bmcfall/vpp-centos-userspace-cni:0.2.0 bash
    
    /* Within Container: */
    vpp -c /etc/vpp/startup.conf &
-   vpp-app
+   usrsp-app
 ```
 
 
@@ -994,7 +1025,3 @@ To exit:
 Pktgen:/> stop 0
 Pktgen:/> quit
 ```
-
-
-# Contacts
-For any questions about Userspace CNI, please reach out on github issue or feel free to contact the developer @Kural, @abdul or @bmcfall in our [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
