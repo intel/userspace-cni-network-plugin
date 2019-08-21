@@ -22,24 +22,25 @@ RUN rpm --import https://mirror.go-repo.io/centos/RPM-GPG-KEY-GO-REPO && curl -s
 RUN yum install -y git golang make
 
 # Build the usrsp-app
-WORKDIR /root/go/src/github.com/intel/
-RUN git clone https://github.com/intel/userspace-cni-network-plugin
+WORKDIR /root/go/src/
+RUN go get github.com/intel/userspace-cni-network-plugin 2>&1 > /tmp/UserspaceDockerBuild.log || echo "Can ignore no GO files."
 WORKDIR /root/go/src/github.com/intel/userspace-cni-network-plugin
 RUN make extras
 RUN cp docker/usrsp-app/usrsp-app /usr/sbin/usrsp-app
 
 
 # -------- Import stage.
-FROM centos
+# Docker 17.05 or higher, remove ##
+##FROM centos
 
 # Install UserSpace CNI
-COPY --from=0 /usr/sbin/usrsp-app /usr/sbin/usrsp-app
+##COPY --from=0 /usr/sbin/usrsp-app /usr/sbin/usrsp-app
 
 
 # Install VPP
-RUN curl -s https://packagecloud.io/install/repositories/fdio/release/script.rpm.sh | bash
-RUN yum install -y epel-release
-RUN yum install -y vpp-plugins vpp-devel vpp-api-python vpp-api-lua; yum clean all
+##RUN curl -s https://packagecloud.io/install/repositories/fdio/release/script.rpm.sh | bash
+##RUN yum install -y epel-release
+##RUN yum install -y vpp-plugins vpp-devel vpp-api-python vpp-api-lua; yum clean all
 
 # Overwrite VPP systemfiles
 COPY startup.conf /etc/vpp/startup.conf

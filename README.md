@@ -53,10 +53,12 @@ Weekly Meeting Details:
 * Meeting Time: 12:00 PM UTC every other Wednesday
   * 8:00 AM EST / 1:00 PM GMT
 * Meeting Dates:
-  * 07/03/2019     07/17/2019     07/31/2019
   * 08/14/2019     08/28/2019
   * 09/11/2019     09/25/2019
   * 10/09/2019     10/23/2019
+  * 11/06/2019     
+  * **Note:** No 11/20/2019 meeting, KubeCon NA - San Diego
+  * 12/04/2019     12/18/2019
 * Meeting Bridge: https://zoom.us/j/2392609689
 * Meeting Minute Document: [Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
 
@@ -76,8 +78,10 @@ For any questions about Userspace CNI, please reach out.
 # Userspace CNI Plugin
 The Userspace CNI is a Container Network Interface (CNI) plugin designed to
 implement userspace networking (as opposed to kernel space networking), like
-DPDK based applications. It is designed to run with either OVS-DPDK or VPP along
-with the [Multus CNI plugin](https://github.com/intel/multus-cni).
+DPDK based applications. It is designed to run with either OVS-DPDK or VPP
+running on the host, along with the
+[Multus CNI plugin](https://github.com/intel/multus-cni), which enables additional
+interfaces in a container.
 
 Userspace networking requires additional considerations. For one, the interface
 needs to be created/configured on a local vswitch (running on the host). There
@@ -88,14 +92,6 @@ in the container to consume the interface and add to a network within the
 container. The Userspace CNI is designed to work with these additional
 considerations by provisioning the local vswitch (OVS-DPDK/VPP), and by pushing
 data into the container so the interface can be consumed.
-
-**NOTE:** One major design feature that needs to be further work is how the
-data is pushed into the container and consumed by the container. Current code,
-which is not the final solution, writes the data to a file, and the directory
-the file is in is mounted in the countainer. Code in the container must know
-where and how to parse this data. Sample code to run in the container to handle
-this is currently implemented in the usrsp-app piece of code
-(*./docker/usrsp-app/*).
 
 The Userspace CNI, based on the input config data, adds interfaces (memif and/or
 vhost-user interfaces) to a local OVS-DPDK or VPP instance running on the host.
@@ -112,7 +108,7 @@ for more information.
 
 # Build & Clean
 
-This plugin is recommended to be built with Go 1.9.4 and either OVS-DPDK 2.9.0-3
+This plugin is recommended to be built with Go 1.11.10 and either OVS-DPDK 2.9.0-3
 or VPP 19.04.1. Other versions of Go, OVS-DPDK and VPP are theoretically
 supported, but MIGHT cause unknown issue.
 
@@ -518,8 +514,8 @@ in the '*./docker/vpp-centos-userspace-cni/*' subfolder.
 Setup your configuration file in your CNI directory. An example is
 */etc/cni/net.d/*.
 
-**NOTE:** The *userspace* nectconf definition is still a work in progress. So
-the example below is just an example, see *usrsptypes* for latest definitions.
+**NOTE:** The *userspace* netconf definition is still a work in progress. So
+the example below is just an example, see *pkg/types/types.go* for latest definitions.
 
 Example of how to setup a configuration for a VPP memif interface between the
 host and container:

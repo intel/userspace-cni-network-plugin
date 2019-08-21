@@ -32,7 +32,7 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 )
 
 //
@@ -60,7 +60,7 @@ func main() {
 
 	// Dummy Input Data
 	var ipString string = "192.168.172.100/24"
-	var ipData usrsptypes.IPDataType
+	var ipData types.IPDataType
 	var memifSocketId uint32
 	var memifSocketFile string = "/var/run/vpp/123456/memif-3.sock"
 	var memifRole vppmemif.MemifRole = vppmemif.RoleMaster

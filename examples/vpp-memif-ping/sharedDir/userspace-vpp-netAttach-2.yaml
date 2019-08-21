@@ -1,0 +1,47 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: userspace-vpp-net-2
+spec:
+  config: '{
+        "cniVersion": "0.3.1",
+        "type": "userspace",
+        "name": "userspace-vpp-net-2",
+        "sharedDir": "/var/run/vpp",
+        "logFile": "/var/log/userspace-vpp-net-2-cni.log",
+        "logLevel": "debug",
+        "host": {
+                "engine": "vpp",
+                "iftype": "memif",
+                "netType": "bridge",
+                "memif": {
+                        "role": "master",
+                        "mode": "ethernet"
+                },
+                "bridge": {
+                        "bridgeName": "12"
+                }
+        },
+        "container": {
+                "engine": "vpp",
+                "iftype": "memif",
+                "netType": "interface",
+                "memif": {
+                        "role": "slave",
+                        "mode": "ethernet"
+                }
+        },
+        "ipam": {
+                "type": "host-local",
+                "subnet": "10.77.217.0/24",
+                "rangeStart": "10.77.217.131",
+                "rangeEnd": "10.77.217.190",
+                "routes": [
+                        {
+                                "dst": "0.0.0.0/0"
+                        }
+                ],
+                "gateway": "10.77.217.1"
+        }
+    }'
+

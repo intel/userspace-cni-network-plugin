@@ -45,7 +45,6 @@ const (
 //
 // Types
 //
-const DefaultSharedDir = "/var/lib/cni/usrspcni/shared"
 
 //
 // API Functions

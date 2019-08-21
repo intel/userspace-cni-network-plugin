@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package usrsptypes
+package types
 
 import (
-	"net"
-
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 )
@@ -82,22 +80,28 @@ type NetConf struct {
 	//  - Read Volume Mounts:
 	//    - "shared-dir": Directory on host socketfiles are created in
 	//  - Write annotations:
-	//    - "userspace-cni/configuration-data": Configuration data passed
+	//    - "userspace/configuration-data": Configuration data passed
 	//      to containe in JSON format.
-	//    - "userspace-cni/mapped-dir": Directory in container socketfiles
+	//    - "userspace/mapped-dir": Directory in container socketfiles
 	//      are created in. Scraped from Volume Mounts above.
 	//
 	// SharedDir:
-	//  Example: "sharedDir": "/usr/local/var/run/openvswitch/023bcd123/",
+	//  Example: "sharedDir": "/usr/local/var/run/openvswitch/",
 	//  Since credentials are not provided, Userspace CNI cannot call KubeAPI
 	//  to read the Volume Mounts, so this is the same directory used in the
-	//  "hostPath".
+	//  "hostPath". Difference from the "kubeConfig" is that with the "sharedDir"
+	//  method, the directory is not unique per POD. That is because the Network
+	//  Attachment Definition (where this is defined) is used by multiple PODs.
+	//  So this is the base directory and the CNI creates a sub-directory with
+	//  the ContainerId as the sub-directory name.
+	//
 	//  Along the same lines, no annotations are written by Userspace CNI.
 	//   1) Configuration data will be written to a file in the same
 	//      directory as the socketfiles instead of to an annotation.
-	//   2) The "userspace-cni/mapped-dir" annotation must be added to the
-	//      pod spec so container know where to retrieve data.
-	//      Example: userspace-cni/mappedDir: /var/lib/cni/usrspcni/
+	//   2) The "userspace/mapped-dir" annotation must be added to the
+	//      pod spec manually (not done by CNI) so container know where to
+	//      retrieve data.
+	//      Example: userspace/mappedDir: /var/lib/cni/usrspcni/
 	KubeConfig    string        `json:"kubeconfig,omitempty"`
 	SharedDir     string        `json:"sharedDir,omitempty"`
 
@@ -110,7 +114,7 @@ type NetConf struct {
 }
 
 // Defines the JSON data written to container. It is either written to:
-//  1) Annotation - "userspace-cni/configuration-data"
+//  1) Annotation - "userspace/configuration-data"
 //  -- OR --
 //  2) a file in the directory designated by NetConf.SharedDir.
 type ConfigurationData struct {
@@ -120,16 +124,3 @@ type ConfigurationData struct {
 	Config        UserSpaceConf            `json:"config"`      // From NetConf.ContainerConf
 	IPResult      current.Result           `json:"ipResult"`    // Network Status also has IP, but wrong format
 }
-
-// UnmarshallableString typedef for builtin string
-type UnmarshallableString string
-
-// K8sArgs is the valid CNI_ARGS used for Kubernetes
-type K8sArgs struct {
-	types.CommonArgs
-	IP                         net.IP
-	K8S_POD_NAME               types.UnmarshallableString
-	K8S_POD_NAMESPACE          types.UnmarshallableString
-	K8S_POD_INFRA_CONTAINER_ID types.UnmarshallableString
-}
-

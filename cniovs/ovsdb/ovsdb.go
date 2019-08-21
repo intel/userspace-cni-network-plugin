@@ -29,7 +29,7 @@ import (
 	"github.com/containernetworking/cni/pkg/skel"
 
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 )
 
 //
@@ -54,7 +54,7 @@ type OvsSavedData struct {
 
 // SaveConfig() - Some data needs to be saved for cmdDel().
 //  This function squirrels the data away to be retrieved later.
-func SaveConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
+func SaveConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
 
 	// Current implementation is to write data to a file with the name:
 	//   /var/run/ovs/cni/data/local-<ContainerId:12>-<IfName>.json
@@ -81,7 +81,7 @@ func SaveConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData
 	}
 }
 
-func LoadConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
+func LoadConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
 
 	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
 	localDir := usrspdb.DefaultLocalCNIDir
