@@ -36,7 +36,7 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 	"github.com/intel/userspace-cni-network-plugin/annotations"
 	"github.com/intel/userspace-cni-network-plugin/logging"
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
 
 	_ "github.com/vishvananda/netlink"
@@ -63,8 +63,8 @@ func printVersionString() string {
 }
 
 // loadNetConf() - Unmarshall the inputdata into the NetConf Structure
-func loadNetConf(bytes []byte) (*usrsptypes.NetConf, error) {
-	netconf := &usrsptypes.NetConf{}
+func loadNetConf(bytes []byte) (*types.NetConf, error) {
+	netconf := &types.NetConf{}
 	if err := json.Unmarshal(bytes, netconf); err != nil {
 		return nil, fmt.Errorf("failed to load netconf: %v", err)
 	}
@@ -103,7 +103,7 @@ func loadNetConf(bytes []byte) (*usrsptypes.NetConf, error) {
 	return netconf, nil
 }
 
-func getPodAndSharedDir(netConf *usrsptypes.NetConf,
+func getPodAndSharedDir(netConf *types.NetConf,
 						args *skel.CmdArgs,
 						kubeClient k8sclient.KubeClient) (k8sclient.KubeClient, *v1.Pod, string, error) {
 
@@ -112,48 +112,47 @@ func getPodAndSharedDir(netConf *usrsptypes.NetConf,
 	var sharedDir string
 	var err error
 
-	if netConf.KubeConfig != "" {
-		kubeClient, err = k8sclient.GetK8sClient(kubeClient, netConf.KubeConfig)
-		if err != nil {
-			logging.Debugf("getPodAndSharedDir: Failure to retrieve kubeClient - %v", err)
-		}
-		
-		if err == nil {
-			// Retrieve pod so any annotations from the podSpec can be inspected
-			pod, err = k8sclient.GetPod(args, kubeClient, netConf.KubeConfig)
-			if err != nil {
-				logging.Debugf("getPodAndSharedDir: Failure to retrieve pod - %v", err)
-			}
-		}
-
-		// Retrieve the sharedDir from the Volumes in podSpec. Directory Socket
-		// Files will be written to on host.
-		if err == nil {
-			sharedDir, err = annotations.GetPodVolumeMountHostSharedDir(pod)
-			if err != nil {
-				logging.Infof("getPodAndSharedDir: VolumeMount \"shared-dir\" not provided - %v", err)
-			} else {
-				found = true
-			}
-		}
-
-		err = nil
+	kubeClient, err = k8sclient.GetK8sClient(kubeClient, netConf.KubeConfig)
+	if err != nil {
+		logging.Debugf("getPodAndSharedDir: Failure to retrieve kubeClient - %v", err)
 	}
+	
+	if err == nil && kubeClient != nil {
+		// Retrieve pod so any annotations from the podSpec can be inspected
+		pod, err = k8sclient.GetPod(args, kubeClient, netConf.KubeConfig)
+		if err != nil {
+			logging.Debugf("getPodAndSharedDir: Failure to retrieve pod - %v", err)
+		}
+	}
+
+	// Retrieve the sharedDir from the Volumes in podSpec. Directory Socket
+	// Files will be written to on host.
+	if err == nil {
+		sharedDir, err = annotations.GetPodVolumeMountHostSharedDir(pod)
+		if err != nil {
+			logging.Infof("getPodAndSharedDir: VolumeMount \"shared-dir\" not provided - %v", err)
+		} else {
+			found = true
+		}
+	}
+
+	err = nil
+
 
 	if found == false {
 		if netConf.SharedDir != "" {
 			if netConf.SharedDir[len(netConf.SharedDir)-1:] == "/" {
-				sharedDir = netConf.SharedDir
+				sharedDir = fmt.Sprintf("%s%s/", netConf.SharedDir, args.ContainerID[:12])
 			} else {
-				sharedDir = netConf.SharedDir + "/"
+				sharedDir = fmt.Sprintf("%s/%s/", netConf.SharedDir, args.ContainerID[:12])
 			}
 		} else {
 			if netConf.HostConf.Engine == "vpp" {
-				sharedDir = fmt.Sprintf("%s/%s", usrspdb.DefaultVppCNIDir, args.ContainerID[:12])
+				sharedDir = fmt.Sprintf("%s/%s/", usrspdb.DefaultVppCNIDir, args.ContainerID[:12])
 			} else if netConf.HostConf.Engine == "ovs-dpdk" {
-				sharedDir = fmt.Sprintf("%s/%s", usrspdb.DefaultOvsCNIDir, args.ContainerID[:12])
+				sharedDir = fmt.Sprintf("%s/%s/", usrspdb.DefaultOvsCNIDir, args.ContainerID[:12])
 			} else {
-				sharedDir = fmt.Sprintf("%s/%s", usrspdb.DefaultBaseCNIDir, args.ContainerID[:12])
+				sharedDir = fmt.Sprintf("%s/%s/", usrspdb.DefaultBaseCNIDir, args.ContainerID[:12])
 			}
 
 			if netConf.KubeConfig == "" {
@@ -168,7 +167,7 @@ func getPodAndSharedDir(netConf *usrsptypes.NetConf,
 }
 
 func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClient) error {
-	var netConf *usrsptypes.NetConf
+	var netConf *types.NetConf
 	var containerEngine string
 
 	vpp := cnivpp.CniVpp{}
@@ -315,7 +314,7 @@ func cmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 
 
 func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClient) error {
-	var netConf *usrsptypes.NetConf
+	var netConf *types.NetConf
 	var containerEngine string
 
 	vpp := cnivpp.CniVpp{}

@@ -47,13 +47,13 @@ directory. This is where the container writes its
 **local-<ContainerId:12>-<ifname>.json** file described above.
     * **remote-<ContainerId:12>-<ifname>.json**: This file contains the configuration
 to apply the interface in the container. The data is the same json data passed into
-the UserSpace CNI (define in **user-space-net-plugin/usrsptypes/usrsptypes.go**), but
+the UserSpace CNI (define in **user-space-net-plugin/pkg/types/types.go**), but
 the Container data has been copied into the Host data label. The usrsp-app processes the
 data as local data. Once this data is read in the container, the usrsp-app deletes the
 file.
     * **addData-<ContainerId:12>-<ifname>.json**: This file is used to pass
-additional data into the the container, which is not defined by **usrsptypes.go**.
-This includes the ContianerId itself, and the results from the IPAM plugin that
+additional data into the the container, which is not defined by **pkg/types/types.go**.
+This includes the ContainerId itself, and the results from the IPAM plugin that
 were processed locally. Once this data is read in the container, the usrsp-app deletes
 the file.
 

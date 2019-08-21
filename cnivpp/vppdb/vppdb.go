@@ -15,7 +15,7 @@
 //
 // This module provides the library functions to implement the
 // VPP UserSpace CNI implementation. The input to the library is json
-// data defined in usrsptypes. If the configuration contains local data,
+// data defined in pkg/types. If the configuration contains local data,
 // the 'api' library is used to send the request to the local govpp-agent,
 // which provisions the local VPP instance. If the configuration contains
 // remote data, the database library is used to store the data, which is
@@ -35,7 +35,7 @@ import (
 	"github.com/containernetworking/cni/pkg/skel"
 
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 )
 
 //
@@ -60,7 +60,7 @@ type VppSavedData struct {
 
 // saveVppConfig() - Some data needs to be saved, like the swIfIndex, for cmdDel().
 //  This function squirrels the data away to be retrieved later.
-func SaveVppConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *VppSavedData) error {
+func SaveVppConfig(conf *types.NetConf, args *skel.CmdArgs, data *VppSavedData) error {
 
 	// Current implementation is to write data to a file with the name:
 	//   /var/run/vpp/cni/data/local-<ContainerId:12>-<IfName>.json
@@ -90,7 +90,7 @@ func SaveVppConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *VppSavedD
 	}
 }
 
-func LoadVppConfig(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *VppSavedData) error {
+func LoadVppConfig(conf *types.NetConf, args *skel.CmdArgs, data *VppSavedData) error {
 
 	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
 	localDir := usrspdb.DefaultLocalCNIDir

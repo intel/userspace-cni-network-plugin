@@ -34,7 +34,7 @@ import (
 	"github.com/containernetworking/cni/pkg/types/current"
 
 	"github.com/intel/userspace-cni-network-plugin/k8sclient"
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 	"github.com/intel/userspace-cni-network-plugin/annotations"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 )
@@ -66,16 +66,13 @@ const DefaultVppCNIDir = "/var/run/vpp"
 //      flip the location and write the data to a file. When the Container
 //      comes up, it will read the file via () and delete the file. This function
 //      writes the file.
-func SaveRemoteConfig(conf *usrsptypes.NetConf,
+func SaveRemoteConfig(conf *types.NetConf,
 					  args *skel.CmdArgs,
 					  kubeClient k8sclient.KubeClient,
 					  sharedDir string,
 					  pod *v1.Pod,
 					  ipResult *current.Result) (*v1.Pod, error) {
-	var err error
-	var configData usrsptypes.ConfigurationData
-	var modifiedConfig bool
-	var modifiedMappedDir bool
+	var configData types.ConfigurationData
 
 	configData.ContainerId = args.ContainerID
 	configData.IfName = args.IfName
@@ -119,6 +116,18 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf,
 		configData.Config.VhostConf.Socketfile = conf.HostConf.VhostConf.Socketfile
 	}
 
+	return WriteRemoteConfig(kubeClient, pod, &configData, sharedDir, args.ContainerID, args.IfName)
+}
+
+func WriteRemoteConfig(kubeClient k8sclient.KubeClient,
+					   pod *v1.Pod,
+					   configData *types.ConfigurationData,
+					   sharedDir string,
+					   containerID string,
+					   ifName string) (*v1.Pod, error) {
+	var err error
+	var modifiedConfig bool
+	var modifiedMappedDir bool
 
 	//
 	// Write configuration data that will be consumed by container
@@ -129,7 +138,7 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf,
 		//
 		logging.Debugf("SaveRemoteConfig(): Store in PodSpec")
 
-		modifiedConfig, err = annotations.SetPodAnnotationConfigData(kubeClient, conf.KubeConfig, pod, &configData)
+		modifiedConfig, err = annotations.SetPodAnnotationConfigData(pod, configData)
 		if err != nil {
 			logging.Errorf("SaveRemoteConfig: Error formatting annotation configData: %v", err)
 			return pod, err
@@ -145,14 +154,14 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf,
 			logging.Warningf("SaveRemoteConfig: VolumeMount \"shared-dir\" not provided, defaulting to: %s", mappedSharedDir)
 			err = nil
 		}
-		modifiedMappedDir, err = annotations.SetPodAnnotationMappedDir(kubeClient, conf.KubeConfig, pod, mappedSharedDir)
+		modifiedMappedDir, err = annotations.SetPodAnnotationMappedDir(pod, mappedSharedDir)
 		if err != nil {
 			logging.Errorf("SaveRemoteConfig: Error formatting annotation mappedSharedDir - %v", err)
 			return pod, err
 		}
 
 		if modifiedConfig == true || modifiedMappedDir == true {
-			pod, err = annotations.WritePodAnnotation(kubeClient, conf.KubeConfig, pod)
+			pod, err = annotations.WritePodAnnotation(kubeClient, pod)
 			if err != nil {
 				logging.Errorf("SaveRemoteConfig: Error writing annotations - %v", err)
 				return pod, err
@@ -174,7 +183,7 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf,
 			}
 		}
 
-		fileName := fmt.Sprintf("configData-%s-%s.json", args.ContainerID[:12], args.IfName)
+		fileName := fmt.Sprintf("configData-%s-%s.json", containerID[:12], ifName)
 		path := filepath.Join(sharedDir, fileName)
 
 		dataBytes, err := json.Marshal(configData)
@@ -191,7 +200,7 @@ func SaveRemoteConfig(conf *usrsptypes.NetConf,
 // CleanupRemoteConfig() - This function cleans up any remaining files
 //   in the passed in directory. Some of these files were used to squirrel
 //   data from the create so interface can be deleted properly.
-func CleanupRemoteConfig(conf *usrsptypes.NetConf, sharedDir string) {
+func CleanupRemoteConfig(conf *types.NetConf, sharedDir string) {
 
 	if err := os.RemoveAll(sharedDir); err != nil {
 		fmt.Println(err)
@@ -236,7 +245,7 @@ func FileCleanup(directory string, filepath string) (err error) {
 
 type InterfaceData struct {
 	Args      skel.CmdArgs
-	NetConf   usrsptypes.NetConf
+	NetConf   types.NetConf
 	IPResult  current.Result
 }
 
@@ -245,22 +254,26 @@ func GetRemoteConfig() ([]*InterfaceData, string, error) {
 
 	// Retrieve the directory that is shared between host and container.
 	// No conversion necessary
-	sharedDir, err := annotations.GetFileAnnotationMappedDir()
+	mappedDir, err := annotations.GetFileAnnotationMappedDir()
 	if err != nil {
-		return ifaceList, sharedDir, err
+		return ifaceList, mappedDir, err
 	}
 
 	// Retrieve the configuration data for each interface. This is a list of 1 to n interfaces.
 	configDataList, err := annotations.GetFileAnnotationConfigData()
 	if err != nil {
-		return ifaceList, sharedDir, err
+		// If annotation is not found, need to see if data was written
+		// to a file.
+
+		// BILLY: Pickup here.
+		return ifaceList, mappedDir, err
 	}
 
-	// Convert the data to usrsptypes.NetConf
+	// Convert the data to types.NetConf
 	for _, configData := range configDataList {
 		var ifaceData InterfaceData
 
-		ifaceData.NetConf = usrsptypes.NetConf{}
+		ifaceData.NetConf = types.NetConf{}
 		ifaceData.NetConf.Name = configData.Name
 		ifaceData.NetConf.HostConf = configData.Config
 
@@ -274,5 +287,5 @@ func GetRemoteConfig() ([]*InterfaceData, string, error) {
 	}
 
 
-	return ifaceList, sharedDir, err
+	return ifaceList, mappedDir, err
 }

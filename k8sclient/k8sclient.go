@@ -15,6 +15,7 @@
 package k8sclient
 
 import (
+	"net"
 	"os"
 
 	v1 "k8s.io/api/core/v1"
@@ -24,13 +25,20 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
 
-	_ "github.com/containernetworking/cni/libcni"
 	"github.com/containernetworking/cni/pkg/skel"
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 
 	"github.com/intel/userspace-cni-network-plugin/logging"
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
 )
+
+// K8sArgs is the valid CNI_ARGS used for Kubernetes
+type K8sArgs struct {
+	cnitypes.CommonArgs
+	IP                         net.IP
+	K8S_POD_NAME               cnitypes.UnmarshallableString
+	K8S_POD_NAMESPACE          cnitypes.UnmarshallableString
+	K8S_POD_INFRA_CONTAINER_ID cnitypes.UnmarshallableString
+}
 
 // defaultKubeClient implements KubeClient
 type defaultKubeClient struct {
@@ -57,8 +65,8 @@ type KubeClient interface {
 	UpdatePodStatus(pod *v1.Pod) (*v1.Pod, error)
 }
 
-func getK8sArgs(args *skel.CmdArgs) (*usrsptypes.K8sArgs, error) {
-	k8sArgs := &usrsptypes.K8sArgs{}
+func getK8sArgs(args *skel.CmdArgs) (*K8sArgs, error) {
+	k8sArgs := &K8sArgs{}
 
 	logging.Verbosef("getK8sArgs: %v", args)
 	err := cnitypes.LoadArgs(args.Args, k8sArgs)
@@ -147,15 +155,8 @@ func GetPod(args *skel.CmdArgs, kubeClient KubeClient, kubeConfig string) (*v1.P
 	return pod, err
 }
 
-func WritePodAnnotation(kubeClient KubeClient, kubeConfig string, pod *v1.Pod) (*v1.Pod, error) {
+func WritePodAnnotation(kubeClient KubeClient, pod *v1.Pod) (*v1.Pod, error) {
 	var err error
-
-	// Get kubeClient. If passed in, GetK8sClient() will just return it back.
-	kubeClient, err = GetK8sClient(kubeClient, kubeConfig)
-	if err != nil {
-		logging.Errorf("WritePodAnnotation: Err in getting kubeClient: %v", err)
-		return pod, err
-	}
 
 	if kubeClient == nil {
 		logging.Errorf("WritePodAnnotation: No kubeClient: %v", err)

@@ -21,7 +21,7 @@ import (
 	_ "github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 )
 
@@ -29,21 +29,21 @@ import (
 // Exported Types
 //
 type UsrSpCni interface {
-	AddOnHost(conf *usrsptypes.NetConf,
+	AddOnHost(conf *types.NetConf,
 			  args *skel.CmdArgs,
 			  kubeClient k8sclient.KubeClient,
 			  sharedDir string,
 			  ipResult *current.Result) error
-	AddOnContainer(conf *usrsptypes.NetConf,
+	AddOnContainer(conf *types.NetConf,
 				   args *skel.CmdArgs,
 				   kubeClient k8sclient.KubeClient,
 				   sharedDir string,
 				   pod *v1.Pod,
 				   ipResult *current.Result) (*v1.Pod, error)
-	DelFromHost(conf *usrsptypes.NetConf,
+	DelFromHost(conf *types.NetConf,
 				args *skel.CmdArgs,
 				sharedDir string) error
-	DelFromContainer(conf *usrsptypes.NetConf,
+	DelFromContainer(conf *types.NetConf,
 		             args *skel.CmdArgs,
 		             sharedDir string,
 		             pod *v1.Pod) error

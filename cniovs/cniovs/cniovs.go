@@ -15,7 +15,7 @@
 //
 // This module provides the library functions to implement the
 // OVS UserSpace CNI implementation. The input to the library is json
-// data defined in usrsptypes. If the configuration contains local data,
+// data defined in pkg/types. If the configuration contains local data,
 // the code builds up an 'ovsctl' command to proviosn the local OVS,
 // instance. If the configuration contains remote data, the database
 // library is used to store the data, which is later read and processed
@@ -40,7 +40,7 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/cniovs/ovsdb"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/usrspdb"
-	"github.com/intel/userspace-cni-network-plugin/usrsptypes"
+	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 )
 
@@ -58,7 +58,7 @@ type CniOvs struct {
 //
 // API Functions
 //
-func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf,
+func (cniOvs CniOvs) AddOnHost(conf *types.NetConf,
 							   args *skel.CmdArgs,
 							   kubeClient k8sclient.KubeClient,
 							   sharedDir string,
@@ -130,7 +130,7 @@ func (cniOvs CniOvs) AddOnHost(conf *usrsptypes.NetConf,
 	return err
 }
 
-func (cniOvs CniOvs) AddOnContainer(conf *usrsptypes.NetConf,
+func (cniOvs CniOvs) AddOnContainer(conf *types.NetConf,
 									args *skel.CmdArgs,
 									kubeClient k8sclient.KubeClient,
 									sharedDir string,
@@ -140,7 +140,7 @@ func (cniOvs CniOvs) AddOnContainer(conf *usrsptypes.NetConf,
 	return usrspdb.SaveRemoteConfig(conf, args, kubeClient, sharedDir, pod, ipResult)
 }
 
-func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string) error {
+func (cniOvs CniOvs) DelFromHost(conf *types.NetConf, args *skel.CmdArgs, sharedDir string) error {
 	var data ovsdb.OvsSavedData
 	var err error
 
@@ -191,7 +191,7 @@ func (cniOvs CniOvs) DelFromHost(conf *usrsptypes.NetConf, args *skel.CmdArgs, s
 	return err
 }
 
-func (cniOvs CniOvs) DelFromContainer(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, pod *v1.Pod) error {
+func (cniOvs CniOvs) DelFromContainer(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, pod *v1.Pod) error {
 	logging.Infof("OVS DelFromContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
 	usrspdb.FileCleanup(sharedDir, "")
@@ -216,7 +216,7 @@ func generateRandomMacAddress() string {
 	return macAddr
 }
 
-func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, data *ovsdb.OvsSavedData) error {
+func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, data *ovsdb.OvsSavedData) error {
 	var err error
 	var vhostName string
 
@@ -260,7 +260,7 @@ func addLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir
 	return err
 }
 
-func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir string, data *ovsdb.OvsSavedData) error {
+func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, data *ovsdb.OvsSavedData) error {
 	// ovs-vsctl --if-exists del-port
 	if err := deleteVhostPort(data.Vhostname, conf.HostConf.BridgeConf.BridgeName); err == nil {
 		folder, err := os.Open(sharedDir)
@@ -311,7 +311,7 @@ func delLocalDeviceVhost(conf *usrsptypes.NetConf, args *skel.CmdArgs, sharedDir
 	return nil
 }
 
-func addLocalNetworkBridge(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
+func addLocalNetworkBridge(conf *types.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
 	var err error
 
 	if found := findBridge(conf.HostConf.BridgeConf.BridgeName); found == false {
@@ -334,7 +334,7 @@ func addLocalNetworkBridge(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *o
 	return err
 }
 
-func delLocalNetworkBridge(conf *usrsptypes.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
+func delLocalNetworkBridge(conf *types.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
 	var err error
 
 	if containInterfaces := doesBridgeContainInterfaces(conf.HostConf.BridgeConf.BridgeName); containInterfaces == false {
