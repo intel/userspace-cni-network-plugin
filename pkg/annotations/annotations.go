@@ -36,11 +36,8 @@ import (
 const (
 	annotKeyNetwork = "k8s.v1.cni.cncf.io/networks"
 	annotKeyNetworkStatus = "k8s.v1.cni.cncf.io/networks-status"
-	// BILLY: Need app-netutil merge
-	//AnnotKeyUsrspConfigData = "userspace/configuration-data"
-	//AnnotKeyUsrspMappedDir = "userspace/mapped-dir"
-	AnnotKeyUsrspConfigData = "userspace-cni/configuration-data"
-	AnnotKeyUsrspMappedDir = "userspace-cni/mapped-dir"
+	AnnotKeyUsrspConfigData = "userspace/configuration-data"
+	AnnotKeyUsrspMappedDir = "userspace/mapped-dir"
 	volMntKeySharedDir = "shared-dir"
 
 	DefaultBaseCNIDir = "/var/lib/cni/usrspcni"

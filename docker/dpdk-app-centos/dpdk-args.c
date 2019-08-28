@@ -13,13 +13,6 @@
 #include "libnetutil_api.h"
 #include "dpdk-args.h"
 
-/*****/
-// BILLY: Need app-netutil merge
-#define NETUTIL_ERRNO_SUCCESS 0
-#define NETUTIL_ERRNO_FAIL 1
-#define NETUTIL_ERRNO_SIZE_ERROR 2
-/*****/
-
 bool debugArgs = true;
 
 #define DPDK_ARGS_MAX_ARGS (30)
