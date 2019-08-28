@@ -13,11 +13,17 @@
 // limitations under the License.
 
 //
-// This module provides the database library functions. Initial implementaion
-// copies the json data to a known file location.
+// This module provides the library functions to implement the
+// VPP UserSpace CNI implementation. The input to the library is json
+// data defined in pkg/types. If the configuration contains local data,
+// the 'api' library is used to send the request to the local govpp-agent,
+// which provisions the local VPP instance. If the configuration contains
+// remote data, the database library is used to store the data, which is
+// later read and processed locally by the remotes agent (usrsp-app running
+// in the container)
 //
 
-package ovsdb
+package cnivpp
 
 import (
 	"encoding/json"
@@ -28,40 +34,41 @@ import (
 
 	"github.com/containernetworking/cni/pkg/skel"
 
-	"github.com/intel/userspace-cni-network-plugin/usrspdb"
+	"github.com/intel/userspace-cni-network-plugin/pkg/annotations"
+	"github.com/intel/userspace-cni-network-plugin/pkg/configdata"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 )
 
 //
 // Constants
 //
+const debugVppDb = false
 
 //
 // Types
 //
 
-// This structure is a union of all the OVS data (for all types of
+// This structure is a union of all the VPP data (for all types of
 // interfaces) that need to be preserved for later use.
-type OvsSavedData struct {
-	Vhostname string `json:"vhostname"` // Vhost Port name
-	VhostMac  string `json:"vhostmac"`  // Vhost port MAC address
-	IfMac     string `json:"ifmac"`     // Interface Mac address
+type VppSavedData struct {
+	SwIfIndex     uint32 `json:"swIfIndex"`     // Software Index, used to access the created interface, needed to delete interface.
+	MemifSocketId uint32 `json:"memifSocketId"` // Memif SocketId, used to access the created memif Socket File, used for debug only.
 }
 
 //
 // API Functions
 //
 
-// SaveConfig() - Some data needs to be saved for cmdDel().
+// saveVppConfig() - Some data needs to be saved, like the swIfIndex, for cmdDel().
 //  This function squirrels the data away to be retrieved later.
-func SaveConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
+func SaveVppConfig(conf *types.NetConf, args *skel.CmdArgs, data *VppSavedData) error {
 
 	// Current implementation is to write data to a file with the name:
-	//   /var/run/ovs/cni/data/local-<ContainerId:12>-<IfName>.json
+	//   /var/run/vpp/cni/data/local-<ContainerId:12>-<IfName>.json
 
 	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
 	if dataBytes, err := json.Marshal(data); err == nil {
-		localDir := usrspdb.DefaultLocalCNIDir
+		localDir := annotations.DefaultLocalCNIDir
 
 		if _, err := os.Stat(localDir); err != nil {
 			if os.IsNotExist(err) {
@@ -75,16 +82,19 @@ func SaveConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) err
 
 		path := filepath.Join(localDir, fileName)
 
+		if debugVppDb {
+			fmt.Printf("SAVE FILE: swIfIndex=%d path=%s dataBytes=%s\n", data.SwIfIndex, path, dataBytes)
+		}
 		return ioutil.WriteFile(path, dataBytes, 0644)
 	} else {
 		return fmt.Errorf("ERROR: serializing delegate VPP saved data: %v", err)
 	}
 }
 
-func LoadConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
+func LoadVppConfig(conf *types.NetConf, args *skel.CmdArgs, data *VppSavedData) error {
 
 	fileName := fmt.Sprintf("local-%s-%s.json", args.ContainerID[:12], args.IfName)
-	localDir := usrspdb.DefaultLocalCNIDir
+	localDir := annotations.DefaultLocalCNIDir
 	path := filepath.Join(localDir, fileName)
 
 	if _, err := os.Stat(path); err == nil {
@@ -101,7 +111,7 @@ func LoadConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) err
 	}
 
 	// Delete file (and directory if empty)
-	usrspdb.FileCleanup(localDir, path)
+	configdata.FileCleanup(localDir, path)
 
 	return nil
 }

@@ -56,8 +56,7 @@ Weekly Meeting Details:
   * 08/14/2019     08/28/2019
   * 09/11/2019     09/25/2019
   * 10/09/2019     10/23/2019
-  * 11/06/2019     
-  * **Note:** No 11/20/2019 meeting, KubeCon NA - San Diego
+  * 11/06/2019     (No 11/20/2019 meeting, KubeCon NA - San Diego)
   * 12/04/2019     12/18/2019
 * Meeting Bridge: https://zoom.us/j/2392609689
 * Meeting Minute Document: [Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)

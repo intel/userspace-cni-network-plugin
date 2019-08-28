@@ -1,0 +1,26 @@
+#if 0
+        diag = rte_eal_init(argc, argv);
+#else
+        int i;
+        int myArgc = 0;
+        char **myArgv = NULL;
+
+        printf("ENTER dpdk-app:\n");
+        printf("  argc=%d\n", argc);
+        for (i = 0; i < argc; i++) {
+                printf("  argv[%d]=%s\n", i, argv[i]);
+        }
+
+        if (argc > 1) {
+                diag = rte_eal_init(argc, argv);
+        } else {
+                myArgv = GetArgs(&myArgc, DPDK_APP_TESTPMD);
+                printf("  myArgc=%d\n", myArgc);
+                for (i = 0; i < myArgc; i++) {
+                        printf("  myArgv[%d]=%s\n", i, myArgv[i]);
+                }
+
+                diag = rte_eal_init(myArgc, myArgv);
+        }
+#endif
+

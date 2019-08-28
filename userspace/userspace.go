@@ -21,6 +21,7 @@ import (
 	_ "flag"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/containernetworking/cni/pkg/invoke"
 	"github.com/containernetworking/cni/pkg/skel"
@@ -31,13 +32,13 @@ import (
 	"github.com/containernetworking/plugins/pkg/ipam"
 	"github.com/containernetworking/plugins/pkg/ns"
 
-	"github.com/intel/userspace-cni-network-plugin/cniovs/cniovs"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/cnivpp"
-	"github.com/intel/userspace-cni-network-plugin/k8sclient"
-	"github.com/intel/userspace-cni-network-plugin/annotations"
+	"github.com/intel/userspace-cni-network-plugin/cniovs"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp"
+	"github.com/intel/userspace-cni-network-plugin/pkg/k8sclient"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
-	"github.com/intel/userspace-cni-network-plugin/usrspdb"
+	"github.com/intel/userspace-cni-network-plugin/pkg/annotations"
+	"github.com/intel/userspace-cni-network-plugin/pkg/configdata"
 
 	_ "github.com/vishvananda/netlink"
 )
@@ -105,24 +106,17 @@ func loadNetConf(bytes []byte) (*types.NetConf, error) {
 
 func getPodAndSharedDir(netConf *types.NetConf,
 						args *skel.CmdArgs,
-						kubeClient k8sclient.KubeClient) (k8sclient.KubeClient, *v1.Pod, string, error) {
+						kubeClient kubernetes.Interface) (kubernetes.Interface, *v1.Pod, string, error) {
 
 	var found bool
 	var pod *v1.Pod
 	var sharedDir string
 	var err error
 
-	kubeClient, err = k8sclient.GetK8sClient(kubeClient, netConf.KubeConfig)
+	// Retrieve pod so any annotations from the podSpec can be inspected
+	pod, kubeClient, err = k8sclient.GetPod(args, kubeClient, netConf.KubeConfig)
 	if err != nil {
-		logging.Debugf("getPodAndSharedDir: Failure to retrieve kubeClient - %v", err)
-	}
-	
-	if err == nil && kubeClient != nil {
-		// Retrieve pod so any annotations from the podSpec can be inspected
-		pod, err = k8sclient.GetPod(args, kubeClient, netConf.KubeConfig)
-		if err != nil {
-			logging.Debugf("getPodAndSharedDir: Failure to retrieve pod - %v", err)
-		}
+		logging.Debugf("getPodAndSharedDir: Failure to retrieve pod - %v", err)
 	}
 
 	// Retrieve the sharedDir from the Volumes in podSpec. Directory Socket
@@ -148,11 +142,11 @@ func getPodAndSharedDir(netConf *types.NetConf,
 			}
 		} else {
 			if netConf.HostConf.Engine == "vpp" {
-				sharedDir = fmt.Sprintf("%s/%s/", usrspdb.DefaultVppCNIDir, args.ContainerID[:12])
+				sharedDir = fmt.Sprintf("%s/%s/", configdata.DefaultVppCNIDir, args.ContainerID[:12])
 			} else if netConf.HostConf.Engine == "ovs-dpdk" {
-				sharedDir = fmt.Sprintf("%s/%s/", usrspdb.DefaultOvsCNIDir, args.ContainerID[:12])
+				sharedDir = fmt.Sprintf("%s/%s/", configdata.DefaultOvsCNIDir, args.ContainerID[:12])
 			} else {
-				sharedDir = fmt.Sprintf("%s/%s/", usrspdb.DefaultBaseCNIDir, args.ContainerID[:12])
+				sharedDir = fmt.Sprintf("%s/%s/", annotations.DefaultBaseCNIDir, args.ContainerID[:12])
 			}
 
 			if netConf.KubeConfig == "" {
@@ -166,7 +160,7 @@ func getPodAndSharedDir(netConf *types.NetConf,
 	return kubeClient, pod, sharedDir, err
 }
 
-func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClient) error {
+func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
 	var netConf *types.NetConf
 	var containerEngine string
 
@@ -293,7 +287,7 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 }
 
 
-func cmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClient) error {
+func cmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
 /*
 	netConf, err := loadNetConf(args.StdinData)
 
@@ -313,7 +307,7 @@ func cmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClien
 }
 
 
-func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient k8sclient.KubeClient) error {
+func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
 	var netConf *types.NetConf
 	var containerEngine string
 

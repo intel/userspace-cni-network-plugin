@@ -1,0 +1,19 @@
+#if 0
+	argc -= diag;
+	argv += diag;
+	if (argc > 1)
+		launch_args_parse(argc, argv);
+#else
+	if (argc > 1) {
+		argc -= diag;
+		argv += diag;
+		if (argc > 1)
+			launch_args_parse(argc, argv);
+	} else {
+		myArgc -= diag;
+		myArgv += diag;
+		if (myArgc > 1)
+			launch_args_parse(myArgc, myArgv);
+	}
+#endif
+

@@ -18,7 +18,7 @@
 // configuration being passed to the container.
 //
 
-package usrspdb
+package configdata
 
 import (
 	"encoding/json"
@@ -29,21 +29,19 @@ import (
 	"path/filepath"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
 
-	"github.com/intel/userspace-cni-network-plugin/k8sclient"
+	"github.com/intel/userspace-cni-network-plugin/pkg/annotations"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
-	"github.com/intel/userspace-cni-network-plugin/annotations"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 )
 
 //
 // Constants
 //
-const DefaultBaseCNIDir = "/var/lib/cni/usrspcni"
-const DefaultLocalCNIDir = "/var/lib/cni/usrspcni/data"
 const debugUsrSpDb = false
 
 const DefaultOvsCNIDir = "/usr/local/var/run/openvswitch"
@@ -68,12 +66,17 @@ const DefaultVppCNIDir = "/var/run/vpp"
 //      writes the file.
 func SaveRemoteConfig(conf *types.NetConf,
 					  args *skel.CmdArgs,
-					  kubeClient k8sclient.KubeClient,
+					  kubeClient kubernetes.Interface,
 					  sharedDir string,
 					  pod *v1.Pod,
 					  ipResult *current.Result) (*v1.Pod, error) {
 	var configData types.ConfigurationData
+	var err error
 
+	//
+	// Convert Local Data to types.ConfigurationData, which
+	// will be written to the container.
+	//
 	configData.ContainerId = args.ContainerID
 	configData.IfName = args.IfName
 	configData.Name = conf.Name
@@ -116,19 +119,6 @@ func SaveRemoteConfig(conf *types.NetConf,
 		configData.Config.VhostConf.Socketfile = conf.HostConf.VhostConf.Socketfile
 	}
 
-	return WriteRemoteConfig(kubeClient, pod, &configData, sharedDir, args.ContainerID, args.IfName)
-}
-
-func WriteRemoteConfig(kubeClient k8sclient.KubeClient,
-					   pod *v1.Pod,
-					   configData *types.ConfigurationData,
-					   sharedDir string,
-					   containerID string,
-					   ifName string) (*v1.Pod, error) {
-	var err error
-	var modifiedConfig bool
-	var modifiedMappedDir bool
-
 	//
 	// Write configuration data that will be consumed by container
 	//
@@ -138,42 +128,14 @@ func WriteRemoteConfig(kubeClient k8sclient.KubeClient,
 		//
 		logging.Debugf("SaveRemoteConfig(): Store in PodSpec")
 
-		modifiedConfig, err = annotations.SetPodAnnotationConfigData(pod, configData)
-		if err != nil {
-			logging.Errorf("SaveRemoteConfig: Error formatting annotation configData: %v", err)
-			return pod, err
-		}
-
-		// Retrieve the mappedSharedDir from the Containers in podSpec. Directory
-		// in container Socket Files will be read from. Write this data back as an
-		// annotation so container knows where directory is located.
-		mappedSharedDir, err := annotations.GetPodVolumeMountHostMappedSharedDir(pod)
-		if err != nil {
-			mappedSharedDir = DefaultBaseCNIDir
-			logging.Warningf("SaveRemoteConfig: Error reading VolumeMount: %v", err)
-			logging.Warningf("SaveRemoteConfig: VolumeMount \"shared-dir\" not provided, defaulting to: %s", mappedSharedDir)
-			err = nil
-		}
-		modifiedMappedDir, err = annotations.SetPodAnnotationMappedDir(pod, mappedSharedDir)
-		if err != nil {
-			logging.Errorf("SaveRemoteConfig: Error formatting annotation mappedSharedDir - %v", err)
-			return pod, err
-		}
-
-		if modifiedConfig == true || modifiedMappedDir == true {
-			pod, err = annotations.WritePodAnnotation(kubeClient, pod)
-			if err != nil {
-				logging.Errorf("SaveRemoteConfig: Error writing annotations - %v", err)
-				return pod, err
-			}
-		}
+		pod, err = annotations.WritePodAnnotation(kubeClient, pod, &configData)
 	} else {
 		//
 		// Write configuration data into file
 		//
 
 		// Make sure directory exists
-		if _, err := os.Stat(sharedDir); err != nil {
+		if _, err = os.Stat(sharedDir); err != nil {
 			if os.IsNotExist(err) {
 				if err := os.MkdirAll(sharedDir, 0700); err != nil {
 					return pod, err
@@ -183,7 +145,7 @@ func WriteRemoteConfig(kubeClient k8sclient.KubeClient,
 			}
 		}
 
-		fileName := fmt.Sprintf("configData-%s-%s.json", containerID[:12], ifName)
+		fileName := fmt.Sprintf("configData-%s-%s.json", args.ContainerID[:12], args.IfName)
 		path := filepath.Join(sharedDir, fileName)
 
 		dataBytes, err := json.Marshal(configData)

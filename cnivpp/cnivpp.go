@@ -32,6 +32,7 @@ import (
 	"strconv"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
@@ -40,11 +41,9 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/vppdb"
 	"github.com/intel/userspace-cni-network-plugin/logging"
-	"github.com/intel/userspace-cni-network-plugin/usrspdb"
+	"github.com/intel/userspace-cni-network-plugin/pkg/configdata"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
-	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 )
 
 //
@@ -66,12 +65,12 @@ type CniVpp struct {
 //
 func (cniVpp CniVpp) AddOnHost(conf *types.NetConf,
 							   args *skel.CmdArgs,
-							   kubeClient k8sclient.KubeClient,
+							   kubeClient kubernetes.Interface,
 							   sharedDir string,
 							   ipResult *current.Result) error {
 	var vppCh vppinfra.ConnectionData
 	var err error
-	var data vppdb.VppSavedData
+	var data VppSavedData
 
 	logging.Infof("VPP AddOnHost: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
@@ -160,7 +159,7 @@ func (cniVpp CniVpp) AddOnHost(conf *types.NetConf,
 	//
 	// Save Create Data for Delete
 	//
-	err = vppdb.SaveVppConfig(conf, args, &data)
+	err = SaveVppConfig(conf, args, &data)
 
 	if err != nil {
 		return err
@@ -171,17 +170,17 @@ func (cniVpp CniVpp) AddOnHost(conf *types.NetConf,
 
 func (cniVpp CniVpp) AddOnContainer(conf *types.NetConf,
 									args *skel.CmdArgs,
-									kubeClient k8sclient.KubeClient,
+									kubeClient kubernetes.Interface,
 									sharedDir string,
 									pod *v1.Pod,
 									ipResult *current.Result) (*v1.Pod, error) {
 	logging.Infof("VPP AddOnContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
-	return usrspdb.SaveRemoteConfig(conf, args, kubeClient, sharedDir, pod, ipResult)
+	return configdata.SaveRemoteConfig(conf, args, kubeClient, sharedDir, pod, ipResult)
 }
 
 func (cniVpp CniVpp) DelFromHost(conf *types.NetConf, args *skel.CmdArgs, sharedDir string) error {
 	var vppCh vppinfra.ConnectionData
-	var data vppdb.VppSavedData
+	var data VppSavedData
 	var err error
 
 	logging.Infof("VPP DelFromHost: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
@@ -194,7 +193,7 @@ func (cniVpp CniVpp) DelFromHost(conf *types.NetConf, args *skel.CmdArgs, shared
 	defer vppinfra.VppCloseCh(vppCh)
 
 	// Retrieved squirreled away data needed for processing delete
-	err = vppdb.LoadVppConfig(conf, args, &data)
+	err = LoadVppConfig(conf, args, &data)
 
 	if err != nil {
 		return err
@@ -244,7 +243,7 @@ func (cniVpp CniVpp) DelFromHost(conf *types.NetConf, args *skel.CmdArgs, shared
 func (cniVpp CniVpp) DelFromContainer(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, pod *v1.Pod) error {
 	logging.Infof("VPP DelFromContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
-	usrspdb.FileCleanup(sharedDir, "")
+	configdata.FileCleanup(sharedDir, "")
 
 	return nil
 }
@@ -266,7 +265,7 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData,
 						 conf *types.NetConf,
 						 args *skel.CmdArgs,
 						 sharedDir string,
-						 data *vppdb.VppSavedData) (err error) {
+						 data *VppSavedData) (err error) {
 	// Validate and convert input data
 	var memifRole vppmemif.MemifRole
 	var memifMode vppmemif.MemifMode
@@ -323,7 +322,7 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData,
 	return
 }
 
-func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *types.NetConf, args *skel.CmdArgs, sharedDir string, data *vppdb.VppSavedData) (err error) {
+func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *types.NetConf, args *skel.CmdArgs, sharedDir string, data *VppSavedData) (err error) {
 	// Retrieve the Socketfile name
 	memifSocketPath := getMemifSocketfileName(conf, sharedDir, args.ContainerID, args.IfName)
 
@@ -341,7 +340,7 @@ func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *types.NetConf, arg
 	}
 
 	// Remove socketfile
-	err = usrspdb.FileCleanup("", memifSocketPath)
+	err = configdata.FileCleanup("", memifSocketPath)
 
 	return
 }
