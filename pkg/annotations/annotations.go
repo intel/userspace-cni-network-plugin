@@ -17,12 +17,13 @@ import (
 	"io/ioutil"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/go-logfmt/logfmt"
 
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
-	"github.com/intel/userspace-cni-network-plugin/k8sclient"
+	"github.com/intel/userspace-cni-network-plugin/pkg/k8sclient"
 )
 
 
@@ -35,9 +36,16 @@ import (
 const (
 	annotKeyNetwork = "k8s.v1.cni.cncf.io/networks"
 	annotKeyNetworkStatus = "k8s.v1.cni.cncf.io/networks-status"
-	AnnotKeyUsrspConfigData = "userspace/configuration-data"
-	AnnotKeyUsrspMappedDir = "userspace/mapped-dir"
+	// BILLY: Need app-netutil merge
+	//AnnotKeyUsrspConfigData = "userspace/configuration-data"
+	//AnnotKeyUsrspMappedDir = "userspace/mapped-dir"
+	AnnotKeyUsrspConfigData = "userspace-cni/configuration-data"
+	AnnotKeyUsrspMappedDir = "userspace-cni/mapped-dir"
 	volMntKeySharedDir = "shared-dir"
+
+	DefaultBaseCNIDir = "/var/lib/cni/usrspcni"
+	DefaultLocalCNIDir = "/var/lib/cni/usrspcni/data"
+
 )
 
 
@@ -47,6 +55,12 @@ type NoSharedDirProvidedError struct {
 	message string
 }
 func (e *NoSharedDirProvidedError) Error() string { return string(e.message) }
+
+type NoKubeClientProvidedError struct {
+	message string
+}
+func (e *NoKubeClientProvidedError) Error() string { return string(e.message) }
+
 
 
 func GetPodVolumeMountHostSharedDir(pod *v1.Pod) (string, error) {
@@ -72,10 +86,10 @@ func GetPodVolumeMountHostSharedDir(pod *v1.Pod) (string, error) {
 	return hostSharedDir, nil
 }
 
-func GetPodVolumeMountHostMappedSharedDir(pod *v1.Pod) (string, error) {
+func getPodVolumeMountHostMappedSharedDir(pod *v1.Pod) (string, error) {
 	var mappedSharedDir string
 
-	logging.Verbosef("GetPodVolumeMountHostMappedSharedDir: type=%T Containers=%v", pod.Spec.Containers, pod.Spec.Containers)
+	logging.Verbosef("getPodVolumeMountHostMappedSharedDir: type=%T Containers=%v", pod.Spec.Containers, pod.Spec.Containers)
 
 	if len(pod.Spec.Containers) == 0 {
 		return mappedSharedDir, &NoSharedDirProvidedError{"Error: No Containers. Need \"shared-dir\" in podSpec \"Volumes\""}
@@ -99,7 +113,63 @@ func GetPodVolumeMountHostMappedSharedDir(pod *v1.Pod) (string, error) {
 	return mappedSharedDir, nil
 }
 
-func SetPodAnnotationMappedDir(pod *v1.Pod,
+func WritePodAnnotation(kubeClient kubernetes.Interface,
+						pod *v1.Pod,
+						configData *types.ConfigurationData) (*v1.Pod, error) {
+	var err error
+	var modifiedConfig bool
+	var modifiedMappedDir bool
+
+	//
+	// Write configuration data that will be consumed by container
+	//
+	if kubeClient != nil {
+		//
+		// Write configuration data into annotation
+		//
+		logging.Debugf("SaveRemoteConfig(): Store in PodSpec")
+
+		modifiedConfig, err = setPodAnnotationConfigData(pod, configData)
+		if err != nil {
+			logging.Errorf("SaveRemoteConfig: Error formatting annotation configData: %v", err)
+			return pod, err
+		}
+
+		// Retrieve the mappedSharedDir from the Containers in podSpec. Directory
+		// in container Socket Files will be read from. Write this data back as an
+		// annotation so container knows where directory is located.
+		mappedSharedDir, err := getPodVolumeMountHostMappedSharedDir(pod)
+		if err != nil {
+			mappedSharedDir = DefaultBaseCNIDir
+			logging.Warningf("SaveRemoteConfig: Error reading VolumeMount: %v", err)
+			logging.Warningf("SaveRemoteConfig: VolumeMount \"shared-dir\" not provided, defaulting to: %s", mappedSharedDir)
+			err = nil
+		}
+		modifiedMappedDir, err = setPodAnnotationMappedDir(pod, mappedSharedDir)
+		if err != nil {
+			logging.Errorf("SaveRemoteConfig: Error formatting annotation mappedSharedDir - %v", err)
+			return pod, err
+		}
+
+		if modifiedConfig == true || modifiedMappedDir == true {
+			pod, err = commitAnnotation(kubeClient, pod)
+			if err != nil {
+				logging.Errorf("SaveRemoteConfig: Error writing annotations - %v", err)
+				return pod, err
+			}
+		}
+	} else {
+		return pod, &NoKubeClientProvidedError{"Error: KubeClient not provided."}
+	}
+
+	return pod, err
+}
+
+
+//
+// Local Utility Functions
+//
+func setPodAnnotationMappedDir(pod *v1.Pod,
 							   mappedDir string) (bool, error) {
 	var modified bool
 
@@ -131,7 +201,7 @@ func SetPodAnnotationMappedDir(pod *v1.Pod,
 	return modified, nil
 }
 
-func SetPodAnnotationConfigData(pod *v1.Pod,
+func setPodAnnotationConfigData(pod *v1.Pod,
 								configData *types.ConfigurationData) (bool, error) {
 	var configDataStr []string
 	var modified bool
@@ -172,11 +242,12 @@ func SetPodAnnotationConfigData(pod *v1.Pod,
 	return modified, err
 }
 
-func WritePodAnnotation(kubeClient k8sclient.KubeClient,
+func commitAnnotation(kubeClient kubernetes.Interface,
 						pod *v1.Pod) (*v1.Pod, error) {
 	// Write the modified data back to the pod.
 	return k8sclient.WritePodAnnotation(kubeClient, pod)
 }
+
 
 //
 // Container Access Functions

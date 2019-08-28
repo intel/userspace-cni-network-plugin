@@ -33,15 +33,14 @@ import (
 	"regexp"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types/current"
 
-	"github.com/intel/userspace-cni-network-plugin/cniovs/ovsdb"
 	"github.com/intel/userspace-cni-network-plugin/logging"
-	"github.com/intel/userspace-cni-network-plugin/usrspdb"
+	"github.com/intel/userspace-cni-network-plugin/pkg/configdata"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
-	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 )
 
 //
@@ -60,11 +59,11 @@ type CniOvs struct {
 //
 func (cniOvs CniOvs) AddOnHost(conf *types.NetConf,
 							   args *skel.CmdArgs,
-							   kubeClient k8sclient.KubeClient,
+							   kubeClient kubernetes.Interface,
 							   sharedDir string,
 							   ipResult *current.Result) error {
 	var err error
-	var data ovsdb.OvsSavedData
+	var data OvsSavedData
 
 	logging.Infof("OVS AddOnHost: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
@@ -122,7 +121,7 @@ func (cniOvs CniOvs) AddOnHost(conf *types.NetConf,
 	//
 	// Save Config - Save Create Data for Delete
 	//
-	err = ovsdb.SaveConfig(conf, args, &data)
+	err = SaveConfig(conf, args, &data)
 	if err != nil {
 		return err
 	}
@@ -132,16 +131,16 @@ func (cniOvs CniOvs) AddOnHost(conf *types.NetConf,
 
 func (cniOvs CniOvs) AddOnContainer(conf *types.NetConf,
 									args *skel.CmdArgs,
-									kubeClient k8sclient.KubeClient,
+									kubeClient kubernetes.Interface,
 									sharedDir string,
 									pod *v1.Pod,
 									ipResult *current.Result) (*v1.Pod, error) {
 	logging.Infof("OVS AddOnContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
-	return usrspdb.SaveRemoteConfig(conf, args, kubeClient, sharedDir, pod, ipResult)
+	return configdata.SaveRemoteConfig(conf, args, kubeClient, sharedDir, pod, ipResult)
 }
 
 func (cniOvs CniOvs) DelFromHost(conf *types.NetConf, args *skel.CmdArgs, sharedDir string) error {
-	var data ovsdb.OvsSavedData
+	var data OvsSavedData
 	var err error
 
 	logging.Infof("OVS DelFromHost: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
@@ -149,7 +148,7 @@ func (cniOvs CniOvs) DelFromHost(conf *types.NetConf, args *skel.CmdArgs, shared
 	//
 	// Load Config - Retrieved squirreled away data needed for processing delete
 	//
-	err = ovsdb.LoadConfig(conf, args, &data)
+	err = LoadConfig(conf, args, &data)
 	if err != nil {
 		logging.Debugf("DelFromHost(ovs): %v", err)
 		return err
@@ -194,7 +193,7 @@ func (cniOvs CniOvs) DelFromHost(conf *types.NetConf, args *skel.CmdArgs, shared
 func (cniOvs CniOvs) DelFromContainer(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, pod *v1.Pod) error {
 	logging.Infof("OVS DelFromContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
-	usrspdb.FileCleanup(sharedDir, "")
+	configdata.FileCleanup(sharedDir, "")
 
 	return nil
 }
@@ -216,7 +215,7 @@ func generateRandomMacAddress() string {
 	return macAddr
 }
 
-func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, data *ovsdb.OvsSavedData) error {
+func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, data *OvsSavedData) error {
 	var err error
 	var vhostName string
 
@@ -260,7 +259,7 @@ func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir stri
 	return err
 }
 
-func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, data *ovsdb.OvsSavedData) error {
+func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, data *OvsSavedData) error {
 	// ovs-vsctl --if-exists del-port
 	if err := deleteVhostPort(data.Vhostname, conf.HostConf.BridgeConf.BridgeName); err == nil {
 		folder, err := os.Open(sharedDir)
@@ -311,7 +310,7 @@ func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir stri
 	return nil
 }
 
-func addLocalNetworkBridge(conf *types.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
+func addLocalNetworkBridge(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
 	var err error
 
 	if found := findBridge(conf.HostConf.BridgeConf.BridgeName); found == false {
@@ -334,7 +333,7 @@ func addLocalNetworkBridge(conf *types.NetConf, args *skel.CmdArgs, data *ovsdb.
 	return err
 }
 
-func delLocalNetworkBridge(conf *types.NetConf, args *skel.CmdArgs, data *ovsdb.OvsSavedData) error {
+func delLocalNetworkBridge(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
 	var err error
 
 	if containInterfaces := doesBridgeContainInterfaces(conf.HostConf.BridgeConf.BridgeName); containInterfaces == false {

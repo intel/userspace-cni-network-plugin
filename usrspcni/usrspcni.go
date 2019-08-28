@@ -16,13 +16,13 @@ package usrspcni
 
 import (
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	_ "github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
-	"github.com/intel/userspace-cni-network-plugin/k8sclient"
 )
 
 //
@@ -31,12 +31,12 @@ import (
 type UsrSpCni interface {
 	AddOnHost(conf *types.NetConf,
 			  args *skel.CmdArgs,
-			  kubeClient k8sclient.KubeClient,
+			  kubeClient kubernetes.Interface,
 			  sharedDir string,
 			  ipResult *current.Result) error
 	AddOnContainer(conf *types.NetConf,
 				   args *skel.CmdArgs,
-				   kubeClient k8sclient.KubeClient,
+				   kubeClient kubernetes.Interface,
 				   sharedDir string,
 				   pod *v1.Pod,
 				   ipResult *current.Result) (*v1.Pod, error)

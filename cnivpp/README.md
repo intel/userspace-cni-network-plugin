@@ -21,9 +21,9 @@ to consume interfaces in the container.
 The docker image **vpp-centos-userspace-cni** runs a VPP instance and the
 usrsp-app at startup. 
 
-## cnivpp/vppdb
-**vppdb** is use to store data in a DB. For the local VPP instance, the vppdb is
-used to store the swIndex generated when the interface is created. It is used
+## cnivpp/localdb.go
+**localdb** is use to store data in a DB. For the local VPP instance, the localdb
+is used to store the swIndex generated when the interface is created. It is used
 later to delete the interface. The usrspdb is used to pass configuration
 data to the container so the container can consume the interface.
 

@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
   - name: multi-memif-example
-    image: vpp-centos-userspace-cni:latest
+    image: dpdk-app-centos:latest
     imagePullPolicy: Never
     securityContext:
       privileged: true

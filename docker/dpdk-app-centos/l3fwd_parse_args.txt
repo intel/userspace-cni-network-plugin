@@ -1,0 +1,9 @@
+#if 0
+	ret = parse_args(argc, argv);
+#else
+	if (argc > 1) {
+		ret = parse_args(argc, argv);
+	} else {
+		ret = parse_args(myArgc, myArgv);
+	}
+#endif

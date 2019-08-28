@@ -1,0 +1,37 @@
+#if 0
+        ret = rte_eal_init(argc, argv);
+        if (ret < 0)
+                rte_exit(EXIT_FAILURE, "Invalid EAL parameters\n");
+        argc -= ret;
+        argv += ret;
+#else
+        int i;
+        int myArgc = 0;
+        char **myArgv = NULL;
+
+        printf("ENTER dpdk-app:\n");
+        printf("  argc=%d\n", argc);
+        for (i = 0; i < argc; i++) {
+                printf("  argv[%d]=%s\n", i, argv[i]);
+        }
+
+        if (argc > 1) {
+                ret = rte_eal_init(argc, argv);
+                if (ret < 0)
+                        rte_exit(EXIT_FAILURE, "Invalid EAL parameters\n");
+                argc -= ret;
+                argv += ret;
+        } else {
+                myArgv = GetArgs(&myArgc, DPDK_APP_L3FWD);
+                printf("  myArgc=%d\n", myArgc);
+                for (i = 0; i < myArgc; i++) {
+                        printf("  myArgv[%d]=%s\n", i, myArgv[i]);
+                }
+
+                ret = rte_eal_init(myArgc, myArgv);
+                if (ret < 0)
+                        rte_exit(EXIT_FAILURE, "Invalid EAL parameters\n");
+                myArgc -= ret;
+                myArgv += ret;
+        }
+#endif

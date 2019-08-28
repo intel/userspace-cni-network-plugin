@@ -28,11 +28,11 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/intel/userspace-cni-network-plugin/cniovs/cniovs"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/cnivpp"
+	"k8s.io/client-go/kubernetes"
+
+	"github.com/intel/userspace-cni-network-plugin/cnivpp"
 	"github.com/intel/userspace-cni-network-plugin/logging"
-	"github.com/intel/userspace-cni-network-plugin/usrspdb"
-	"github.com/intel/userspace-cni-network-plugin/k8sclient"
+	"github.com/intel/userspace-cni-network-plugin/pkg/configdata"
 )
 
 //
@@ -55,13 +55,13 @@ const (
 //
 func cniContainerConfig() (bool, string, error) {
 	var engine string
-	var kubeClient k8sclient.KubeClient
+	var kubeClient kubernetes.Interface
 	var found bool
 
 	vpp := cnivpp.CniVpp{}
 	//ovs := cniovs.CniOvs{}
 
-	ifaceList, sharedDir, err := usrspdb.GetRemoteConfig()
+	ifaceList, sharedDir, err := configdata.GetRemoteConfig()
 	if err != nil || len(ifaceList) == 0 {
 		return found, engine, err
 	} else {
