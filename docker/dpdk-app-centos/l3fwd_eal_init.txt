@@ -9,24 +9,28 @@
         int myArgc = 0;
         char **myArgv = NULL;
 
-        printf("ENTER dpdk-app:\n");
-        printf("  argc=%d\n", argc);
-        for (i = 0; i < argc; i++) {
-                printf("  argv[%d]=%s\n", i, argv[i]);
-        }
-
         if (argc > 1) {
+                printf("ENTER dpdk-app (l3fwd):\n");
+                printf("  argc=%d\n ", argc);
+                for (i = 0; i < argc; i++) {
+                        printf(" %s", argv[i]);
+                }
+                printf("\n");
+
                 ret = rte_eal_init(argc, argv);
                 if (ret < 0)
                         rte_exit(EXIT_FAILURE, "Invalid EAL parameters\n");
                 argc -= ret;
                 argv += ret;
         } else {
+                printf("COLLECT Data:\n");
                 myArgv = GetArgs(&myArgc, DPDK_APP_L3FWD);
-                printf("  myArgc=%d\n", myArgc);
+                printf("ENTER dpdk-app (l3fwd):\n");
+                printf("  myArgc=%d\n ", myArgc);
                 for (i = 0; i < myArgc; i++) {
-                        printf("  myArgv[%d]=%s\n", i, myArgv[i]);
+                        printf(" %s", myArgv[i]);
                 }
+                printf("\n");
 
                 ret = rte_eal_init(myArgc, myArgv);
                 if (ret < 0)

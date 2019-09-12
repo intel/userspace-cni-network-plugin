@@ -36,6 +36,7 @@ static int getInterfaces(int argc, int *pPortCnt, int *pPortMask) {
 	int j;
 	int vhostCnt = 0;
 	int memifCnt = 1;
+	int sriovCnt = 0;
 	int err;
 	struct InterfaceResponse ifaceRsp;
 	char macStr[DPDK_ARGS_MAX_MAC_STRLEN];
@@ -147,6 +148,8 @@ static int getInterfaces(int argc, int *pPortCnt, int *pPortMask) {
 						if (ifaceRsp.pIface[i].Sriov.PCIAddress) {
 							snprintf(&myArgsArray[argc++][0], DPDK_ARGS_MAX_ARG_STRLEN-1,
 									 "-w %s", ifaceRsp.pIface[i].Sriov.PCIAddress);
+							sriovCnt++;
+
 							free(ifaceRsp.pIface[i].Sriov.PCIAddress);
 
 							*pPortMask = *pPortMask | 1 << *pPortCnt;
@@ -271,6 +274,11 @@ static int getInterfaces(int argc, int *pPortCnt, int *pPortMask) {
 					free(ifaceRsp.pIface[i].Name);
 				}
 			} /* END of FOR EACH Interface */
+
+
+			if (sriovCnt == 0) {
+				strncpy(&myArgsArray[argc++][0], "--no-pci", DPDK_ARGS_MAX_ARG_STRLEN-1);
+			}
 		}
 		else {
 			printf("Couldn't get network interface, err code: %d\n", err);
@@ -333,8 +341,6 @@ char** GetArgs(int *pArgc, eDpdkAppType appType)
 
 			argc = getInterfaces(argc, &portCnt, &portMask);
 
-			strncpy(&myArgsArray[argc++][0], "--no-pci", DPDK_ARGS_MAX_ARG_STRLEN-1);
-
 			/*
 			 * Initialize APP Specific Options
 			 */
@@ -360,8 +366,6 @@ char** GetArgs(int *pArgc, eDpdkAppType appType)
 			lcoreBase = 1;
 
 			argc = getInterfaces(argc, &portCnt, &portMask);
-
-			strncpy(&myArgsArray[argc++][0], "--no-pci", DPDK_ARGS_MAX_ARG_STRLEN-1);
 
 			/*
 			 * Initialize APP Specific Options

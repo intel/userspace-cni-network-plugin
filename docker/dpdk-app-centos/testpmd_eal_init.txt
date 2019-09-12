@@ -5,20 +5,24 @@
         int myArgc = 0;
         char **myArgv = NULL;
 
-        printf("ENTER dpdk-app:\n");
-        printf("  argc=%d\n", argc);
-        for (i = 0; i < argc; i++) {
-                printf("  argv[%d]=%s\n", i, argv[i]);
-        }
-
         if (argc > 1) {
+                printf("ENTER dpdk-app (testpmd):\n");
+                printf("  argc=%d\n ", argc);
+                for (i = 0; i < argc; i++) {
+                        printf(" %s", argv[i]);
+                }
+                printf("\n");
+
                 diag = rte_eal_init(argc, argv);
         } else {
+                printf("COLLECT Data:\n");
                 myArgv = GetArgs(&myArgc, DPDK_APP_TESTPMD);
-                printf("  myArgc=%d\n", myArgc);
+                printf("ENTER dpdk-app (testpmd):\n");
+                printf("  myArgc=%d\n ", myArgc);
                 for (i = 0; i < myArgc; i++) {
-                        printf("  myArgv[%d]=%s\n", i, myArgv[i]);
+                        printf(" %s", myArgv[i]);
                 }
+                printf("\n");
 
                 diag = rte_eal_init(myArgc, myArgv);
         }
