@@ -1,6 +1,6 @@
 #  Docker Image: dpdk-app-centos
 This directory contains the files needed to build a DPDK based test image.
-This image is based on CentOS (latest) base image built with DPDK 19.02.
+This image is based on CentOS (latest) base image built with DPDK 19.08.
 
 The User Space CNI inconjunction with the OVS CNI Library (cniovs) or VPP
 CNI Library (cnivpp) creates interfaces on the host, like a vhost-user or
@@ -46,8 +46,8 @@ additional package or two to the image after the import stage.
 
 
 # Docker Image Details
-This Docker Image is downloading DPDK (version 19.02, but the version is
-not important) and building it. Once built, changing into the DPDK `testpmd`
+This Docker Image is downloading DPDK (version 19.08 to get memif PMD)
+and building it. Once built, changing into the DPDK `testpmd`
 directory (${DPDK_DIR}/app/test-pmd) and building it.
 
 `testpmd` is a sample DPDK application that comes with DPDK. Typically,
@@ -69,7 +69,8 @@ $ testpmd \
 ```
 
 This Docker image is tweaking this a little. Before `testpmd` is built, the
-testpmd.c file (contains main()) is overwritten with a local copy.
+testpmd.c file (contains main()) is updated using 'sed'. See
+'testpmd_substitute.sh'.
 
 **NOTE:** If a different version of DPDK is needed or used, this local file
 may need to be synchronized with the updated version. 
@@ -79,6 +80,12 @@ The changes to testpmd.c are simply to call a function in dpdk-args.c which
 will generate this list of input parameters, and then pass this private set
 of parameters to DPDK functions instead of the inpupt `argc` and `argv`. When
 the generated binary is copied to `/usr/bin/`, it is renamed to `dpdk-app`.
+
+The code is leveraging another project, app-netutil
+(https://github.com/openshift/app-netutil), which is a library design to be
+called within a container to collect all the configuration data, like that
+stored in annotations by Userspace CNI, and expose it to a DPDK application
+in a clean API.
 
 **NOTE:** For debugging, if `dpdk-app` is called with a set of input parameters,
 it will skip the dpdk-args.c code and behave exactly as `testpmd`. Just add
@@ -101,10 +108,37 @@ Then get a pod shell:
    kubectl exec -it userspace-ovs-pod-1 -- sh
 ```
 
-Run `dpdk-app` as needed:
+Run `dpdk-app` with no parameters, and it will be as if it is called
+as the container is started. It also prints out the generated parameter
+list, which include the dynamic socketfile path:
+```
+sh-4.2# dpdk-app 
+COLLECT Data:
+  cpuRsp.CPUSet = 0-63
+  Interface[0]:
+    IfName="eth0"  Name="cbr0"  Type=unknown
+    MAC="5e:6b:7e:19:5b:94"  IP="10.244.0.197"
+  Interface[1]:
+    IfName="net1"  Name="sriov-network-a"  Type=SR-IOV
+    MAC=""
+    PCIAddress=0000:01:0a.4
+  Interface[2]:
+    IfName="net2"  Name="sriov-network-b"  Type=SR-IOV
+    MAC=""
+    PCIAddress=0000:01:02.4
+ENTER dpdk-app (testpmd):
+  myArgc=15
+  dpdk-app -n 4 -l 1-3 --master-lcore 1 --vdev=virtio_user0,path=/var/lib/cni/usrspcni/34c8ba49b767-net1 --vdev=virtio_user1,path=/var/lib/cni/usrspcni/34c8ba49b767-net2 --no-pci -- --auto-start --tx-first --no-lsc-interrupt --stats-period 60
+EAL: Detected 64 lcore(s)
+EAL: Detected 2 NUMA nodes
+EAL: Multi-process socket /var/run/dpdk/rte/mp_socket
+:
+```
+
+Then 'CTRL-C' to exit and re-run `dpdk-app` with input parameters
+modified as needed:
 ```
 dpdk-app \
--m 1024 \
 -l 1-3 \
 -master-lcore 1 \
 -n 4 \
@@ -116,13 +150,6 @@ dpdk-app \
 --tx-first \
 --no-lsc-interrupt
 ```
-
-In a future patch, instead of hardcoding these parameters in dpdk-args.c, the
-code will leverage another project, app-netutil
-(https://github.com/openshift/app-netutil), which is a library design to be
-called within a container to collect all the configuration data, like that
-stored in annotations by Userspace CNI, and expose it to a DPDK application
-in a clean API.
 
 
 # Deploy Image
