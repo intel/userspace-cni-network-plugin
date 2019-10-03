@@ -1,0 +1,9 @@
+language: go
+
+before-install:
+  - sudo apt-get update -qq
+
+script:
+  - make install
+  - make
+  - make clean
