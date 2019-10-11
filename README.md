@@ -459,6 +459,13 @@ containers, work still needs to be done. Set SELinux to permissive.
 To install VPP on CentOS from https://packagecloud.io/fdio/ repository:
 ```
 curl -s https://packagecloud.io/install/repositories/fdio/1904/script.rpm.sh | sudo bash
+```
+To resolve dependency issues, install the following packages:
+```
+yum install -y epel-release mbedtls python36
+```
+Installing RPMs:
+```
 yum install -y vpp vpp-lib vpp-plugins vpp-devel vpp-api-python vpp-api-lua vpp-selinux-policy
 ```
 
