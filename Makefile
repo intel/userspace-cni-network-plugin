@@ -94,7 +94,7 @@ ifeq ($(VPPINSTALLED),0)
 ifeq ($(PKG),rpm)
 	@$(SUDO) -E yum install -y wget cpio rpm
 else ifeq ($(PKG),deb)
-	@$(SUDO) -E apt-get install -y binutils wget curl
+	@$(SUDO) -E apt-get install -y binutils wget
 endif
 endif
 
