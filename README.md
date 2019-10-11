@@ -108,7 +108,7 @@ for more information.
 # Build & Clean
 
 This plugin is recommended to be built with Go 1.11.10 and either OVS-DPDK 2.9.0-3
-or VPP 19.04.1. Other versions of Go, OVS-DPDK and VPP are theoretically
+or VPP 19.04. Other versions of Go, OVS-DPDK and VPP are theoretically
 supported, but MIGHT cause unknown issue.
 
 There are a few environmental variables used in building and teating this plugin.
@@ -432,7 +432,7 @@ feature (https://github.com/intel/userspace-cni-network-plugin/issues).
 
 ## Installing VPP
 There are several ways to install VPP. This code is based on a fixed release
-VPP (VPP 19.04.1 initially), so it is best to install a released version (even
+VPP (VPP 19.04 initially), so it is best to install a released version (even
 though it is possible to build your own).
 
 
@@ -474,7 +474,7 @@ sudo systemctl enable vpp
 To install on Ubuntu 16.04 (Xenial) as an example to demonstrate how to install VPP from pre-build packages:
 ```
 export UBUNTU="xenial"
-export RELEASE=".stable.19.04.1"
+export RELEASE=".stable.1904"
 sudo rm /etc/apt/sources.list.d/99fd.io.list
 echo "deb [trusted=yes] https://nexus.fd.io/content/repositories/fd.io$RELEASE.ubuntu.$UBUNTU.main/ ./" | sudo tee -a /etc/apt/sources.list.d/99fd.io.list
 sudo apt-get update
@@ -501,7 +501,7 @@ There are a few environmental variables used in this test. Here is an example:
 
 ```
 
-In order to test, a container with VPP 19.04.1 and usrsp-app has been created:
+In order to test, a container with VPP 19.04 and usrsp-app has been created:
 ```
   docker pull bmcfall/vpp-centos-userspace-cni:latest
 ```
