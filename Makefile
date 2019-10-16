@@ -119,21 +119,24 @@ ifeq ($(PKG),rpm)
 		./usr/share/vpp/api/vhost_user.api.json \
 		./usr/share/vpp/api/vpe.api.json
 else ifeq ($(PKG),deb)
-	@cd tmpvpp && wget https://nexus.fd.io/content/repositories/fd.io.stable.$(VPPVERSION).ubuntu.xenial.main/io/fd/vpp/vpp/$(VPPDOTVERSION)-release_amd64/vpp-$(VPPDOTVERSION)-release_amd64-deb.deb
-	@cd tmpvpp && wget https://nexus.fd.io/content/repositories/fd.io.stable.$(VPPVERSION).ubuntu.xenial.main/io/fd/vpp/vpp-lib/$(VPPDOTVERSION)-release_amd64/vpp-lib-$(VPPDOTVERSION)-release_amd64-deb.deb
-	@cd tmpvpp && wget https://nexus.fd.io/content/repositories/fd.io.stable.$(VPPVERSION).ubuntu.xenial.main/io/fd/vpp/vpp-dev/$(VPPDOTVERSION)-release_amd64/vpp-dev-$(VPPDOTVERSION)-release_amd64-deb.deb
-	@cd tmpvpp && wget https://nexus.fd.io/content/repositories/fd.io.stable.$(VPPVERSION).ubuntu.xenial.main/io/fd/vpp/vpp-plugins/$(VPPDOTVERSION)-release_amd64/vpp-plugins-$(VPPDOTVERSION)-release_amd64-deb.deb
-	@cd tmpvpp && dpkg-deb --fsys-tarfile vpp-dev-$(VPPDOTVERSION)-release_amd64-deb.deb | tar -x \
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/xenial/vpp_$(VPPDOTVERSION)-release_amd64.deb/download.deb
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/xenial/vpp-dev_$(VPPDOTVERSION)-release_amd64.deb/download.deb
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/xenial/libvppinfra_$(VPPDOTVERSION)-release_amd64.deb/download.deb
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/xenial/vpp-plugin-core_$(VPPDOTVERSION)-release_amd64.deb/download.deb
+	@cd tmpvpp && dpkg-deb --fsys-tarfile vpp-dev_$(VPPDOTVERSION)-release_amd64.deb | tar -x \
 		./usr/include/vpp-api/client/vppapiclient.h
-	@cd tmpvpp && dpkg-deb --fsys-tarfile vpp-lib-$(VPPDOTVERSION)-release_amd64-deb.deb | tar -x \
-		./usr/lib/x86_64-linux-gnu/libvppapiclient.so.0.0.0
-	@cd tmpvpp && dpkg-deb --fsys-tarfile vpp-$(VPPDOTVERSION)-release_amd64-deb.deb | tar -x \
-		./usr/share/vpp/api/interface.api.json \
-		./usr/share/vpp/api/l2.api.json \
-		./usr/share/vpp/api/vhost_user.api.json \
-		./usr/share/vpp/api/vpe.api.json
-	@cd tmpvpp && dpkg-deb --fsys-tarfile vpp-plugins-$(VPPDOTVERSION)-release_amd64-deb.deb | tar -x \
-		./usr/share/vpp/api/memif.api.json
+	@cd tmpvpp && dpkg-deb --fsys-tarfile libvppinfra_$(VPPDOTVERSION)-release_amd64.deb | tar -x \
+		./usr/lib/x86_64-linux-gnu/libvppinfra.so.$(VPPDOTVERSION)
+	@cd tmpvpp && dpkg-deb --fsys-tarfile vpp_$(VPPDOTVERSION)-release_amd64.deb | tar -x \
+		./usr/share/vpp/api/core/interface.api.json \
+		./usr/share/vpp/api/core/l2.api.json \
+		./usr/share/vpp/api/core/vhost_user.api.json \
+		./usr/share/vpp/api/core/vpe.api.json \
+		./usr/lib/x86_64-linux-gnu/libsvm.so.$(VPPDOTVERSION) \
+		./usr/lib/x86_64-linux-gnu/libvlibmemoryclient.so.$(VPPDOTVERSION) \
+		./usr/lib/x86_64-linux-gnu/libvppapiclient.so.$(VPPDOTVERSION)
+	@cd tmpvpp && dpkg-deb --fsys-tarfile vpp-plugin-core_$(VPPDOTVERSION)-release_amd64.deb | tar -x \
+		./usr/share/vpp/api/plugins/memif.api.json
 endif
 	@$(SUDO) -E mkdir -p /usr/include/vpp-api/client/
 	@$(SUDO) -E cp tmpvpp/usr/include/vpp-api/client/vppapiclient.h /usr/include/vpp-api/client/.
@@ -163,7 +166,11 @@ endif
 	@$(SUDO) -E chown -R bin:bin $(VPPLIBDIR)/libvppinfra.so*
 	@echo   Installed  $(VPPLIBDIR)/libsvm.so $(VPPLIBDIR)/libvlibmemoryclient.so $(VPPLIBDIR)/libvppapiclient.so $(VPPLIBDIR)/libvppinfra.so
 	@$(SUDO) -E mkdir -p /usr/share/vpp/api/
+ifeq ($(PKG),rpm)
 	@$(SUDO) -E cp tmpvpp/usr/share/vpp/api/*.json /usr/share/vpp/api/.
+else ifeq ($(PKG),deb)
+	@$(SUDO) -E cp tmpvpp/usr/share/vpp/api/core/*.json /usr/share/vpp/api/.
+endif
 	@$(SUDO) -E chown -R bin:bin /usr/share/vpp/
 	@echo   Installed /usr/share/vpp/api/*.json
 	@rm -rf tmpvpp
