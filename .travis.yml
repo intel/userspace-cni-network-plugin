@@ -4,6 +4,7 @@ before-install:
   - sudo apt-get update -qq
 
 script:
+  - make install-dep
   - make install
   - make
   - make clean

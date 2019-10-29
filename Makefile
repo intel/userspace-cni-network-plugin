@@ -170,6 +170,7 @@ ifeq ($(PKG),rpm)
 	@$(SUDO) -E cp tmpvpp/usr/share/vpp/api/*.json /usr/share/vpp/api/.
 else ifeq ($(PKG),deb)
 	@$(SUDO) -E cp tmpvpp/usr/share/vpp/api/core/*.json /usr/share/vpp/api/.
+	@$(SUDO) -E cp tmpvpp/usr/share/vpp/api/plugins/*.json /usr/share/vpp/api/.
 endif
 	@$(SUDO) -E chown -R bin:bin /usr/share/vpp/
 	@echo   Installed /usr/share/vpp/api/*.json
