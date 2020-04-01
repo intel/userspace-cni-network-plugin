@@ -10,8 +10,32 @@ import (
 
 const defaultOvSSocketDir = "/usr/local/var/run/openvswitch/"
 
-func execCommand(cmd string, args []string) ([]byte, error) {
+/*
+OVS command execution handling and its public interface
+*/
+
+type ExecCommandInterface interface {
+	execCommand(cmd string, args []string) ([]byte, error)
+}
+
+type realExecCommand struct{}
+
+func (e *realExecCommand) execCommand(cmd string, args []string) ([]byte, error) {
 	return exec.Command(cmd, args...).Output()
+}
+
+var ovsCommandS ExecCommandInterface = &realExecCommand{}
+
+func SetExecCommand(o ExecCommandInterface) {
+	ovsCommandS = o
+}
+
+func SetDefaultExecCommand() {
+	ovsCommandS = &realExecCommand{}
+}
+
+func execCommand(cmd string, args []string) ([]byte, error) {
+	return ovsCommandS.execCommand(cmd, args)
 }
 
 /*
