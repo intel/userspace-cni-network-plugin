@@ -58,10 +58,10 @@ type CniOvs struct {
 // API Functions
 //
 func (cniOvs CniOvs) AddOnHost(conf *types.NetConf,
-							   args *skel.CmdArgs,
-							   kubeClient kubernetes.Interface,
-							   sharedDir string,
-							   ipResult *current.Result) error {
+	args *skel.CmdArgs,
+	kubeClient kubernetes.Interface,
+	sharedDir string,
+	ipResult *current.Result) error {
 	var err error
 	var data OvsSavedData
 
@@ -130,11 +130,11 @@ func (cniOvs CniOvs) AddOnHost(conf *types.NetConf,
 }
 
 func (cniOvs CniOvs) AddOnContainer(conf *types.NetConf,
-									args *skel.CmdArgs,
-									kubeClient kubernetes.Interface,
-									sharedDir string,
-									pod *v1.Pod,
-									ipResult *current.Result) (*v1.Pod, error) {
+	args *skel.CmdArgs,
+	kubeClient kubernetes.Interface,
+	sharedDir string,
+	pod *v1.Pod,
+	ipResult *current.Result) (*v1.Pod, error) {
 	logging.Infof("OVS AddOnContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 	return configdata.SaveRemoteConfig(conf, args, kubeClient, sharedDir, pod, ipResult)
 }
@@ -241,9 +241,9 @@ func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir stri
 
 	// ovs-vsctl add-port
 	if vhostName, err = createVhostPort(sharedDir,
-							conf.HostConf.VhostConf.Socketfile,
-							clientMode,
-							conf.HostConf.BridgeConf.BridgeName); err == nil {
+		conf.HostConf.VhostConf.Socketfile,
+		clientMode,
+		conf.HostConf.BridgeConf.BridgeName); err == nil {
 		if vhostPortMac, err := getVhostPortMac(vhostName); err == nil {
 			data.VhostMac = vhostPortMac
 		} else {

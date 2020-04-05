@@ -10,11 +10,11 @@
 package annotations
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"strings"
-	"bytes"
 	"io/ioutil"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -22,10 +22,9 @@ import (
 	"github.com/go-logfmt/logfmt"
 
 	"github.com/intel/userspace-cni-network-plugin/logging"
-	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 	"github.com/intel/userspace-cni-network-plugin/pkg/k8sclient"
+	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 )
-
 
 // Annotation
 // These structures are used to document the set of annotations used in
@@ -34,31 +33,28 @@ import (
 
 // List of Annotations supported in the podSpec
 const (
-	annotKeyNetwork = "k8s.v1.cni.cncf.io/networks"
-	annotKeyNetworkStatus = "k8s.v1.cni.cncf.io/networks-status"
+	annotKeyNetwork         = "k8s.v1.cni.cncf.io/networks"
+	annotKeyNetworkStatus   = "k8s.v1.cni.cncf.io/networks-status"
 	AnnotKeyUsrspConfigData = "userspace/configuration-data"
-	AnnotKeyUsrspMappedDir = "userspace/mapped-dir"
-	volMntKeySharedDir = "shared-dir"
+	AnnotKeyUsrspMappedDir  = "userspace/mapped-dir"
+	volMntKeySharedDir      = "shared-dir"
 
-	DefaultBaseCNIDir = "/var/lib/cni/usrspcni"
+	DefaultBaseCNIDir  = "/var/lib/cni/usrspcni"
 	DefaultLocalCNIDir = "/var/lib/cni/usrspcni/data"
-
 )
-
-
 
 // Errors returned from this module
 type NoSharedDirProvidedError struct {
 	message string
 }
+
 func (e *NoSharedDirProvidedError) Error() string { return string(e.message) }
 
 type NoKubeClientProvidedError struct {
 	message string
 }
+
 func (e *NoKubeClientProvidedError) Error() string { return string(e.message) }
-
-
 
 func GetPodVolumeMountHostSharedDir(pod *v1.Pod) (string, error) {
 	var hostSharedDir string
@@ -111,8 +107,8 @@ func getPodVolumeMountHostMappedSharedDir(pod *v1.Pod) (string, error) {
 }
 
 func WritePodAnnotation(kubeClient kubernetes.Interface,
-						pod *v1.Pod,
-						configData *types.ConfigurationData) (*v1.Pod, error) {
+	pod *v1.Pod,
+	configData *types.ConfigurationData) (*v1.Pod, error) {
 	var err error
 	var modifiedConfig bool
 	var modifiedMappedDir bool
@@ -162,12 +158,11 @@ func WritePodAnnotation(kubeClient kubernetes.Interface,
 	return pod, err
 }
 
-
 //
 // Local Utility Functions
 //
 func setPodAnnotationMappedDir(pod *v1.Pod,
-							   mappedDir string) (bool, error) {
+	mappedDir string) (bool, error) {
 	var modified bool
 
 	logging.Verbosef("SetPodAnnotationMappedDir: inputMappedDir=%s Annot - type=%T mappedDir=%v", mappedDir, pod.Annotations[AnnotKeyUsrspMappedDir], pod.Annotations[AnnotKeyUsrspMappedDir])
@@ -199,7 +194,7 @@ func setPodAnnotationMappedDir(pod *v1.Pod,
 }
 
 func setPodAnnotationConfigData(pod *v1.Pod,
-								configData *types.ConfigurationData) (bool, error) {
+	configData *types.ConfigurationData) (bool, error) {
 	var configDataStr []string
 	var modified bool
 
@@ -210,7 +205,7 @@ func setPodAnnotationConfigData(pod *v1.Pod,
 		pod.Annotations = make(map[string]string)
 	}
 
-	// Get current data, if any. The current data is a string in JSON format with 
+	// Get current data, if any. The current data is a string in JSON format with
 	// data for multiple interfaces appended together. A given container can have
 	// multiple interfaces, added one at a time. So existing data may be empty if
 	// this is the first interface, or already contain data.
@@ -240,11 +235,10 @@ func setPodAnnotationConfigData(pod *v1.Pod,
 }
 
 func commitAnnotation(kubeClient kubernetes.Interface,
-						pod *v1.Pod) (*v1.Pod, error) {
+	pod *v1.Pod) (*v1.Pod, error) {
 	// Write the modified data back to the pod.
 	return k8sclient.WritePodAnnotation(kubeClient, pod)
 }
-
 
 //
 // Container Access Functions
@@ -285,7 +279,7 @@ func GetFileAnnotationMappedDir() (string, error) {
 		return "", err
 	}
 
-	return string(rawData), err	
+	return string(rawData), err
 }
 
 func GetFileAnnotationConfigData() ([]*types.ConfigurationData, error) {
@@ -308,7 +302,7 @@ func GetFileAnnotationConfigData() ([]*types.ConfigurationData, error) {
 		return nil, logging.Errorf("GetFileAnnotationConfigData: Invalid formatted JSON data")
 	}
 
-	return configDataList, err	
+	return configDataList, err
 }
 
 //func GetFileAnnotationNetworksStatus() ([]*multusTypes.NetworkStatus, error) {
@@ -331,5 +325,5 @@ func GetFileAnnotationConfigData() ([]*types.ConfigurationData, error) {
 //		return nil, logging.Errorf("GetFileAnnotationNetworksStatus: Invalid formatted JSON data")
 //	}
 //
-//	return networkStatusList, err	
+//	return networkStatusList, err
 //}
