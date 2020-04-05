@@ -32,7 +32,11 @@ func createVhostPort(sock_dir string, sock_name string, client bool, bridge_name
 
 	if client == true {
 		socketarg := "options:vhost-server-path=" + sock_dir
-		logging.Errorf("Additional string: %s", socketarg)
+		if sock_dir[len(sock_dir)-1] != '/' {
+			socketarg += "/"
+		}
+		socketarg += sock_name
+		logging.Debugf("Additional string: %s", socketarg)
 
 		args = append(args, socketarg)
 	}

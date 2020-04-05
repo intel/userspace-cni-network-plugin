@@ -41,6 +41,9 @@ const (
 
 	DefaultBaseCNIDir  = "/var/lib/cni/usrspcni"
 	DefaultLocalCNIDir = "/var/lib/cni/usrspcni/data"
+
+	DefaultHostkubeletPodBaseDir  = "/var/lib/kubelet/pods/"
+	DefaultHostEmptyDirVolumeName = "volumes/kubernetes.io~empty-dir/"
 )
 
 // Errors returned from this module
@@ -67,7 +70,13 @@ func GetPodVolumeMountHostSharedDir(pod *v1.Pod) (string, error) {
 
 	for _, volumeMount := range pod.Spec.Volumes {
 		if volumeMount.Name == volMntKeySharedDir {
-			hostSharedDir = volumeMount.HostPath.Path
+			if volumeMount.HostPath != nil {
+				hostSharedDir = volumeMount.HostPath.Path
+			} else if volumeMount.EmptyDir != nil {
+				hostSharedDir = DefaultHostkubeletPodBaseDir + string(pod.UID) + "/" + DefaultHostEmptyDirVolumeName + volMntKeySharedDir
+			} else {
+				return hostSharedDir, &NoSharedDirProvidedError{"Error: Volume is invalid"}
+			}
 			break
 		}
 	}
@@ -82,7 +91,7 @@ func GetPodVolumeMountHostSharedDir(pod *v1.Pod) (string, error) {
 func getPodVolumeMountHostMappedSharedDir(pod *v1.Pod) (string, error) {
 	var mappedSharedDir string
 
-	logging.Verbosef("getPodVolumeMountHostMappedSharedDir: type=%T Containers=%v", pod.Spec.Containers, pod.Spec.Containers)
+	logging.Verbosef("getPodVolumeMountHostMappedSharedDir: Containers=%v", pod.Spec.Containers)
 
 	if len(pod.Spec.Containers) == 0 {
 		return mappedSharedDir, &NoSharedDirProvidedError{"Error: No Containers. Need \"shared-dir\" in podSpec \"Volumes\""}
