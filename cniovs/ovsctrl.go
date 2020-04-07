@@ -24,18 +24,18 @@ func (e *realExecCommand) execCommand(cmd string, args []string) ([]byte, error)
 	return exec.Command(cmd, args...).Output()
 }
 
-var ovsCommandS ExecCommandInterface = &realExecCommand{}
+var ovsCommand ExecCommandInterface = &realExecCommand{}
 
 func SetExecCommand(o ExecCommandInterface) {
-	ovsCommandS = o
+	ovsCommand = o
 }
 
 func SetDefaultExecCommand() {
-	ovsCommandS = &realExecCommand{}
+	ovsCommand = &realExecCommand{}
 }
 
 func execCommand(cmd string, args []string) ([]byte, error) {
-	return ovsCommandS.execCommand(cmd, args)
+	return ovsCommand.execCommand(cmd, args)
 }
 
 /*

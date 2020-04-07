@@ -6,46 +6,24 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/containernetworking/cni/pkg/invoke"
-	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/plugins/pkg/testutils"
 	"github.com/intel/userspace-cni-network-plugin/cniovs"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
+	"github.com/intel/userspace-cni-network-plugin/userspace/testdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
 const verString = "userspace-cni-network-plugin version:%s, commit:%s, date:%s"
-
-func getTestPod() *v1.Pod {
-	return &v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			UID:       "12345678",
-			Name:      "testName",
-			Namespace: "testNamespace",
-		},
-	}
-}
-
-func getTestArgs() *skel.CmdArgs {
-	return &skel.CmdArgs{
-		ContainerID: "12345678901234567890",
-		Netns:       "testNet",
-		IfName:      "eth0",
-		Args:        "",
-	}
-}
 
 func TestPrintVersionString(t *testing.T) {
 	t.Run("verify version string", func(t *testing.T) {
@@ -143,7 +121,7 @@ func TestLoadNetConf(t *testing.T) {
 			if err == nil {
 				assert.Equal(t, tc.expErr, err, "Error was expected")
 			} else {
-				require.NotNil(t, tc.expErr, "Unexpected error returned")
+				require.Error(t, tc.expErr, "Unexpected error returned")
 				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected error returned")
 			}
 			assert.Equal(t, tc.expNetConf, netConf, "Unexpected parsing output.")
@@ -152,19 +130,9 @@ func TestLoadNetConf(t *testing.T) {
 }
 
 func TestGetPodAndSharedDir(t *testing.T) {
-	args := getTestArgs()
-	testPod := getTestPod()
-	testPodWithVolume := getTestPod()
-
-	tmpVolume := v1.Volume{
-		Name: "shared-dir",
-		VolumeSource: v1.VolumeSource{
-			HostPath: &v1.HostPathVolumeSource{
-				Path: "/tmp/testdir/",
-			},
-		},
-	}
-	testPodWithVolume.Spec.Volumes = append(testPodWithVolume.Spec.Volumes, tmpVolume)
+	args := testdata.GetTestArgs()
+	pod := testdata.GetTestPod("")
+	podWithVolume := testdata.GetTestPod("/tmp/testdir/")
 
 	testCases := []struct {
 		name         string
@@ -174,7 +142,7 @@ func TestGetPodAndSharedDir(t *testing.T) {
 	}{
 		{
 			name:         "default sharedDir",
-			pod:          testPod,
+			pod:          pod,
 			netConf:      &types.NetConf{},
 			expSharedDir: fmt.Sprintf("/var/lib/cni/usrspcni/%v/", args.ContainerID[:12]),
 		},
@@ -186,37 +154,37 @@ func TestGetPodAndSharedDir(t *testing.T) {
 		},
 		{
 			name:         "default sharedDir for vpp",
-			pod:          testPod,
+			pod:          pod,
 			netConf:      &types.NetConf{HostConf: types.UserSpaceConf{Engine: "vpp"}},
 			expSharedDir: fmt.Sprintf("/var/run/vpp/%v/", args.ContainerID[:12]),
 		},
 		{
 			name:         "default sharedDir for ovs-dpdk",
-			pod:          testPod,
+			pod:          pod,
 			netConf:      &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk"}},
 			expSharedDir: fmt.Sprintf("/usr/local/var/run/openvswitch/%v/", args.ContainerID[:12]),
 		},
 		{
 			name:         "default sharedDir for ovs-dpdk with kubeconfig",
-			pod:          testPod,
+			pod:          pod,
 			netConf:      &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk"}, KubeConfig: "/etc/kube.conf"},
 			expSharedDir: fmt.Sprintf("/usr/local/var/run/openvswitch/%v/", args.ContainerID[:12]),
 		},
 		{
 			name:         "configured sharedDir in netConf with trailing slash",
-			pod:          testPod,
+			pod:          pod,
 			netConf:      &types.NetConf{SharedDir: "/tmp/netconfdir/"},
 			expSharedDir: fmt.Sprintf("/tmp/netconfdir/%v/", args.ContainerID[:12]),
 		},
 		{
 			name:         "configured sharedDir in netConf with NO trailing slash",
-			pod:          testPod,
+			pod:          pod,
 			netConf:      &types.NetConf{SharedDir: "/tmp/netconfdir"},
 			expSharedDir: fmt.Sprintf("/tmp/netconfdir/%v/", args.ContainerID[:12]),
 		},
 		{
 			name:         "configured sharedDir in Pod.Spec.Volumes",
-			pod:          testPodWithVolume,
+			pod:          podWithVolume,
 			netConf:      &types.NetConf{},
 			expSharedDir: "/tmp/testdir/",
 		},
@@ -230,19 +198,16 @@ func TestGetPodAndSharedDir(t *testing.T) {
 				kubeClient = fake.NewSimpleClientset(tc.pod)
 			}
 
-			_, _, sharedDir, err := getPodAndSharedDir(tc.netConf, args, kubeClient)
-			assert.Nil(t, err, "Unexpected error")
+			resClient, resPod, sharedDir, err := getPodAndSharedDir(tc.netConf, args, kubeClient)
+			assert.NoError(t, err, "Unexpected error")
 			assert.Equal(t, tc.expSharedDir, sharedDir, "Unexpected sharedDir returned")
+			assert.Equal(t, tc.pod, resPod, "Unexpected pod returned")
+			assert.Equal(t, kubeClient, resClient, "Unexpected kube client returned")
 		})
 	}
 }
 
 func TestCmdAdd(t *testing.T) {
-	testArgs := getTestArgs()
-	testPod := getTestPod()
-	testNetNS, nsErr := testutils.NewNS()
-	require.Nil(t, nsErr, "Can't craete NewNS")
-
 	testCases := []struct {
 		name       string
 		netConfStr string
@@ -250,6 +215,7 @@ func TestCmdAdd(t *testing.T) {
 		expError   string
 		expJSONKey string // a mandatory key in valid JSON output
 		fakeExec   bool
+		fakeErr    error
 	}{
 		{
 			name:       "fail to parse netConf",
@@ -259,61 +225,64 @@ func TestCmdAdd(t *testing.T) {
 		},
 		{
 			name:       "fail to open netns",
-			netConfStr: `{"host":{"engine":"ovs-dpdk"}}`,
+			netConfStr: `{"host":{"engine":"ovs-dpdk"},"sharedDir":"#sharedDir#"}`,
 			netNS:      "badNS",
 			expError:   "failed to open netns",
 		},
 		{
 			name:       "fail to connect to vpp",
-			netConfStr: `{"host":{"engine":"vpp"}}`,
-			netNS:      testNetNS.Path(),
+			netConfStr: `{"host":{"engine":"vpp"},"sharedDir":"#sharedDir#"}`,
+			netNS:      "generate",
 			expError:   "dial unix /run/vpp-api.sock: connect: no such file or directory",
 		},
 		{
 			name:       "fail to connect to ovs-dpdk",
-			netConfStr: `{"host":{"engine":"ovs-dpdk"}}`,
-			netNS:      testNetNS.Path(),
-			expError:   `exec: "ovs-vsctl":`,
+			netConfStr: `{"host":{"engine":"ovs-dpdk"},"sharedDir":"#sharedDir#"}`,
+			netNS:      "generate",
+			expError:   "ovs exec error",
+			fakeExec:   true,
+			fakeErr:    errors.New("ovs exec error"),
 		},
 		{
 			name:       "fail with unknown engine",
-			netConfStr: `{"host":{"engine":"nonsence"}}`,
-			netNS:      testNetNS.Path(),
-			expError:   "ERROR: Unknown Host Engine:nonsence",
+			netConfStr: `{"host":{"engine":"nonsense"},"sharedDir":"#sharedDir#"}`,
+			netNS:      "generate",
+			expError:   "ERROR: Unknown Host Engine:nonsense",
+			fakeExec:   true,
 		},
 		{
 			name:       "host set and no IPAM",
-			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"}}`,
-			netNS:      testNetNS.Path(),
+			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser","vhost":{"mode":"client"}},"sharedDir":"#sharedDir#"}`,
+			netNS:      "generate",
 			expJSONKey: "cniVersion",
 			fakeExec:   true,
 		},
 		{
 			// currently host and container engine can differ - does it make sense?
 			name:       "container with vpp engine",
-			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"vpp","iftype":"vhostuser"}}`,
-			netNS:      testNetNS.Path(),
+			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser","vhost":{"mode":"client"}},"container":{"engine":"vpp","iftype":"vhostuser"},"sharedDir":"#sharedDir#"}`,
+			netNS:      "generate",
 			expJSONKey: "cniVersion",
 			fakeExec:   true,
 		},
 		{
 			name:       "fail container with unknown engine",
-			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"nonsence","iftype":"vhostuser"}}`,
-			netNS:      testNetNS.Path(),
+			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser","vhost":{"mode":"client"}},"container":{"engine":"nonsense","iftype":"vhostuser"},"sharedDir":"#sharedDir#"}`,
+			netNS:      "generate",
 			fakeExec:   true,
-			expError:   "ERROR: Unknown Container Engine:nonsence",
+			expError:   "ERROR: Unknown Container Engine:nonsense",
 		},
 		{
 			name:       "container set and no IPAM",
-			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"ovs-dpdk","iftype":"vhostuser"}}`,
-			netNS:      testNetNS.Path(),
+			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser","vhost":{"mode":"client"}},"container":{"engine":"ovs-dpdk","iftype":"vhostuser"},"sharedDir":"#sharedDir#"}`,
+			netNS:      "generate",
 			expJSONKey: "cniVersion",
 			fakeExec:   true,
 		},
 		{
 			name:       "fail when CNI command is not set",
-			netConfStr: `{"ipam":{"type":"host-local"},"host":{"engine":"ovs-dpdk","iftype":"vhostuser"}}`,
-			netNS:      testNetNS.Path(),
+			netConfStr: `{"ipam":{"type":"host-local"},"host":{"engine":"ovs-dpdk","iftype":"vhostuser","vhost":{"mode":"client"}},"sharedDir":"#sharedDir#"}`,
+			netNS:      "generate",
 			fakeExec:   true,
 			expError:   "CNI_COMMAND is not",
 		},
@@ -322,14 +291,29 @@ func TestCmdAdd(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var kubeClient *fake.Clientset
 			var exec invoke.Exec
+			args := testdata.GetTestArgs()
 
-			testArgs.Netns = tc.netNS
-			kubeClient = fake.NewSimpleClientset(testPod)
+			if tc.netNS == "generate" {
+				netNS, nsErr := testutils.NewNS()
+				require.NoError(t, nsErr, "Can't create NewNS")
+				defer testutils.UnmountNS(netNS)
+				args.Netns = netNS.Path()
+			} else {
+				args.Netns = tc.netNS
+			}
 
-			testArgs.StdinData = []byte(tc.netConfStr)
+			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-userspace-")
+			require.NoError(t, dirErr, "Can't create temporary directory")
+			tc.netConfStr = strings.Replace(tc.netConfStr, "#sharedDir#", sharedDir, -1)
+			defer os.RemoveAll(sharedDir)
+
+			pod := testdata.GetTestPod(sharedDir)
+			kubeClient = fake.NewSimpleClientset(pod)
+
+			args.StdinData = []byte(tc.netConfStr)
 
 			if tc.fakeExec {
-				cniovs.SetExecCommand(&cniovs.FakeExecCommand{})
+				cniovs.SetExecCommand(&cniovs.FakeExecCommand{Err: tc.fakeErr})
 				defer cniovs.SetDefaultExecCommand()
 			}
 
@@ -340,7 +324,7 @@ func TestCmdAdd(t *testing.T) {
 			}
 			origStdout := os.Stdout
 			os.Stdout = stdW
-			err := cmdAdd(testArgs, exec, kubeClient)
+			err := cmdAdd(args, exec, kubeClient)
 			os.Stdout = origStdout
 			stdW.Close()
 			var buf bytes.Buffer
@@ -348,9 +332,9 @@ func TestCmdAdd(t *testing.T) {
 			stdOut := buf.String()
 
 			if tc.expError == "" {
-				assert.Nil(t, err, "Unexpected error")
+				assert.NoError(t, err, "Unexpected error")
 			} else {
-				require.NotNil(t, err, "Unexpected error")
+				require.Error(t, err, "Unexpected error")
 				assert.Contains(t, err.Error(), tc.expError, "Unexpected error")
 			}
 
@@ -362,6 +346,10 @@ func TestCmdAdd(t *testing.T) {
 				require.NoError(t, json.Unmarshal([]byte(stdOut), &jsonOut), "Invalid JSON in output")
 				assert.Contains(t, jsonOut, tc.expJSONKey)
 			}
+
+			// remove termporary files by reading saved data
+			var data cniovs.OvsSavedData
+			assert.NoError(t, cniovs.LoadConfig(&types.NetConf{}, args, &data))
 		})
 	}
 }
@@ -369,23 +357,16 @@ func TestCmdAdd(t *testing.T) {
 func TestCmdGet(t *testing.T) {
 	t.Run("test placeholder until GetCmd will be implemented", func(t *testing.T) {
 		var exec invoke.Exec
-		testArgs := getTestArgs()
+		args := testdata.GetTestArgs()
 		kubeClient := fake.NewSimpleClientset()
-		assert.NoError(t, cmdGet(testArgs, exec, kubeClient), "Unexpected error")
+		assert.NoError(t, cmdGet(args, exec, kubeClient), "Unexpected error")
 	})
 }
 
 func TestCmdDel(t *testing.T) {
-	testArgs := getTestArgs()
-	testPod := getTestPod()
-
-	testNetNS, nsErr := testutils.NewNS()
-	require.Nil(t, nsErr, "Can't craete NewNS")
-
 	testCases := []struct {
 		name       string
 		netConfStr string
-		netNS      string
 		expError   string
 		fakeExec   bool
 	}{
@@ -396,51 +377,50 @@ func TestCmdDel(t *testing.T) {
 		},
 		{
 			name:       "fail to connect to vpp",
-			netConfStr: `{"host":{"engine":"vpp"}}`,
+			netConfStr: `{"host":{"engine":"vpp"},"sharedDir":"#sharedDir#"}`,
 			expError:   "dial unix /run/vpp-api.sock: connect: no such file or directory",
 		},
 		{
 			name:       "fail to connect to ovs-dpdk",
-			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"}}`,
+			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"sharedDir":"#sharedDir#"}`,
 			expError:   `exec: "ovs-vsctl":`,
 		},
 		{
 			name:       "fail with unknown host engine",
-			netConfStr: `{"host":{"engine":"nonsence"}}`,
-			expError:   "ERROR: Unknown Host Engine:nonsence",
+			netConfStr: `{"host":{"engine":"nonsense"},"sharedDir":"#sharedDir#"}`,
+			expError:   "ERROR: Unknown Host Engine:nonsense",
 		},
 		{
 			name:       "container fail with unknown engine",
-			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"nonsence","iftype":"vhostuser"}}`,
+			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"nonsense","iftype":"vhostuser"},"sharedDir":"#sharedDir#"}`,
 			fakeExec:   true,
-			expError:   "ERROR: Unknown Container Engine:nonsence",
+			expError:   "ERROR: Unknown Container Engine:nonsense",
 		},
 		{
 			name:       "host set and no IPAM",
-			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"sharedDir":"/tmp/tmp_shareddir"}`,
+			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"sharedDir":"#sharedDir#"}`,
 			fakeExec:   true,
 		},
 		{
 			name:       "host and netNS set and no IPAM",
-			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"sharedDir":"/tmp/tmp_shareddir"}`,
-			netNS:      testNetNS.Path(),
+			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"sharedDir":"#sharedDir#"}`,
 			fakeExec:   true,
 		},
 		{
 			name:       "container set and no IPAM",
-			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"ovs-dpdk","iftype":"vhostuser"}}`,
+			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"ovs-dpdk","iftype":"vhostuser"},"sharedDir":"#sharedDir#"}`,
 			fakeExec:   true,
 		},
 		{
 			name:       "fail ipam call",
-			netConfStr: `{"ipam":{"type":"host-local"},"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"ovs-dpdk","iftype":"vhostuser"}}`,
+			netConfStr: `{"ipam":{"type":"host-local"},"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"ovs-dpdk","iftype":"vhostuser"},"sharedDir":"#sharedDir#"}`,
 			expError:   "environment variable CNI_COMMAND must be specified",
 			fakeExec:   true,
 		},
 		{
 			// currently host and container engine can differ - does it make sense?
 			name:       "container with vpp engine",
-			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"vpp","iftype":"vhostuser"}}`,
+			netConfStr: `{"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"vpp","iftype":"vhostuser"},"sharedDir":"#sharedDir#"}`,
 			fakeExec:   true,
 		},
 	}
@@ -449,29 +429,34 @@ func TestCmdDel(t *testing.T) {
 			var kubeClient *fake.Clientset
 			var exec invoke.Exec
 
-			kubeClient = fake.NewSimpleClientset(testPod)
-			testArgs.Netns = tc.netNS
+			args := testdata.GetTestArgs()
 
-			netConf, netErr := loadNetConf([]byte(tc.netConfStr))
-			if netErr == nil {
-				_, _, sharedDir, sharedDirErr := getPodAndSharedDir(netConf, testArgs, kubeClient)
-				if sharedDirErr == nil && sharedDir != "" {
-					dir := path.Join(sharedDir, testArgs.ContainerID[:12])
-					require.Nil(t, os.MkdirAll(dir, os.ModePerm), "Can't create shared directory")
-					defer os.RemoveAll(dir)
-				}
-			}
-			testArgs.StdinData = []byte(tc.netConfStr)
+			netNS, nsErr := testutils.NewNS()
+			require.NoError(t, nsErr, "Can't create NewNS")
+			defer testutils.UnmountNS(netNS)
+
+			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-userspace-")
+			require.NoError(t, dirErr, "Can't create temporary directory")
+			testDir := path.Join(sharedDir, args.ContainerID[:12])
+			require.NoError(t, os.MkdirAll(testDir, os.ModePerm), "Can't create shared directory")
+			tc.netConfStr = strings.Replace(tc.netConfStr, "#sharedDir#", sharedDir, -1)
+			defer os.RemoveAll(sharedDir)
+
+			pod := testdata.GetTestPod(sharedDir)
+			kubeClient = fake.NewSimpleClientset(pod)
+			args.Netns = netNS.Path()
+			args.StdinData = []byte(tc.netConfStr)
 			if tc.fakeExec {
 				cniovs.SetExecCommand(&cniovs.FakeExecCommand{})
 				defer cniovs.SetDefaultExecCommand()
 			}
-			err := cmdDel(testArgs, exec, kubeClient)
+
+			err := cmdDel(args, exec, kubeClient)
 
 			if tc.expError == "" {
-				assert.Nil(t, err, "Unexpected error")
+				assert.NoError(t, err, "Unexpected error")
 			} else {
-				require.NotNil(t, err, "Unexpected error")
+				require.Error(t, err, "Unexpected error")
 				assert.Contains(t, err.Error(), tc.expError, "Unexpected error")
 			}
 		})

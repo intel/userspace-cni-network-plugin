@@ -2,6 +2,8 @@ package cniovs
 
 import (
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -12,56 +14,42 @@ import (
 )
 
 func TestCreateVhostPort(t *testing.T) {
-
-	socket := "test-socket"
-	defaultSocketDir := "/tmp/test-dir/"
 	expCmd := "ovs-vsctl"
-	expArgs := []string{"add-port", "br0", socket, "--", "set", "Interface", socket}
-	expClientArgs := append(expArgs, "type=dpdkvhostuserclient", "options:vhost-server-path="+defaultSocketDir)
-	expServerArgs := append(expArgs, "type=dpdkvhostuser")
-
 	testCases := []struct {
 		name       string
 		client     bool
-		ovsDir     string
+		ovsDir     bool
 		renameFail bool
 		fakeErr    error
-		expResult  string
 	}{
 		{
-			name:      "fail to run ovs-ctl",
-			client:    true,
-			fakeErr:   errors.New("error"),
-			expResult: "",
+			name:    "fail to run ovs-ctl",
+			client:  true,
+			fakeErr: errors.New("error"),
 		},
 		{
-			name:      "create vhost server interface",
-			client:    false,
-			expResult: socket,
+			name:   "create vhost server interface",
+			client: false,
 		},
 		{
-			name:       "create vhost server interface and fail to rename socket",
+			name:       "create vhost server interface and fail to move socket",
 			client:     false,
 			renameFail: true,
-			expResult:  socket,
 		},
 		{
-			name:       "create vhost server interface and fail to rename socket with OVS_SOCKETDIR set",
+			name:       "create vhost server interface and fail to move socket from OVS_SOCKETDIR",
 			client:     false,
 			renameFail: true,
-			ovsDir:     "/tmp/env-dir/",
-			expResult:  socket,
+			ovsDir:     true,
 		},
 		{
-			name:      "create vhost client interface",
-			client:    true,
-			expResult: socket,
+			name:   "create vhost client interface",
+			client: true,
 		},
 		{
-			name:      "create vhost client interface with OVS_SOCKDIR set",
-			client:    true,
-			ovsDir:    "/tmp/env-dir/",
-			expResult: socket,
+			name:   "create vhost client interface with OVS_SOCKDIR set",
+			client: true,
+			ovsDir: true,
 		},
 	}
 	for _, tc := range testCases {
@@ -70,24 +58,36 @@ func TestCreateVhostPort(t *testing.T) {
 			require := require.New(t)
 			execCommand := &FakeExecCommand{Err: tc.fakeErr}
 
-			socketDir := defaultSocketDir
+			socketDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
+			require.NoError(dirErr, "Can't create temporary directory")
+			defer os.RemoveAll(socketDir)
+
+			randSuffix := strings.Split(socketDir, "-")[2]
+			socket := "socket-" + randSuffix
+
+			// add trailing slash due to bug in the createVhostPort - see os.Rename part
+			socketDir = socketDir + "/"
+
+			expArgs := []string{"add-port", "br0", socket, "--", "set", "Interface", socket}
+			expClientArgs := append(expArgs, "type=dpdkvhostuserclient", "options:vhost-server-path="+socketDir)
+			expServerArgs := append(expArgs, "type=dpdkvhostuser")
+
+			// error scenario to trigger os.Rename failure
 			if tc.renameFail {
-				// error scenario to trigger os.Rename failure
 				socketDir = "/proc/"
-			} else {
-				require.NoError(os.MkdirAll(socketDir, os.ModePerm), "Can't create socketDir")
-				defer os.RemoveAll(socketDir)
 			}
 
 			// create fake socket file at OVS socket dir
 			ovsDir := defaultOvSSocketDir
-			if tc.ovsDir != "" {
-				ovsDir = tc.ovsDir
-				os.Setenv("OVS_SOCKDIR", tc.ovsDir)
+			if tc.ovsDir {
+				ovsDir = fmt.Sprintf("/tmp/test-ovs-%v/", randSuffix)
+				os.Setenv("OVS_SOCKDIR", ovsDir)
 				defer os.Unsetenv("OVS_SOCKDIR")
 			}
-			require.NoError(os.MkdirAll(ovsDir, os.ModePerm), "Can't create ovsDir")
-			defer os.RemoveAll(ovsDir)
+			if _, err := os.Stat(ovsDir); err != nil {
+				require.NoError(os.MkdirAll(ovsDir, os.ModePerm), "Can't create ovsDir")
+				defer os.RemoveAll(ovsDir)
+			}
 			socketFull := path.Join(ovsDir, socket)
 			_, socketErr := os.Create(socketFull)
 			require.NoError(socketErr, "Can't create socket")
@@ -99,7 +99,11 @@ func TestCreateVhostPort(t *testing.T) {
 			result, err := createVhostPort(socketDir, socket, tc.client, "br0")
 			SetDefaultExecCommand()
 
-			assert.Equal(tc.expResult, result, "Unexpected result value")
+			if tc.fakeErr == nil {
+				assert.Equal(socket, result, "Unexpected result value")
+			} else {
+				assert.Equal("", result, "Unexpected result value")
+			}
 			assert.Equal(tc.fakeErr, err, "Unexpected error value")
 			assert.Equal(expCmd, execCommand.Cmd, "Unexpected command executed")
 
@@ -363,19 +367,19 @@ func TestDoesBridgeContainInterfaces(t *testing.T) {
 		expResult bool
 	}{
 		{
-			name:      "find interface connected to brige",
+			name:      "find interface connected to bridge",
 			fakeOut:   []byte("eth2"),
 			fakeErr:   nil,
 			expResult: true,
 		},
 		{
-			name:      "find interface with new line connected to brige",
+			name:      "find interface with new line connected to bridge",
 			fakeOut:   []byte("eth2\n"),
 			fakeErr:   nil,
 			expResult: true,
 		},
 		{
-			name:      "find multiple interfaces connected to brige",
+			name:      "find multiple interfaces connected to bridge",
 			fakeOut:   []byte("eth2\neno15\ntun15\n"),
 			fakeErr:   nil,
 			expResult: true,
@@ -383,13 +387,13 @@ func TestDoesBridgeContainInterfaces(t *testing.T) {
 		{
 			name:      "fail to find interfaces",
 			fakeOut:   []byte(""),
-			fakeErr:   errors.New("Can't find intefaces"),
+			fakeErr:   errors.New("Can't find interfaces"),
 			expResult: false,
 		},
 		{
 			name:      "fail to find interfaces 2",
 			fakeOut:   []byte("eth2"),
-			fakeErr:   errors.New("Can't find intefaces"),
+			fakeErr:   errors.New("Can't find interfaces"),
 			expResult: false,
 		},
 		{
@@ -419,7 +423,7 @@ func TestExecCommand(t *testing.T) {
 		cmdArgs := []string{"param1", "param2"}
 		expOut := []byte(strings.Join(cmdArgs, " ") + "\n")
 
-		// test default (i.e. real) execCommand implementaition
+		// test default (i.e. real) execCommand implementation
 		SetDefaultExecCommand()
 		out, err := execCommand(cmd, cmdArgs)
 
