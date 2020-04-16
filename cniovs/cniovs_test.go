@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path"
 	"regexp"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/containernetworking/cni/pkg/types/current"
@@ -16,6 +18,8 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/userspace/testdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sys/unix"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -28,6 +32,12 @@ func TestAddOnHost(t *testing.T) {
 		fakeErr error
 		expErr  error
 	}{
+		{
+			name:    "fail to create bridge",
+			netConf: &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "vhostuser", NetType: "bridge", VhostConf: types.VhostConf{Mode: "client"}}},
+			fakeErr: errors.New("Can't crate bridge"),
+			expErr:  errors.New("Can't crate bridge"),
+		},
 		{
 			name:    "fail due to missing IfType",
 			netConf: &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", NetType: "bridge"}},
@@ -68,7 +78,7 @@ func TestAddOnHost(t *testing.T) {
 
 			// add trailing slash due to bug in the createVhostPort - see os.Rename part
 			sharedDir = sharedDir + "/"
-			SetExecCommand(&FakeExecCommand{})
+			SetExecCommand(&FakeExecCommand{Err: tc.fakeErr})
 			err := ovs.AddOnHost(tc.netConf, args, kubeClient, sharedDir, result)
 			SetDefaultExecCommand()
 			if tc.expErr == nil {
@@ -78,7 +88,7 @@ func TestAddOnHost(t *testing.T) {
 				assert.NoError(t, LoadConfig(tc.netConf, args, &data))
 				assert.NotEmpty(t, data.Vhostname)
 			} else {
-				assert.Error(t, err, "Unexpected result")
+				require.Error(t, err, "Unexpected result")
 				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected result")
 			}
 		})
@@ -184,7 +194,7 @@ func TestDelFromHost(t *testing.T) {
 				assert.Equal(t, tc.expErr, err, "Unexpected result")
 				assert.NoDirExists(t, sharedDir, "Shared directory was not removed")
 			} else {
-				assert.Error(t, err, "Unexpected result")
+				require.Error(t, err, "Unexpected result")
 				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected result")
 			}
 		})
@@ -206,6 +216,175 @@ func TestGenerateRandomMacAddress(t *testing.T) {
 	})
 }
 
+func TestGetShortSharedDir(t *testing.T) {
+	testCases := []struct {
+		name      string
+		sharedDir string
+		expDir    string
+	}{
+		{
+			name:      "return shared dir",
+			sharedDir: "shared-dir",
+			expDir:    "shared-dir",
+		},
+		{
+			name:      "return shared dir with path",
+			sharedDir: "/tmp/var/log/shared-dir",
+			expDir:    "/tmp/var/log/shared-dir",
+		},
+		{
+			name:      "return shared dir with length 102",
+			sharedDir: "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.io/backup-dir/shared-dir",
+			expDir:    "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.io/backup-dir/shared-dir",
+		},
+		{
+			name:      "return shared dir with empty_dir and length 102",
+			sharedDir: "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.io/empty_dir/shared-dir",
+			expDir:    "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.io/empty_dir/shared-dir",
+		},
+		{
+			name:      "return shared dir with empty-dir and length 88",
+			sharedDir: "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.~empty-dir",
+			expDir:    "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.~empty-dir",
+		},
+		{
+			name:      "shorten shared dir with empty-dir and length 89",
+			sharedDir: "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.i~empty-dir",
+			expDir:    "/var/lib/vhost_sockets/#UUID#",
+		},
+		{
+			name:      "shorten shared dir with empty-dir and length 101",
+			sharedDir: "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.io~empty-dir/shared-dir",
+			expDir:    "/var/lib/vhost_sockets/#UUID#",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			id := string(uuid.NewUUID())
+			tc.sharedDir = strings.Replace(tc.sharedDir, "#UUID#", id, -1)
+			tc.expDir = strings.Replace(tc.expDir, "#UUID#", id, -1)
+			shortDir := getShortSharedDir(tc.sharedDir)
+			assert.Equal(t, tc.expDir, shortDir, "Unexpected result")
+		})
+	}
+}
+
+func TestCreateSharedDir(t *testing.T) {
+	testCases := []struct {
+		name         string
+		sharedDir    string
+		oldSharedDir string
+		expErr       error
+	}{
+		{
+			name:         "shared dir exists",
+			sharedDir:    "#sharedDir#",
+			oldSharedDir: "#sharedDir#",
+			expErr:       nil,
+		},
+		{
+			name:         "fail to create shared dir",
+			sharedDir:    "/proc/broken-shared-dir",
+			oldSharedDir: "/proc/broken-shared-dir",
+			expErr:       errors.New("mkdir "),
+		},
+		{
+			name:         "shared dir in socket dir",
+			sharedDir:    "/var/lib/vhost_sockets/#sharedDirNoPath#",
+			oldSharedDir: "#sharedDir#",
+			expErr:       nil,
+		},
+		{
+			name:         "fail to mount old shared dir to socket dir",
+			sharedDir:    "/var/lib/vhost_sockets/#sharedDirNoPath#",
+			oldSharedDir: "/proc/broken-shared-dir",
+			expErr:       errors.New("no such file"),
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
+			sharedDirNoPath := strings.Split(sharedDir, "/")[2]
+			require.NoError(t, dirErr, "Can't create temporary directory")
+			tc.sharedDir = strings.Replace(tc.sharedDir, "#sharedDir#", sharedDir, -1)
+			tc.sharedDir = strings.Replace(tc.sharedDir, "#sharedDirNoPath#", sharedDirNoPath, -1)
+			tc.oldSharedDir = strings.Replace(tc.oldSharedDir, "#sharedDir#", sharedDir, -1)
+			defer os.RemoveAll(sharedDir)
+
+			err := createSharedDir(tc.sharedDir, tc.oldSharedDir)
+			if tc.expErr == nil {
+				assert.Equal(t, tc.expErr, err, "Unexpected result")
+			} else {
+				require.Error(t, err, "Unexpected result")
+				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected result")
+			}
+
+			// cleanup
+			unix.Unmount(tc.sharedDir, 0)
+			os.RemoveAll(tc.sharedDir)
+			os.RemoveAll(tc.oldSharedDir)
+
+		})
+	}
+}
+
+func TestSetSharedDirGroup(t *testing.T) {
+	testCases := []struct {
+		name      string
+		sharedDir string
+		group     string
+		expErr    error
+	}{
+		{
+			name:      "set group",
+			sharedDir: "#sharedDir#",
+			group:     "#group#",
+			expErr:    nil,
+		},
+		{
+			name:      "fail to set bad group",
+			sharedDir: "#sharedDir#",
+			group:     "B@DGrO0P!",
+			expErr:    errors.New("group: unknown group"),
+		},
+		{
+			name:      "fail to set group of broken shared dir",
+			sharedDir: "/proc/broken_shared_dir",
+			group:     "root",
+			expErr:    errors.New("chown /proc/broken_shared_dir"),
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
+			require.NoError(t, dirErr, "Can't create temporary directory")
+			tc.sharedDir = strings.Replace(tc.sharedDir, "#sharedDir#", sharedDir, -1)
+			defer os.RemoveAll(sharedDir)
+
+			// read sharedDir original group to avoid system changes
+			if tc.group == "#group#" {
+				dirInfo, _ := os.Stat(sharedDir)
+				dirSys := dirInfo.Sys().(*syscall.Stat_t)
+				group, _ := user.LookupGroupId(string(48 + dirSys.Gid))
+				tc.group = group.Name
+			}
+
+			// create default socket dir if needed, so its group can be set
+			if _, err := os.Stat(DefaultHostVhostuserBaseDir); os.IsNotExist(err) {
+				require.NoError(t, os.MkdirAll(DefaultHostVhostuserBaseDir, 0700), "Can't create default socket dir")
+				defer os.RemoveAll(DefaultHostVhostuserBaseDir)
+			}
+
+			err := setSharedDirGroup(tc.sharedDir, tc.group)
+			if tc.expErr == nil {
+				assert.Equal(t, tc.expErr, err, "Unexpected result")
+			} else {
+				require.Error(t, err, "Unexpected result")
+				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected result")
+			}
+		})
+	}
+}
 func TestAddLocalDeviceVhost(t *testing.T) {
 	var data OvsSavedData
 
@@ -254,6 +433,12 @@ func TestAddLocalDeviceVhost(t *testing.T) {
 			createDir: true,
 			fakeErr:   errors.New("MAC error"),
 			expErr:    errors.New("MAC error"),
+		},
+		{
+			name:      "fail to create port with bad group",
+			netConf:   &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "vhostuser", NetType: "bridge", VhostConf: types.VhostConf{Mode: "client", Group: "B@DGrO0P!"}}},
+			createDir: true,
+			expErr:    errors.New("group: unknown group"),
 		},
 	}
 	for _, tc := range testCases {
@@ -306,7 +491,7 @@ func TestAddLocalDeviceVhost(t *testing.T) {
 					assert.FileExists(t, path.Join(sharedDir, socketFile), "Vhost user server port socket not found")
 				}
 			} else {
-				assert.Error(t, err, "Unexpected result")
+				require.Error(t, err, "Unexpected result")
 				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected result")
 			}
 		})
@@ -331,6 +516,7 @@ func TestDelLocalDeviceVhost(t *testing.T) {
 	testCases := []struct {
 		name        string
 		netConf     *types.NetConf
+		sharedDir   string
 		socketFiles int
 		noiseFiles  int
 		brokenFiles bool
@@ -414,23 +600,67 @@ func TestDelLocalDeviceVhost(t *testing.T) {
 			noiseFiles:  2,
 			expErr:      nil,
 		},
+		{
+			name:      "delete shared dir with long name",
+			netConf:   &types.NetConf{},
+			sharedDir: "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.io/empty-dir/shared-dir",
+			expErr:    nil,
+		},
+		{
+			name:      "delete shared dir with long name - dir doesn't exist",
+			netConf:   &types.NetConf{},
+			sharedDir: "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.io/empty-dir/shared-dir",
+			brokenDir: "none",
+			expErr:    nil,
+		},
+		{
+			name:      "fail to delete shared dir with long name - dir isn't mounted",
+			netConf:   &types.NetConf{},
+			sharedDir: "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.io/empty-dir/shared-dir",
+			brokenDir: "unmount",
+			expErr:    errors.New("invalid argument"),
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			var sharedDir string
 			args := testdata.GetTestArgs()
 			execCommand := &FakeExecCommand{}
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
-			require.NoError(t, dirErr, "Can't create temporary directory")
-			if tc.brokenDir != "" {
-				require.NoError(t, os.RemoveAll(sharedDir))
+			assert := assert.New(t)
+			require := require.New(t)
+
+			if tc.sharedDir != "" {
+				tc.sharedDir = strings.Replace(tc.sharedDir, "#UUID#", string(uuid.NewUUID()), -1)
+				require.NoError(os.MkdirAll(tc.sharedDir, 0700), "Can't create old shared dir")
+				sharedDir = getShortSharedDir(tc.sharedDir)
+				switch tc.brokenDir {
+				case "none":
+					// directory shall not exist - do nothing
+				case "unmount":
+					require.NoError(createSharedDir(sharedDir, tc.sharedDir), "Can't create new short shared dir")
+					require.NoError(unix.Unmount(sharedDir, 0), "Can't unmount shared dir")
+
+				default:
+					require.NoError(createSharedDir(sharedDir, tc.sharedDir), "Can't create new short shared dir")
+				}
+				// cleanup if needed
+				defer os.RemoveAll(tc.sharedDir)
+				defer os.RemoveAll(sharedDir)
+				defer unix.Unmount(sharedDir, 0)
+			} else {
+				var dirErr error
+				sharedDir, dirErr = ioutil.TempDir("/tmp", "test-cniovs-")
+				require.NoError(dirErr, "Can't create temporary directory")
 				switch tc.brokenDir {
 				case "proc":
+					require.NoError(os.RemoveAll(sharedDir))
 					sharedDir = "/proc/broken_shared_dir"
 				case "file":
-					require.NoError(t, ioutil.WriteFile(sharedDir, []byte(""), 0644), "Can't create test file")
+					require.NoError(os.RemoveAll(sharedDir))
+					require.NoError(ioutil.WriteFile(sharedDir, []byte(""), 0644), "Can't create test file")
 					defer os.Remove(sharedDir)
 				}
-			} else {
+				// cleanup if needed
 				defer os.RemoveAll(sharedDir)
 			}
 
@@ -448,7 +678,7 @@ func TestDelLocalDeviceVhost(t *testing.T) {
 			// prepare noise files, which shall remain and avoid shared dir removal
 			for i := 0; i < tc.noiseFiles; i++ {
 				path := path.Join(sharedDir, fmt.Sprintf("noise-file-%v", i))
-				require.NoError(t, ioutil.WriteFile(path, []byte(""), 0644), "Can't create test file")
+				require.NoError(ioutil.WriteFile(path, []byte(""), 0644), "Can't create test file")
 				defer os.Remove(path)
 			}
 
@@ -457,15 +687,15 @@ func TestDelLocalDeviceVhost(t *testing.T) {
 			SetDefaultExecCommand()
 
 			if tc.expErr == nil {
-				assert.Equal(t, tc.expErr, err, "Unexpected result")
+				assert.Equal(tc.expErr, err, "Unexpected result")
 				if tc.noiseFiles == 0 {
-					assert.NoDirExists(t, sharedDir, "Shared directory was not removed")
+					assert.NoDirExists(sharedDir, "Shared directory was not removed")
 				} else {
-					assert.DirExists(t, sharedDir, "Shared directory was not removed")
+					assert.DirExists(sharedDir, "Shared directory was not removed")
 				}
 			} else {
-				assert.Error(t, err, "Unexpected result")
-				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected result")
+				require.Error(err, "Unexpected result")
+				assert.Contains(err.Error(), tc.expErr.Error(), "Unexpected result")
 			}
 		})
 	}
@@ -512,7 +742,7 @@ func TestAddLocalNetworkBridge(t *testing.T) {
 				assert.Equal(t, tc.expCmd, execCommand.Cmd, "Unexpected ovs command executed")
 				assert.Contains(t, execCommand.Args, tc.expArg, "Unexpected ovs command arguments")
 			} else {
-				assert.Error(t, err, "Unexpected result")
+				require.Error(t, err, "Unexpected result")
 				assert.Equal(t, err.Error(), tc.expErr.Error(), "Unexpected result")
 			}
 		})
@@ -562,7 +792,7 @@ func TestDelLocalNetworkBridge(t *testing.T) {
 				assert.Equal(t, tc.expCmd, execCommand.Cmd, "Unexpected ovs command executed")
 				assert.Contains(t, execCommand.Args, tc.expArg, "Unexpected ovs command arguments")
 			} else {
-				assert.Error(t, err, "Unexpected result")
+				require.Error(t, err, "Unexpected result")
 				assert.Equal(t, err.Error(), tc.expErr.Error(), "Unexpected result")
 			}
 		})

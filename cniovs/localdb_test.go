@@ -103,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 			if tc.expErr == nil {
 				assert.Equal(t, tc.expErr, err, "Unexpected result")
 			} else {
-				assert.Error(t, err, "Unexpected result")
+				require.Error(t, err, "Unexpected result")
 				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected result")
 			}
 			assert.Equal(t, tc.expData, &data, "Unexpected result")

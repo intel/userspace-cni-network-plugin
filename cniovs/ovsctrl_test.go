@@ -19,6 +19,7 @@ func TestCreateVhostPort(t *testing.T) {
 		name       string
 		client     bool
 		ovsDir     bool
+		noDirSlash bool
 		renameFail bool
 		fakeErr    error
 	}{
@@ -47,6 +48,11 @@ func TestCreateVhostPort(t *testing.T) {
 			client: true,
 		},
 		{
+			name:       "create vhost client interface with socket dir without trailing slash",
+			client:     true,
+			noDirSlash: true,
+		},
+		{
 			name:   "create vhost client interface with OVS_SOCKDIR set",
 			client: true,
 			ovsDir: true,
@@ -66,7 +72,9 @@ func TestCreateVhostPort(t *testing.T) {
 			socket := "socket-" + randSuffix
 
 			// add trailing slash due to bug in the createVhostPort - see os.Rename part
-			socketDir = socketDir + "/"
+			if tc.noDirSlash == false {
+				socketDir = socketDir + "/"
+			}
 
 			expArgs := []string{"add-port", "br0", socket, "--", "set", "Interface", socket}
 			expClientArgs := append(expArgs, "type=dpdkvhostuserclient", "options:vhost-server-path="+path.Join(socketDir, socket))
