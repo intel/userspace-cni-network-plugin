@@ -29,8 +29,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"regexp"
+	"strconv"
+	"strings"
+
+	"golang.org/x/sys/unix"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -46,7 +51,10 @@ import (
 //
 // Constants
 //
-const defaultBridge = "br0"
+const (
+	defaultBridge               = "br0"
+	DefaultHostVhostuserBaseDir = "/var/lib/vhost_sockets/"
+)
 
 //
 // Types
@@ -58,10 +66,11 @@ type CniOvs struct {
 // API Functions
 //
 func (cniOvs CniOvs) AddOnHost(conf *types.NetConf,
-							   args *skel.CmdArgs,
-							   kubeClient kubernetes.Interface,
-							   sharedDir string,
-							   ipResult *current.Result) error {
+	args *skel.CmdArgs,
+	kubeClient kubernetes.Interface,
+	sharedDir string,
+	ipResult *current.Result) error {
+
 	var err error
 	var data OvsSavedData
 
@@ -130,11 +139,11 @@ func (cniOvs CniOvs) AddOnHost(conf *types.NetConf,
 }
 
 func (cniOvs CniOvs) AddOnContainer(conf *types.NetConf,
-									args *skel.CmdArgs,
-									kubeClient kubernetes.Interface,
-									sharedDir string,
-									pod *v1.Pod,
-									ipResult *current.Result) (*v1.Pod, error) {
+	args *skel.CmdArgs,
+	kubeClient kubernetes.Interface,
+	sharedDir string,
+	pod *v1.Pod,
+	ipResult *current.Result) (*v1.Pod, error) {
 	logging.Infof("OVS AddOnContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 	return configdata.SaveRemoteConfig(conf, args, kubeClient, sharedDir, pod, ipResult)
 }
@@ -215,7 +224,72 @@ func generateRandomMacAddress() string {
 	return macAddr
 }
 
-func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, data *OvsSavedData) error {
+func getShortSharedDir(sharedDir string) string {
+	// sun_path for unix domain socket has a array size of 108
+	// When the sharedDir path length greater than 89 (108 - 19)
+	// 19 is the possible vhostuser socke file name length "/abcdefghijkl-net99" (1 + 12 + 1 + 3 + 2)
+	if len(sharedDir) >= 89 && strings.Contains(sharedDir, "empty-dir") {
+		// Format - /var/lib/kubelet/pods/<podID>/volumes/kubernetes.io~empty-dir/shared-dir
+		parts := strings.Split(sharedDir, "/")
+		podID := parts[5]
+		newSharedDir := DefaultHostVhostuserBaseDir + podID
+		logging.Infof("getShortSharedDir: Short shared directory: %s", newSharedDir)
+		return newSharedDir
+	}
+	return sharedDir
+
+}
+
+func createSharedDir(sharedDir, oldSharedDir string) error {
+	var err error
+
+	_, err = os.Stat(sharedDir)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(sharedDir, 0750)
+		if err != nil {
+			logging.Errorf("createSharedDir: Failed to create dir (%s): %v", sharedDir, err)
+			return err
+		}
+
+		if strings.Contains(sharedDir, DefaultHostVhostuserBaseDir) {
+			logging.Debugf("createSharedDir: Mount from %s to %s", oldSharedDir, sharedDir)
+			err = unix.Mount(oldSharedDir, sharedDir, "", unix.MS_BIND, "")
+			if err != nil {
+				logging.Errorf("createSharedDir: Failed to bind mout: %s", err)
+				return err
+			}
+		}
+		return nil
+
+	}
+	return err
+}
+
+func setSharedDirGroup(sharedDir string, group string) error {
+	groupInfo, err := user.LookupGroup(group)
+	if err != nil {
+		return err
+	}
+
+	logging.Debugf("setSharedDirGroup: group %s's gid is %s", group, groupInfo.Gid)
+	gid, err := strconv.Atoi(groupInfo.Gid)
+	if err != nil {
+		return err
+	}
+
+	err = os.Chown(DefaultHostVhostuserBaseDir, -1, gid)
+	if err != nil {
+		return err
+	}
+
+	err = os.Chown(sharedDir, -1, gid)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, actualSharedDir string, data *OvsSavedData) error {
 	var err error
 	var vhostName string
 
@@ -223,12 +297,18 @@ func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir stri
 		conf.HostConf.VhostConf.Socketfile = fmt.Sprintf("%s-%s", args.ContainerID[:12], args.IfName)
 	}
 
-	if _, err = os.Stat(sharedDir); err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(sharedDir, 0700); err != nil {
-				return err
-			}
-		} else {
+	sharedDir := getShortSharedDir(actualSharedDir)
+	err = createSharedDir(sharedDir, actualSharedDir)
+	if err != nil {
+		logging.Errorf("addLocalDeviceVhost: Failed to create shared dir group: %v", err)
+		return err
+	}
+
+	group := conf.HostConf.VhostConf.Group
+	if group != "" {
+		err = setSharedDirGroup(sharedDir, group)
+		if err != nil {
+			logging.Errorf("addLocalDeviceVhost: Failed to set shared dir group: %v", err)
 			return err
 		}
 	}
@@ -241,9 +321,9 @@ func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir stri
 
 	// ovs-vsctl add-port
 	if vhostName, err = createVhostPort(sharedDir,
-							conf.HostConf.VhostConf.Socketfile,
-							clientMode,
-							conf.HostConf.BridgeConf.BridgeName); err == nil {
+		conf.HostConf.VhostConf.Socketfile,
+		clientMode,
+		conf.HostConf.BridgeConf.BridgeName); err == nil {
 		if vhostPortMac, err := getVhostPortMac(vhostName); err == nil {
 			data.VhostMac = vhostPortMac
 		} else {
@@ -259,9 +339,35 @@ func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir stri
 	return err
 }
 
-func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, data *OvsSavedData) error {
+func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, actualSharedDir string, data *OvsSavedData) error {
+	sharedDir := getShortSharedDir(actualSharedDir)
+
 	// ovs-vsctl --if-exists del-port
-	if err := deleteVhostPort(data.Vhostname, conf.HostConf.BridgeConf.BridgeName); err == nil {
+	err := deleteVhostPort(data.Vhostname, conf.HostConf.BridgeConf.BridgeName)
+	if err != nil {
+		logging.Errorf("delLocalDeviceVhost: Failed to delete port: %v", err)
+		return err
+	}
+
+	// Check if sharedDir is a mount dir of EmptyDir
+	if strings.Contains(sharedDir, DefaultHostVhostuserBaseDir) {
+		logging.Debugf("delLocalDeviceVhost: Unmount shared directory: %v", sharedDir)
+		_, err = os.Stat(sharedDir)
+		if os.IsNotExist(err) {
+			logging.Errorf("delLocalDeviceVhost: shared directory %s does not existt to unmount", sharedDir)
+			return nil
+		}
+		err = unix.Unmount(sharedDir, 0)
+		if err != nil {
+			logging.Errorf("Failed to unmount dir: %v", err)
+			return err
+		}
+		err = os.Remove(sharedDir)
+		if err != nil {
+			logging.Errorf("Failed to remove dir: %v", err)
+			return err
+		}
+	} else {
 		folder, err := os.Open(sharedDir)
 		if err != nil {
 			return err
