@@ -69,7 +69,7 @@ func TestCreateVhostPort(t *testing.T) {
 			socketDir = socketDir + "/"
 
 			expArgs := []string{"add-port", "br0", socket, "--", "set", "Interface", socket}
-			expClientArgs := append(expArgs, "type=dpdkvhostuserclient", "options:vhost-server-path="+socketDir)
+			expClientArgs := append(expArgs, "type=dpdkvhostuserclient", "options:vhost-server-path="+path.Join(socketDir, socket))
 			expServerArgs := append(expArgs, "type=dpdkvhostuser")
 
 			// error scenario to trigger os.Rename failure
