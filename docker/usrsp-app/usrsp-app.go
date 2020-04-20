@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Red Hat.
+// Copyright (c) 2018-2020 Red Hat, Intel Corp.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,6 +53,8 @@ const (
 //
 // Utility Functions
 //
+const DefaultAnnotationsFile = "/etc/podinfo/annotations"
+
 func cniContainerConfig() (bool, string, error) {
 	var engine string
 	var kubeClient kubernetes.Interface
@@ -61,7 +63,7 @@ func cniContainerConfig() (bool, string, error) {
 	vpp := cnivpp.CniVpp{}
 	//ovs := cniovs.CniOvs{}
 
-	ifaceList, sharedDir, err := configdata.GetRemoteConfig()
+	ifaceList, sharedDir, err := configdata.GetRemoteConfig(DefaultAnnotationsFile)
 	if err != nil || len(ifaceList) == 0 {
 		return found, engine, err
 	} else {
@@ -77,7 +79,6 @@ func cniContainerConfig() (bool, string, error) {
 		}
 
 		logging.Debugf("USRSP_APP: iface %v - Data %v", i, ifaceList[i])
-
 
 		// Add the requested interface and network
 		engine = ifaceList[i].NetConf.HostConf.Engine

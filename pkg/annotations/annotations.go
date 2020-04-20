@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright(c) 2018 Red Hat, Inc.
+// Copyright(c) 2018-2020 Red Hat, Inc, Intel Corp.
 
 //
 // This module provides the library functions to read and write
@@ -254,15 +254,13 @@ func commitAnnotation(kubeClient kubernetes.Interface,
 // These functions can be called from code running in a container. It reads
 // the data from the exposed Downward API.
 //
-const DefaultAnnotationsFile = "/etc/podinfo/annotations"
-
-func getFileAnnotation(annotIndex string) ([]byte, error) {
+func getFileAnnotation(annotFile string, annotIndex string) ([]byte, error) {
 	var rawData []byte
 
-	fileData, err := ioutil.ReadFile(DefaultAnnotationsFile)
+	fileData, err := ioutil.ReadFile(annotFile)
 	if err != nil {
 		logging.Errorf("getFileAnnotation: File Read ERROR - %v", err)
-		return rawData, fmt.Errorf("error reading %s: %s", DefaultAnnotationsFile, err)
+		return rawData, fmt.Errorf("error reading %s: %s", annotFile, err)
 	}
 
 	d := logfmt.NewDecoder(bytes.NewReader(fileData))
@@ -282,8 +280,8 @@ func getFileAnnotation(annotIndex string) ([]byte, error) {
 	return rawData, fmt.Errorf("ERROR: \"%s\" missing from pod annotation", annotIndex)
 }
 
-func GetFileAnnotationMappedDir() (string, error) {
-	rawData, err := getFileAnnotation(AnnotKeyUsrspMappedDir)
+func GetFileAnnotationMappedDir(annotFile string) (string, error) {
+	rawData, err := getFileAnnotation(annotFile, AnnotKeyUsrspMappedDir)
 	if err != nil {
 		return "", err
 	}
@@ -291,13 +289,13 @@ func GetFileAnnotationMappedDir() (string, error) {
 	return string(rawData), err
 }
 
-func GetFileAnnotationConfigData() ([]*types.ConfigurationData, error) {
+func GetFileAnnotationConfigData(annotFile string) ([]*types.ConfigurationData, error) {
 	var configDataList []*types.ConfigurationData
 
 	// Remove
 	logging.Debugf("GetFileAnnotationConfigData: ENTER")
 
-	rawData, err := getFileAnnotation(AnnotKeyUsrspConfigData)
+	rawData, err := getFileAnnotation(annotFile, AnnotKeyUsrspConfigData)
 	if err != nil {
 		return nil, err
 	}

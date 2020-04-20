@@ -22,7 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -451,7 +451,7 @@ func TestCmdDel(t *testing.T) {
 
 			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-userspace-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
-			testDir := path.Join(sharedDir, args.ContainerID[:12])
+			testDir := filepath.Join(sharedDir, args.ContainerID[:12])
 			require.NoError(t, os.MkdirAll(testDir, os.ModePerm), "Can't create shared directory")
 			tc.netConfStr = strings.Replace(tc.netConfStr, "#sharedDir#", sharedDir, -1)
 			defer os.RemoveAll(sharedDir)
