@@ -148,8 +148,8 @@ func SaveRemoteConfig(conf *types.NetConf,
 		fileName := fmt.Sprintf("configData-%s-%s.json", args.ContainerID[:12], args.IfName)
 		path := filepath.Join(sharedDir, fileName)
 
-		dataBytes, err := json.Marshal(configData)
-		if err == nil {
+		dataBytes, jsonErr := json.Marshal(configData)
+		if jsonErr == nil {
 			err = ioutil.WriteFile(path, dataBytes, 0644)
 		} else {
 			return pod, fmt.Errorf("ERROR: serializing REMOTE NetConf data: %v", err)
