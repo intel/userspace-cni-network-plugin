@@ -350,7 +350,7 @@ func TestFileCleanup(t *testing.T) {
 		{
 			name:      "remove file and keep directory due to other content",
 			directory: "#tempDir#",
-			filepath:  "test-file.txt",
+			filepath:  "#tempDir#/test-file.txt",
 			noiseFile: true,
 		},
 		{
@@ -387,8 +387,10 @@ func TestFileCleanup(t *testing.T) {
 			tc.filepath = strings.Replace(tc.filepath, "#tempDir#", tempDir, -1)
 
 			if tc.filepath != "" {
-				_, fileErr := os.Create(tc.filepath)
-				require.NoError(t, fileErr, "Can't create test file")
+				if _, err := os.Stat(tc.filepath); err != nil {
+					_, fileErr := os.Create(tc.filepath)
+					require.NoError(t, fileErr, "Can't create test file")
+				}
 			}
 			if tc.noiseFile {
 				noiseFile := filepath.Join(tempDir, "noise-file.txt")
