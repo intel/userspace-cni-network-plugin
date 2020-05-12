@@ -30,12 +30,11 @@ import (
 func TestCreateVhostPort(t *testing.T) {
 	expCmd := "ovs-vsctl"
 	testCases := []struct {
-		name       string
-		client     bool
-		ovsDir     bool
-		noDirSlash bool
-		renameFail bool
-		fakeErr    error
+		name     string
+		client   bool
+		ovsDir   bool
+		testType string
+		fakeErr  error
 	}{
 		{
 			name:    "fail to run ovs-ctl",
@@ -47,24 +46,24 @@ func TestCreateVhostPort(t *testing.T) {
 			client: false,
 		},
 		{
-			name:       "create vhost server interface and fail to move socket",
-			client:     false,
-			renameFail: true,
+			name:     "create vhost server interface and fail to move socket",
+			client:   false,
+			testType: "fail_rename",
 		},
 		{
-			name:       "create vhost server interface and fail to move socket from OVS_SOCKETDIR",
-			client:     false,
-			renameFail: true,
-			ovsDir:     true,
+			name:     "create vhost server interface and fail to move socket from OVS_SOCKETDIR",
+			client:   false,
+			testType: "fail_rename",
+			ovsDir:   true,
 		},
 		{
 			name:   "create vhost client interface",
 			client: true,
 		},
 		{
-			name:       "create vhost client interface with socket dir without trailing slash",
-			client:     true,
-			noDirSlash: true,
+			name:     "create vhost client interface with socket dir with trailing slash",
+			client:   true,
+			testType: "add_slash",
 		},
 		{
 			name:   "create vhost client interface with OVS_SOCKDIR set",
@@ -89,9 +88,12 @@ func TestCreateVhostPort(t *testing.T) {
 			expClientArgs := append(expArgs, "type=dpdkvhostuserclient", "options:vhost-server-path="+path.Join(socketDir, socket))
 			expServerArgs := append(expArgs, "type=dpdkvhostuser")
 
-			// error scenario to trigger os.Rename failure
-			if tc.renameFail {
+			switch tc.testType {
+			case "fail_rename":
+				// error scenario to trigger os.Rename failure
 				socketDir = "/proc/"
+			case "add_slash":
+				socketDir = socketDir + "/"
 			}
 
 			// create fake socket file at OVS socket dir
@@ -129,7 +131,7 @@ func TestCreateVhostPort(t *testing.T) {
 			} else {
 				assert.Equal(expServerArgs, execCommand.Args, "Unexpected command arguments")
 				// test if vhostuser SERVER port socket was moved to socketDir
-				if tc.renameFail {
+				if tc.testType == "fail_rename" {
 					assert.NoFileExists(path.Join(socketDir, socket), "Socket file was found in socketDir")
 					assert.FileExists(path.Join(ovsDir, socket), "Socket file was not found in ovsDir")
 				} else {
