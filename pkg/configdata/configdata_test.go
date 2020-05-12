@@ -199,7 +199,8 @@ func TestSaveRemoteConfig(t *testing.T) {
 				os.RemoveAll(sharedDir)
 				_, err := os.Create(sharedDir)
 				require.NoError(t, err, "Can't create temp file")
-				defer os.Remove(sharedDir)
+				// add trailing slash to fail directory check by os.stat()
+				sharedDir = sharedDir + "/"
 			case "none":
 				os.RemoveAll(sharedDir)
 			}
@@ -210,9 +211,6 @@ func TestSaveRemoteConfig(t *testing.T) {
 
 			tc.expJson = strings.Replace(tc.expJson, "#UUID#", args.ContainerID, -1)
 			tc.expJson = strings.Replace(tc.expJson, "#ifName#", args.IfName, -1)
-
-			// add trailing slash due to bug in the createVhostPort - see os.Rename part
-			sharedDir = sharedDir + "/"
 
 			// NOTE: ipResult set to nil is a valid case tested by several TCs already
 			switch tc.testType {

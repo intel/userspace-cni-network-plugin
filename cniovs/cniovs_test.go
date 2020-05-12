@@ -49,8 +49,8 @@ func TestAddOnHost(t *testing.T) {
 		{
 			name:    "fail to create bridge",
 			netConf: &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "vhostuser", NetType: "bridge", VhostConf: types.VhostConf{Mode: "client"}}},
-			fakeErr: errors.New("Can't crate bridge"),
-			expErr:  errors.New("Can't crate bridge"),
+			fakeErr: errors.New("Can't create bridge"),
+			expErr:  errors.New("Can't create bridge"),
 		},
 		{
 			name:    "fail due to missing IfType",
@@ -90,8 +90,6 @@ func TestAddOnHost(t *testing.T) {
 			pod := testdata.GetTestPod(sharedDir)
 			kubeClient := fake.NewSimpleClientset(pod)
 
-			// add trailing slash due to bug in the createVhostPort - see os.Rename part
-			sharedDir = sharedDir + "/"
 			SetExecCommand(&FakeExecCommand{Err: tc.fakeErr})
 			err := ovs.AddOnHost(tc.netConf, args, kubeClient, sharedDir, result)
 			SetDefaultExecCommand()

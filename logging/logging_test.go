@@ -27,7 +27,7 @@ import (
 )
 
 const panicRegexp = `(?s)` +
-	`\[panic\] Logging: Error occured!\n.*` +
+	`\[panic\] Logging: Error occurred!\n.*` +
 	`\[panic\] ========= Stack trace output ========\n.*` +
 	`\[panic\] Userspace CNI Panic\n.*` +
 	`\[panic\] ========= Stack trace output end ========\n$`
@@ -125,9 +125,9 @@ func TestLogFunctions(t *testing.T) {
 			level:         PanicLevel,
 			logLevel:      InfoLevel,
 			format:        "Logging: %v",
-			arguments:     []interface{}{errors.New("Error occured!")},
-			expResultStdE: ` \[panic\] Logging: Error occured!\n$`,
-			expResultFile: ` \[panic\] Logging: Error occured!\n$`,
+			arguments:     []interface{}{errors.New("Error occurred!")},
+			expResultStdE: ` \[panic\] Logging: Error occurred!\n$`,
+			expResultFile: ` \[panic\] Logging: Error occurred!\n$`,
 		},
 		{
 			name:          "suppress printf verbose log entry due to low log level",
@@ -164,9 +164,9 @@ func TestLogFunctions(t *testing.T) {
 			logFunc:       "Verbosef",
 			logLevel:      MaxLevel,
 			format:        "Logging: %v",
-			arguments:     []interface{}{errors.New("Error occured!")},
-			expResultStdE: ` \[verbose\] Logging: Error occured!\n$`,
-			expResultFile: ` \[verbose\] Logging: Error occured!\n$`,
+			arguments:     []interface{}{errors.New("Error occurred!")},
+			expResultStdE: ` \[verbose\] Logging: Error occurred!\n$`,
+			expResultFile: ` \[verbose\] Logging: Error occurred!\n$`,
 		},
 		{
 			name:          "suppress verbose log entry due to low log level",
@@ -182,9 +182,9 @@ func TestLogFunctions(t *testing.T) {
 			logFunc:       "Debugf",
 			logLevel:      MaxLevel,
 			format:        "Logging: %v",
-			arguments:     []interface{}{errors.New("Error occured!")},
-			expResultStdE: ` \[debug\] Logging: Error occured!\n$`,
-			expResultFile: ` \[debug\] Logging: Error occured!\n$`,
+			arguments:     []interface{}{errors.New("Error occurred!")},
+			expResultStdE: ` \[debug\] Logging: Error occurred!\n$`,
+			expResultFile: ` \[debug\] Logging: Error occurred!\n$`,
 		},
 		{
 			name:          "suppress debug log entry due to low log level",
@@ -200,9 +200,9 @@ func TestLogFunctions(t *testing.T) {
 			logFunc:       "Infof",
 			logLevel:      MaxLevel,
 			format:        "Logging: %v",
-			arguments:     []interface{}{errors.New("Error occured!")},
-			expResultStdE: ` \[info\] Logging: Error occured!\n$`,
-			expResultFile: ` \[info\] Logging: Error occured!\n$`,
+			arguments:     []interface{}{errors.New("Error occurred!")},
+			expResultStdE: ` \[info\] Logging: Error occurred!\n$`,
+			expResultFile: ` \[info\] Logging: Error occurred!\n$`,
 		},
 		{
 			name:          "suppress info log entry due to low log level",
@@ -218,9 +218,9 @@ func TestLogFunctions(t *testing.T) {
 			logFunc:       "Warningf",
 			logLevel:      MaxLevel,
 			format:        "Logging: %v",
-			arguments:     []interface{}{errors.New("Error occured!")},
-			expResultStdE: ` \[warning\] Logging: Error occured!\n$`,
-			expResultFile: ` \[warning\] Logging: Error occured!\n$`,
+			arguments:     []interface{}{errors.New("Error occurred!")},
+			expResultStdE: ` \[warning\] Logging: Error occurred!\n$`,
+			expResultFile: ` \[warning\] Logging: Error occurred!\n$`,
 		},
 		{
 			name:          "suppress warning log entry due to low log level",
@@ -236,9 +236,9 @@ func TestLogFunctions(t *testing.T) {
 			logFunc:       "Errorf",
 			logLevel:      MaxLevel,
 			format:        "Logging: %v",
-			arguments:     []interface{}{errors.New("Error occured!")},
-			expResultStdE: ` \[error\] Logging: Error occured!\n$`,
-			expResultFile: ` \[error\] Logging: Error occured!\n$`,
+			arguments:     []interface{}{errors.New("Error occurred!")},
+			expResultStdE: ` \[error\] Logging: Error occurred!\n$`,
+			expResultFile: ` \[error\] Logging: Error occurred!\n$`,
 		},
 		{
 			name:          "suppress error log entry due to low log level",
@@ -254,7 +254,7 @@ func TestLogFunctions(t *testing.T) {
 			logFunc:       "Panicf",
 			logLevel:      MaxLevel,
 			format:        "Logging: %v",
-			arguments:     []interface{}{errors.New("Error occured!")},
+			arguments:     []interface{}{errors.New("Error occurred!")},
 			expResultStdE: panicRegexp,
 			expResultFile: panicRegexp,
 		},
@@ -263,7 +263,7 @@ func TestLogFunctions(t *testing.T) {
 			logFunc:       "Panicf",
 			logLevel:      MaxLevel,
 			format:        "Logging: %v",
-			arguments:     []interface{}{errors.New("Error occured!")},
+			arguments:     []interface{}{errors.New("Error occurred!")},
 			expResultStdE: panicRegexp,
 			expResultFile: panicRegexp,
 		},
@@ -272,7 +272,7 @@ func TestLogFunctions(t *testing.T) {
 			logFunc:       "Panicf",
 			logLevel:      PanicLevel,
 			format:        "Logging: %v",
-			arguments:     []interface{}{errors.New("Error occured!")},
+			arguments:     []interface{}{errors.New("Error occurred!")},
 			expResultStdE: panicRegexp,
 			expResultFile: panicRegexp,
 		},

@@ -85,11 +85,6 @@ func TestCreateVhostPort(t *testing.T) {
 			randSuffix := strings.Split(socketDir, "-")[2]
 			socket := "socket-" + randSuffix
 
-			// add trailing slash due to bug in the createVhostPort - see os.Rename part
-			if tc.noDirSlash == false {
-				socketDir = socketDir + "/"
-			}
-
 			expArgs := []string{"add-port", "br0", socket, "--", "set", "Interface", socket}
 			expClientArgs := append(expArgs, "type=dpdkvhostuserclient", "options:vhost-server-path="+path.Join(socketDir, socket))
 			expServerArgs := append(expArgs, "type=dpdkvhostuser")
