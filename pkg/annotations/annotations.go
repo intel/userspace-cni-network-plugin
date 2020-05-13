@@ -59,8 +59,18 @@ type NoKubeClientProvidedError struct {
 
 func (e *NoKubeClientProvidedError) Error() string { return string(e.message) }
 
+type NoPodProvidedError struct {
+	message string
+}
+
+func (e *NoPodProvidedError) Error() string { return string(e.message) }
+
 func GetPodVolumeMountHostSharedDir(pod *v1.Pod) (string, error) {
 	var hostSharedDir string
+
+	if pod == nil {
+		return hostSharedDir, &NoPodProvidedError{"Error: Pod not provided."}
+	}
 
 	logging.Verbosef("GetPodVolumeMountSharedDir: type=%T Volumes=%v", pod.Spec.Volumes, pod.Spec.Volumes)
 
@@ -90,6 +100,10 @@ func GetPodVolumeMountHostSharedDir(pod *v1.Pod) (string, error) {
 
 func getPodVolumeMountHostMappedSharedDir(pod *v1.Pod) (string, error) {
 	var mappedSharedDir string
+
+	if pod == nil {
+		return mappedSharedDir, &NoPodProvidedError{"Error: Pod not provided."}
+	}
 
 	logging.Verbosef("getPodVolumeMountHostMappedSharedDir: Containers=%v", pod.Spec.Containers)
 
@@ -121,6 +135,10 @@ func WritePodAnnotation(kubeClient kubernetes.Interface,
 	var err error
 	var modifiedConfig bool
 	var modifiedMappedDir bool
+
+	if pod == nil {
+		return pod, &NoPodProvidedError{"Error: Pod not provided."}
+	}
 
 	//
 	// Write configuration data that will be consumed by container
@@ -174,6 +192,10 @@ func setPodAnnotationMappedDir(pod *v1.Pod,
 	mappedDir string) (bool, error) {
 	var modified bool
 
+	if pod == nil {
+		return false, &NoPodProvidedError{"Error: Pod not provided."}
+	}
+
 	logging.Verbosef("SetPodAnnotationMappedDir: inputMappedDir=%s Annot - type=%T mappedDir=%v", mappedDir, pod.Annotations[AnnotKeyUsrspMappedDir], pod.Annotations[AnnotKeyUsrspMappedDir])
 
 	// If pod annotations is empty, make sure it allocatable
@@ -206,6 +228,16 @@ func setPodAnnotationConfigData(pod *v1.Pod,
 	configData *types.ConfigurationData) (bool, error) {
 	var configDataStr []string
 	var modified bool
+
+	if pod == nil {
+		return false, &NoPodProvidedError{"Error: Pod not provided."}
+	}
+
+	// check for empty configData, otherwise "null" string would be added to annotations
+	if configData == nil {
+		logging.Verbosef("SetPodAnnotationConfigData: ConfigData not provided: %v", configData)
+		return false, nil
+	}
 
 	logging.Verbosef("SetPodAnnotationConfigData: type=%T configData=%v", pod.Annotations[AnnotKeyUsrspConfigData], pod.Annotations[AnnotKeyUsrspConfigData])
 

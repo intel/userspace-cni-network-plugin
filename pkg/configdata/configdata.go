@@ -73,6 +73,16 @@ func SaveRemoteConfig(conf *types.NetConf,
 	var configData types.ConfigurationData
 	var err error
 
+	// Check if required parameters are set and fail otherwise
+	if conf == nil {
+		return pod, logging.Errorf("SaveRemoteConfig(): Error conf is set to: %v", conf)
+	}
+	if args == nil {
+		return pod, logging.Errorf("SaveRemoteConfig(): Error args is set to: %v", args)
+	}
+	if pod == nil {
+		return pod, logging.Errorf("SaveRemoteConfig(): Error pod is set to: %v", pod)
+	}
 	//
 	// Convert Local Data to types.ConfigurationData, which
 	// will be written to the container.
@@ -162,6 +172,8 @@ func SaveRemoteConfig(conf *types.NetConf,
 // CleanupRemoteConfig() - This function cleans up any remaining files
 //   in the passed in directory. Some of these files were used to squirrel
 //   data from the create so interface can be deleted properly.
+//
+// FIXME: parameter *conf* is not used. It shall be used or removed.
 func CleanupRemoteConfig(conf *types.NetConf, sharedDir string) {
 
 	if err := os.RemoveAll(sharedDir); err != nil {
