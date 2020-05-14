@@ -1,4 +1,4 @@
-// Copyright 2017 Intel Corp.
+// Copyright 2017-2020 Intel Corp.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -331,7 +331,7 @@ func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 	// Save off kubeClient and pod for later use if needed.
 	kubeClient, pod, sharedDir, err := getPodAndSharedDir(netConf, args, kubeClient)
 	if err != nil {
-		logging.Errorf("cmdAdd: Unable to determine \"SharedDir\" - %v", err)
+		logging.Errorf("cmdDel: Unable to determine \"SharedDir\" - %v", err)
 		return err
 	}
 
