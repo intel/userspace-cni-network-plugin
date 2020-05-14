@@ -145,8 +145,7 @@ func TestSaveRemoteConfig(t *testing.T) {
 			testType:  "client_nil",
 			brokenDir: "none",
 			expJson:   `{"containerId":"#UUID#","ifName":"#ifName#","name":"","config":{"iftype":"vhostuser","memif":{},"vhost":{"mode":"server"},"bridge":{}},"ipResult":{"dns":{}}}`,
-			//expErr:        nil, // correct result
-			expErr: errors.New("stat "), // wrong result until bug in StoreRemoteConfig will be fixed
+			expErr:        nil,
 		},
 		{
 			name:      "fail to save file to broken dir",
