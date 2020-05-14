@@ -139,6 +139,8 @@ func WritePodAnnotation(kubeClient kubernetes.Interface, pod *v1.Pod) (*v1.Pod, 
 		return pod, err
 	}
 
+	// Keep original pod info for log message in case of failure
+	origPod := pod
 	// Update the pod
 	pod = pod.DeepCopy()
 	if resultErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
@@ -153,7 +155,7 @@ func WritePodAnnotation(kubeClient kubernetes.Interface, pod *v1.Pod) (*v1.Pod, 
 		pod, err = kubeClient.CoreV1().Pods(pod.Namespace).UpdateStatus(pod)
 		return err
 	}); resultErr != nil {
-		return nil, logging.Errorf("status update failed for pod %s/%s: %v", pod.Namespace, pod.Name, resultErr)
+		return nil, logging.Errorf("status update failed for pod %s/%s: %v", origPod.Namespace, origPod.Name, resultErr)
 	}
 	return pod, nil
 }
