@@ -309,5 +309,5 @@ test-clean:
 		echo "Docker is not installed, nothing to delete."; \
 	fi
 
-.PHONY: build test-app install extras clean generate check-test-dep test-build test-build-all \
+.PHONY: build test-app install extras clean generate check-test-dep test-clean test-build test-build-all \
 	test test-all coverage coverage-all $(TEST_TARGETS) $(TEST_BUILD_TARGETS) $(COVERAGE_TARGETS)
