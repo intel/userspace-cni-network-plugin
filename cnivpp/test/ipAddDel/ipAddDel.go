@@ -27,12 +27,12 @@ import (
 	"time"
 
 	_ "git.fd.io/govpp.git/core"
+	"github.com/containernetworking/cni/pkg/types/current"
 	_ "github.com/sirupsen/logrus"
 
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
-	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 )
 
 //
@@ -60,7 +60,7 @@ func main() {
 
 	// Dummy Input Data
 	var ipString string = "192.168.172.100/24"
-	var ipData types.IPDataType
+	var ipResult *current.Result
 	var memifSocketId uint32
 	var memifSocketFile string = "/var/run/vpp/123456/memif-3.sock"
 	var memifRole vppmemif.MemifRole = vppmemif.RoleMaster
@@ -112,7 +112,7 @@ func main() {
 	}
 
 	// Add IP to MemIf to Bridge.
-	err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, 1, ipData)
+	err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, 1, ipResult)
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
@@ -125,7 +125,7 @@ func main() {
 	fmt.Println("User Space VPP client wakeup.")
 
 	// Remove IP from MemIf.
-	err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, 0, ipData)
+	err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, 0, ipResult)
 
 	if err != nil {
 		fmt.Println("Error:", err)
