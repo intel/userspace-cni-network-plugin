@@ -106,24 +106,13 @@ help:
 	@echo ""
 	@echo " Supported OS distributions for unit testing are: $(UT_OS_ALL)"
 	@echo ""
-	@echo "Other:"
-	@echo " glide update --strip-vendor - Recalculate dependancies and update *vendor\* with proper packages."
-	@echo ""
 #	@echo "Makefile variables (debug):"
 #	@echo "   SUDO=$(SUDO) OS_ID=$(OS_ID) OS_VERSION_ID=$(OS_VERSION_ID) PKG=$(PKG) VPPVERSION=$(VPPVERSION) $(VPPDOTVERSION)"
 #	@echo "   VPPLIBDIR=$(VPPLIBDIR)"
 #	@echo "   VPPINSTALLED=$(VPPINSTALLED) VPPLCLINSTALLED=$(VPPLCLINSTALLED)"
 #	@echo ""
 
-build:
-ifeq ($(VPPINSTALLED),0)
-	@echo VPP not installed. Run *make install* to install the minimum set of files to compile, or install VPP.
-	@echo
-endif
-	@cd vendor/git.fd.io/govpp.git/cmd/binapi-generator && go build -v
-	@./vendor/git.fd.io/govpp.git/cmd/binapi-generator/binapi-generator \
-		--input-dir=/usr/share/vpp/api/ \
-		--output-dir=vendor/git.fd.io/govpp.git/core/bin_api/
+build: generate
 	@cd userspace && go build -v
 
 test-app:
@@ -221,10 +210,6 @@ endif
 
 
 extras:
-	@cd vendor/git.fd.io/govpp.git/cmd/binapi-generator && go build -v
-	@./vendor/git.fd.io/govpp.git/cmd/binapi-generator/binapi-generator \
-		--input-dir=/usr/share/vpp/api/ \
-		--output-dir=vendor/git.fd.io/govpp.git/core/bin_api/
 	@cd docker/usrsp-app && go build -v
 
 clean: test-clean
@@ -232,7 +217,7 @@ clean: test-clean
 	@rm -f cnivpp/test/memifAddDel/memifAddDel
 	@rm -f cnivpp/test/vhostUserAddDel/vhostUserAddDel
 	@rm -f cnivpp/test/ipAddDel/ipAddDel
-	@rm -f vendor/git.fd.io/govpp.git/cmd/binapi-generator/binapi-generator
+	@rm -rf cnivpp/bin_api
 	@rm -f userspace/userspace
 ifeq ($(VPPLCLINSTALLED),1)
 	@echo VPP was installed by *make install*, so cleaning up files.
@@ -246,6 +231,11 @@ ifeq ($(VPPLCLINSTALLED),1)
 endif
 
 generate:
+ifeq ($(VPPINSTALLED),0)
+	@echo VPP not installed. Run *make install* to install the minimum set of files to compile, or install VPP.
+	@echo
+endif
+	for package in cnivpp/api/* ; do cd $$package ; pwd ; go generate ; cd - ; done
 
 lint:
 

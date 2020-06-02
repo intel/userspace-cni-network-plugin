@@ -5,7 +5,7 @@
       * [Contacts](#contacts)
    * [Userspace CNI plugin](#userspace-cni-plugin)
    * [Build & Clean](#build--clean)
-      * [Update dependencies in vendor/](#update-dependencies-in-vendor)
+      * [Update dependencies](#update-dependencies)
    * [Network Configuration Reference](#network-configuration-reference)
       * [Work Standalone](#work-standalone)
       * [Integrated with Multus Plugin](#integrated-with-multus-plugin)
@@ -151,14 +151,10 @@ code, perform a make clean:
 ```
 
 
-## Update dependencies in vendor/
-This project is currently using **glide**. To refresh or update the set
-dependancies for this project, run:
-```
-   glide update --strip-vendor
-```
-This project currently checks in the *glide.lock* and files under the
-*vendor* directory.
+## Update dependencies
+This project is currently using [go modules](https://github.com/golang/go/wiki/Modules)
+to manage dependencies. Please refer to official documentation to learn more
+about **go modules** behavior and typical [workflow](https://github.com/golang/go/wiki/Modules#daily-workflow).
 
 
 # Network Configuration Reference
