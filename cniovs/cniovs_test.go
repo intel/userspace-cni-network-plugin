@@ -345,25 +345,25 @@ func TestSetSharedDirGroup(t *testing.T) {
 		name      string
 		sharedDir string
 		group     string
-		expErr    error
+		expErr    string
 	}{
 		{
 			name:      "set group",
 			sharedDir: "#sharedDir#",
 			group:     "#group#",
-			expErr:    nil,
+			expErr:    "",
 		},
 		{
 			name:      "fail to set bad group",
 			sharedDir: "#sharedDir#",
 			group:     "B@DGrO0P!",
-			expErr:    errors.New("group: unknown group"),
+			expErr:    "^(group: unknown group|user: lookup groupname)",
 		},
 		{
 			name:      "fail to set group of broken shared dir",
 			sharedDir: "/proc/broken_shared_dir",
 			group:     "root",
-			expErr:    errors.New("chown /proc/broken_shared_dir"),
+			expErr:    "^chown /proc/broken_shared_dir",
 		},
 	}
 	for _, tc := range testCases {
@@ -388,11 +388,11 @@ func TestSetSharedDirGroup(t *testing.T) {
 			}
 
 			err := setSharedDirGroup(tc.sharedDir, tc.group)
-			if tc.expErr == nil {
-				assert.Equal(t, tc.expErr, err, "Unexpected result")
+			if tc.expErr == "" {
+				assert.NoError(t, err, "Unexpected result")
 			} else {
 				require.Error(t, err, "Unexpected result")
-				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected result")
+				assert.Regexp(t, tc.expErr, err.Error(), "Unexpected result")
 			}
 		})
 	}
@@ -406,51 +406,51 @@ func TestAddLocalDeviceVhost(t *testing.T) {
 		brokenDir string
 		createDir bool
 		fakeErr   error
-		expErr    error
+		expErr    string
 	}{
 		{
 			name:      "add port with default socket file",
 			netConf:   &types.NetConf{},
 			createDir: true,
-			expErr:    nil,
+			expErr:    "",
 		},
 		{
 			name:      "add port with given socket file",
 			netConf:   &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "vhostuser", NetType: "bridge", VhostConf: types.VhostConf{Socketfile: "test-socket"}}},
 			createDir: true,
-			expErr:    nil,
+			expErr:    "",
 		},
 		{
 			name:      "add port with default socket file without sharedDir",
 			netConf:   &types.NetConf{},
 			createDir: false,
-			expErr:    nil,
+			expErr:    "",
 		},
 		{
 			name:      "add port with default socket file with bad sharedDir",
 			netConf:   &types.NetConf{},
 			brokenDir: "/proc/broken_shared_dir",
 			createDir: false,
-			expErr:    errors.New("mkdir "),
+			expErr:    "^mkdir ",
 		},
 		{
 			name:      "add port with client mode",
 			netConf:   &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "vhostuser", NetType: "bridge", VhostConf: types.VhostConf{Mode: "client"}}},
 			createDir: true,
-			expErr:    nil,
+			expErr:    "",
 		},
 		{
 			name:      "fail to create vhost port in client mode",
 			netConf:   &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "vhostuser", NetType: "bridge", VhostConf: types.VhostConf{Mode: "client"}}},
 			createDir: true,
 			fakeErr:   errors.New("MAC error"),
-			expErr:    errors.New("MAC error"),
+			expErr:    "^MAC error",
 		},
 		{
 			name:      "fail to create port with bad group",
 			netConf:   &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "vhostuser", NetType: "bridge", VhostConf: types.VhostConf{Mode: "client", Group: "B@DGrO0P!"}}},
 			createDir: true,
-			expErr:    errors.New("group: unknown group"),
+			expErr:    "^(group: unknown group|user: lookup groupname)",
 		},
 	}
 	for _, tc := range testCases {
@@ -494,8 +494,8 @@ func TestAddLocalDeviceVhost(t *testing.T) {
 			err := addLocalDeviceVhost(tc.netConf, args, sharedDir, &data)
 			SetDefaultExecCommand()
 
-			if tc.expErr == nil {
-				assert.Equal(t, tc.expErr, err, "Unexpected result")
+			if tc.expErr == "" {
+				require.NoError(t, err, "Unexpected result")
 				assert.DirExists(t, sharedDir, "Shared directory was not created")
 				assert.Equal(t, socketFile, data.Vhostname, "Unexpected vhost socket name")
 				// test presence of vhost SERVER port socket
@@ -504,7 +504,7 @@ func TestAddLocalDeviceVhost(t *testing.T) {
 				}
 			} else {
 				require.Error(t, err, "Unexpected result")
-				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected result")
+				assert.Regexp(t, tc.expErr, err.Error(), "Unexpected result")
 			}
 		})
 	}
