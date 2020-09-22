@@ -1,0 +1,1 @@
+go build -o hardened-binary -buildmode=pie -ldflags "-s -w -extldflags=-Wl,-z,now,-z,relro" userspace/userspace.go
