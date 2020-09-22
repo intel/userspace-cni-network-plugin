@@ -5,8 +5,9 @@
 
 
 # -------- Builder stage.
-FROM centos
-MAINTAINER Billy McFall <bmcfall@redhat.com>
+FROM centos:7
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install VPP - Needed by CNI-VPP
 RUN curl -s https://packagecloud.io/install/repositories/fdio/release/script.rpm.sh | bash
@@ -23,7 +24,7 @@ RUN yum install -y git golang make
 
 # Build the usrsp-app
 WORKDIR /root/go/src/
-RUN go get github.com/intel/userspace-cni-network-plugin 2>&1 > /tmp/UserspaceDockerBuild.log || echo "Can ignore no GO files."
+RUN go get github.com/intel/userspace-cni-network-plugin > /tmp/UserspaceDockerBuild.log 2>&1 || echo "Can ignore no GO files."
 WORKDIR /root/go/src/github.com/intel/userspace-cni-network-plugin
 RUN make extras
 RUN cp docker/usrsp-app/usrsp-app /usr/sbin/usrsp-app
@@ -61,5 +62,5 @@ COPY vppcni.sh vppcni.sh
 #COPY usrsp-app /usr/sbin/usrsp-app
 
 
-CMD bash -C './vppcni.sh'
+CMD ["bash", "-C", "./vppcni.sh"]
 #CMD [ "./vppcni.sh" ]
