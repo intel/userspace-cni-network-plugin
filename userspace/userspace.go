@@ -121,7 +121,7 @@ func getPodAndSharedDir(netConf *types.NetConf,
 
 	// Retrieve the sharedDir from the Volumes in podSpec. Directory Socket
 	// Files will be written to on host.
-	if err == nil {
+	if pod != nil {
 		sharedDir, err = annotations.GetPodVolumeMountHostSharedDir(pod)
 		if err != nil {
 			logging.Infof("getPodAndSharedDir: VolumeMount \"shared-dir\" not provided - %v", err)
@@ -153,7 +153,7 @@ func getPodAndSharedDir(netConf *types.NetConf,
 				logging.Warningf("getPodAndSharedDir: Neither \"KubeConfig\" nor \"SharedDir\" provided, defaulting to %s", sharedDir)
 			} else {
 				logging.Warningf("getPodAndSharedDir: \"KubeConfig\" invalid and \"SharedDir\" not provided, defaulting to %s", sharedDir)
-			}	
+			}
 		}
 	}
 
