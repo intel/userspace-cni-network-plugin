@@ -15,12 +15,12 @@
 package logging
 
 import (
-	"fmt"
-	"os"
-	"strings"
-	"time"
+    "fmt"
+    "os"
+    "strings"
+    "time"
 
-	"github.com/pkg/errors"
+    "github.com/pkg/errors"
 )
 
 // Level type
@@ -37,14 +37,14 @@ type Level uint32
 // "verbose": Output of larger variables in code and debug of low level
 //    functions.
 const (
-	PanicLevel Level = iota
-	ErrorLevel
-	WarningLevel
-	InfoLevel
-	DebugLevel
-	VerboseLevel
-	MaxLevel
-	UnknownLevel
+    PanicLevel Level = iota
+    ErrorLevel
+    WarningLevel
+    InfoLevel
+    DebugLevel
+    VerboseLevel
+    MaxLevel
+    UnknownLevel
 )
 
 var loggingStderr bool
@@ -54,116 +54,116 @@ var loggingLevel Level
 const defaultTimestampFormat = time.RFC3339
 
 func (l Level) String() string {
-	switch l {
-	case PanicLevel:
-		return "panic"
-	case ErrorLevel:
-		return "error"
-	case WarningLevel:
-		return "warning"
-	case InfoLevel:
-		return "info"
-	case DebugLevel:
-		return "debug"
-	case VerboseLevel:
-		return "verbose"
-	}
-	return "unknown"
+    switch l {
+    case PanicLevel:
+        return "panic"
+    case ErrorLevel:
+        return "error"
+    case WarningLevel:
+        return "warning"
+    case InfoLevel:
+        return "info"
+    case DebugLevel:
+        return "debug"
+    case VerboseLevel:
+        return "verbose"
+    }
+    return "unknown"
 }
 
 func Printf(level Level, format string, a ...interface{}) {
-	header := "%s [%s] "
-	t := time.Now()
-	if level > loggingLevel {
-		return
-	}
+    header := "%s [%s] "
+    t := time.Now()
+    if level > loggingLevel {
+        return
+    }
 
-	if loggingStderr {
-		fmt.Fprintf(os.Stderr, header, t.Format(defaultTimestampFormat), level)
-		fmt.Fprintf(os.Stderr, format, a...)
-		fmt.Fprintf(os.Stderr, "\n")
-	}
+    if loggingStderr {
+        fmt.Fprintf(os.Stderr, header, t.Format(defaultTimestampFormat), level)
+        fmt.Fprintf(os.Stderr, format, a...)
+        fmt.Fprintf(os.Stderr, "\n")
+    }
 
-	if loggingFp != nil {
-		fmt.Fprintf(loggingFp, header, t.Format(defaultTimestampFormat), level)
-		fmt.Fprintf(loggingFp, format, a...)
-		fmt.Fprintf(loggingFp, "\n")
-	}
+    if loggingFp != nil {
+        fmt.Fprintf(loggingFp, header, t.Format(defaultTimestampFormat), level)
+        fmt.Fprintf(loggingFp, format, a...)
+        fmt.Fprintf(loggingFp, "\n")
+    }
 }
 
 func Verbosef(format string, a ...interface{}) {
-	Printf(VerboseLevel, format, a...)
+    Printf(VerboseLevel, format, a...)
 }
 
 func Debugf(format string, a ...interface{}) {
-	Printf(DebugLevel, format, a...)
+    Printf(DebugLevel, format, a...)
 }
 
 func Infof(format string, a ...interface{}) {
-	Printf(InfoLevel, format, a...)
+    Printf(InfoLevel, format, a...)
 }
 
 func Warningf(format string, a ...interface{}) {
-	Printf(WarningLevel, format, a...)
+    Printf(WarningLevel, format, a...)
 }
 
 func Errorf(format string, a ...interface{}) error {
-	Printf(ErrorLevel, format, a...)
-	return fmt.Errorf(format, a...)
+    Printf(ErrorLevel, format, a...)
+    return fmt.Errorf(format, a...)
 }
 
 func Panicf(format string, a ...interface{}) {
-	Printf(PanicLevel, format, a...)
-	Printf(PanicLevel, "========= Stack trace output ========")
-	Printf(PanicLevel, "%+v", errors.New("Userspace CNI Panic"))
-	Printf(PanicLevel, "========= Stack trace output end ========")
+    Printf(PanicLevel, format, a...)
+    Printf(PanicLevel, "========= Stack trace output ========")
+    Printf(PanicLevel, "%+v", errors.New("Userspace CNI Panic"))
+    Printf(PanicLevel, "========= Stack trace output end ========")
 }
 
 func GetLoggingLevel(levelStr string) Level {
-	switch strings.ToLower(levelStr) {
-	case "verbose":
-		return VerboseLevel
-	case "debug":
-		return DebugLevel
-	case "info":
-		return InfoLevel
-	case "warning":
-		return WarningLevel
-	case "error":
-		return ErrorLevel
-	case "panic":
-		return PanicLevel
-	}
-	fmt.Fprintf(os.Stderr, "Userspace-CNI logging: cannot set logging level to %s\n", levelStr)
-	return UnknownLevel
+    switch strings.ToLower(levelStr) {
+    case "verbose":
+        return VerboseLevel
+    case "debug":
+        return DebugLevel
+    case "info":
+        return InfoLevel
+    case "warning":
+        return WarningLevel
+    case "error":
+        return ErrorLevel
+    case "panic":
+        return PanicLevel
+    }
+    fmt.Fprintf(os.Stderr, "Userspace-CNI logging: cannot set logging level to %s\n", levelStr)
+    return UnknownLevel
 }
 
 func SetLogLevel(levelStr string) {
-	level := GetLoggingLevel(levelStr)
-	if level < MaxLevel {
-		loggingLevel = level
-	}
+    level := GetLoggingLevel(levelStr)
+    if level < MaxLevel {
+        loggingLevel = level
+    }
 }
 
 func SetLogStderr(enable bool) {
-	loggingStderr = enable
+    loggingStderr = enable
 }
 
 func SetLogFile(filename string) {
-	if filename == "" {
-		return
-	}
+    if filename == "" {
+        return
+    }
 
-	fp, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		loggingFp = nil
-		fmt.Fprintf(os.Stderr, "Userspace-CNI logging: cannot open %s", filename)
-	}
-	loggingFp = fp
+    fp, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+    if err != nil {
+        loggingFp = nil
+        fmt.Fprintf(os.Stderr, "Userspace-CNI logging: cannot open %s", filename)
+    }
+    loggingFp = fp
 }
 
 func init() {
-	loggingStderr = true
-	loggingFp = nil
-	loggingLevel = WarningLevel
+    loggingStderr = true
+    loggingFp = nil
+    loggingLevel = WarningLevel
 }

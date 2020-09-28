@@ -20,134 +20,134 @@ package main
 //go:generate binapi-generator --input-dir=../../bin_api --output-dir=../../bin_api
 
 import (
-	"fmt"
-	_ "net"
-	"os"
-	"runtime"
-	"time"
+    "fmt"
+    _ "net"
+    "os"
+    "runtime"
+    "time"
 
-	_ "git.fd.io/govpp.git/core"
-	_ "github.com/sirupsen/logrus"
+    _ "git.fd.io/govpp.git/core"
+    _ "github.com/sirupsen/logrus"
 
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
-	"github.com/intel/userspace-cni-network-plugin/pkg/types"
+    "github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
+    "github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
+    "github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
+    "github.com/intel/userspace-cni-network-plugin/pkg/types"
 )
 
 //
 // Constants
 //
 const (
-	dbgIp    = true
-	dbgMemif = true
+    dbgIp    = true
+    dbgMemif = true
 )
 
 //
 // Functions
 //
 func init() {
-	// this ensures that main runs only on main thread (thread group leader).
-	// since namespace ops (unshare, setns) are done for a single thread, we
-	// must ensure that the goroutine does not jump from OS thread to thread
-	runtime.LockOSThread()
+    // this ensures that main runs only on main thread (thread group leader).
+    // since namespace ops (unshare, setns) are done for a single thread, we
+    // must ensure that the goroutine does not jump from OS thread to thread
+    runtime.LockOSThread()
 }
 
 func main() {
-	var vppCh vppinfra.ConnectionData
-	var err error
-	var swIfIndex uint32
+    var vppCh vppinfra.ConnectionData
+    var err error
+    var swIfIndex uint32
 
-	// Dummy Input Data
-	var ipString string = "192.168.172.100/24"
-	var ipData types.IPDataType
-	var memifSocketId uint32
-	var memifSocketFile string = "/var/run/vpp/123456/memif-3.sock"
-	var memifRole vppmemif.MemifRole = vppmemif.RoleMaster
-	var memifMode vppmemif.MemifMode = vppmemif.ModeEthernet
+    // Dummy Input Data
+    var ipString string = "192.168.172.100/24"
+    var ipData types.IPDataType
+    var memifSocketId uint32
+    var memifSocketFile string = "/var/run/vpp/123456/memif-3.sock"
+    var memifRole vppmemif.MemifRole = vppmemif.RoleMaster
+    var memifMode vppmemif.MemifMode = vppmemif.ModeEthernet
 
-	// Set log level
-	//   Logrus has six logging levels: DebugLevel, InfoLevel, WarningLevel, ErrorLevel, FatalLevel and PanicLevel.
-	//core.SetLogger(&logrus.Logger{Level: logrus.InfoLevel})
+    // Set log level
+    //   Logrus has six logging levels: DebugLevel, InfoLevel, WarningLevel, ErrorLevel, FatalLevel and PanicLevel.
+    //core.SetLogger(&logrus.Logger{Level: logrus.InfoLevel})
 
-	fmt.Println("Starting User Space client...")
+    fmt.Println("Starting User Space client...")
 
-	// Create Channel to pass requests to VPP
-	vppCh, err = vppinfra.VppOpenCh()
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	}
-	defer vppinfra.VppCloseCh(vppCh)
+    // Create Channel to pass requests to VPP
+    vppCh, err = vppinfra.VppOpenCh()
+    if err != nil {
+        fmt.Println("Error:", err)
+        os.Exit(1)
+    }
+    defer vppinfra.VppCloseCh(vppCh)
 
-	// Create Memif Socket
-	memifSocketId, err = vppmemif.CreateMemifSocket(vppCh.Ch, memifSocketFile)
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	} else {
-		fmt.Println("MEMIF SOCKET", memifSocketId, memifSocketFile, "created")
-		if dbgMemif {
-			vppmemif.DumpMemifSocket(vppCh.Ch)
-		}
-	}
+    // Create Memif Socket
+    memifSocketId, err = vppmemif.CreateMemifSocket(vppCh.Ch, memifSocketFile)
+    if err != nil {
+        fmt.Println("Error:", err)
+        os.Exit(1)
+    } else {
+        fmt.Println("MEMIF SOCKET", memifSocketId, memifSocketFile, "created")
+        if dbgMemif {
+            vppmemif.DumpMemifSocket(vppCh.Ch)
+        }
+    }
 
-	// Create MemIf Interface
-	swIfIndex, err = vppmemif.CreateMemifInterface(vppCh.Ch, memifSocketId, memifRole, memifMode)
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	} else {
-		fmt.Println("MEMIF", swIfIndex, "created")
-		if dbgMemif {
-			vppmemif.DumpMemif(vppCh.Ch)
-		}
-	}
+    // Create MemIf Interface
+    swIfIndex, err = vppmemif.CreateMemifInterface(vppCh.Ch, memifSocketId, memifRole, memifMode)
+    if err != nil {
+        fmt.Println("Error:", err)
+        os.Exit(1)
+    } else {
+        fmt.Println("MEMIF", swIfIndex, "created")
+        if dbgMemif {
+            vppmemif.DumpMemif(vppCh.Ch)
+        }
+    }
 
-	// Set interface to up (1)
-	err = vppinterface.SetState(vppCh.Ch, swIfIndex, 1)
-	if err != nil {
-		fmt.Println("Error bringing interface UP:", err)
-		os.Exit(1)
-	}
+    // Set interface to up (1)
+    err = vppinterface.SetState(vppCh.Ch, swIfIndex, 1)
+    if err != nil {
+        fmt.Println("Error bringing interface UP:", err)
+        os.Exit(1)
+    }
 
-	// Add IP to MemIf to Bridge.
-	err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, 1, ipData)
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	} else {
-		fmt.Printf("IP %s added to INTERFACE %d\n", ipString, swIfIndex)
-	}
+    // Add IP to MemIf to Bridge.
+    err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, 1, ipData)
+    if err != nil {
+        fmt.Println("Error:", err)
+        os.Exit(1)
+    } else {
+        fmt.Printf("IP %s added to INTERFACE %d\n", ipString, swIfIndex)
+    }
 
-	fmt.Println("Sleeping for 30 seconds...")
-	time.Sleep(30 * time.Second)
-	fmt.Println("User Space VPP client wakeup.")
+    fmt.Println("Sleeping for 30 seconds...")
+    time.Sleep(30 * time.Second)
+    fmt.Println("User Space VPP client wakeup.")
 
-	// Remove IP from MemIf.
-	err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, 0, ipData)
+    // Remove IP from MemIf.
+    err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, 0, ipData)
 
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	} else {
-		fmt.Printf("IP %s removed from INTERFACE %d\n", ipString, swIfIndex)
-	}
+    if err != nil {
+        fmt.Println("Error:", err)
+        os.Exit(1)
+    } else {
+        fmt.Printf("IP %s removed from INTERFACE %d\n", ipString, swIfIndex)
+    }
 
-	fmt.Println("Sleeping for 30 seconds...")
-	time.Sleep(30 * time.Second)
-	fmt.Println("User Space VPP client wakeup.")
+    fmt.Println("Sleeping for 30 seconds...")
+    time.Sleep(30 * time.Second)
+    fmt.Println("User Space VPP client wakeup.")
 
-	fmt.Println("Delete memif interface.")
-	err = vppmemif.DeleteMemifInterface(vppCh.Ch, swIfIndex)
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	} else {
-		fmt.Printf("INTERFACE %d deleted\n", swIfIndex)
-		if dbgMemif {
-			vppmemif.DumpMemif(vppCh.Ch)
-			vppmemif.DumpMemifSocket(vppCh.Ch)
-		}
-	}
+    fmt.Println("Delete memif interface.")
+    err = vppmemif.DeleteMemifInterface(vppCh.Ch, swIfIndex)
+    if err != nil {
+        fmt.Println("Error:", err)
+        os.Exit(1)
+    } else {
+        fmt.Printf("INTERFACE %d deleted\n", swIfIndex)
+        if dbgMemif {
+            vppmemif.DumpMemif(vppCh.Ch)
+            vppmemif.DumpMemifSocket(vppCh.Ch)
+        }
+    }
 }

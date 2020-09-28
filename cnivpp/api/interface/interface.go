@@ -20,12 +20,12 @@ package vppinterface
 //go:generate binapi-generator --input-dir=../../bin_api --output-dir=../../bin_api
 
 import (
-	"fmt"
+    "fmt"
 
-	"github.com/containernetworking/cni/pkg/types/current"
+    "github.com/containernetworking/cni/pkg/types/current"
 
-	"git.fd.io/govpp.git/api"
-	"git.fd.io/govpp.git/core/bin_api/interfaces"
+    "git.fd.io/govpp.git/api"
+    "git.fd.io/govpp.git/core/bin_api/interfaces"
 )
 
 //
@@ -39,65 +39,65 @@ const debugInterface = false
 
 // Attempt to set an interface state. isUp (1 = up, 0 = down)
 func SetState(ch api.Channel, swIfIndex uint32, isUp uint8) error {
-	// Populate the Add Structure
-	req := &interfaces.SwInterfaceSetFlags{
-		SwIfIndex: swIfIndex,
-		// 1 = up, 0 = down
-		AdminUpDown: isUp,
-	}
+    // Populate the Add Structure
+    req := &interfaces.SwInterfaceSetFlags{
+        SwIfIndex: swIfIndex,
+        // 1 = up, 0 = down
+        AdminUpDown: isUp,
+    }
 
-	reply := &interfaces.SwInterfaceSetFlagsReply{}
+    reply := &interfaces.SwInterfaceSetFlagsReply{}
 
-	err := ch.SendRequest(req).ReceiveReply(reply)
+    err := ch.SendRequest(req).ReceiveReply(reply)
 
-	if err != nil {
-		if debugInterface {
-			fmt.Println("Error:", err)
-		}
-		return err
-	}
+    if err != nil {
+        if debugInterface {
+            fmt.Println("Error:", err)
+        }
+        return err
+    }
 
-	return nil
+    return nil
 }
 
 func AddDelIpAddress(ch api.Channel, swIfIndex uint32, isAdd uint8, ipResult *current.Result) error {
 
-	// Populate the Add Structure
-	req := &interfaces.SwInterfaceAddDelAddress{
-		SwIfIndex: swIfIndex,
-		IsAdd:     isAdd, // 1 = add, 0 = delete
-		DelAll:    0,
-	}
+    // Populate the Add Structure
+    req := &interfaces.SwInterfaceAddDelAddress{
+        SwIfIndex: swIfIndex,
+        IsAdd:     isAdd, // 1 = add, 0 = delete
+        DelAll:    0,
+    }
 
-	for _, ip := range ipResult.IPs {
-		if ip.Version == "4" {
-			req.IsIPv6 = 0
-			req.Address = []byte(ip.Address.IP.To4())
-			prefix, _ := ip.Address.Mask.Size()
-			req.AddressLength = byte(prefix)
-		} else if ip.Version == "6" {
-			req.IsIPv6 = 1
-			req.Address = []byte(ip.Address.IP.To16())
-			prefix, _ := ip.Address.Mask.Size()
-			req.AddressLength = byte(prefix)
-		}
+    for _, ip := range ipResult.IPs {
+        if ip.Version == "4" {
+            req.IsIPv6 = 0
+            req.Address = []byte(ip.Address.IP.To4())
+            prefix, _ := ip.Address.Mask.Size()
+            req.AddressLength = byte(prefix)
+        } else if ip.Version == "6" {
+            req.IsIPv6 = 1
+            req.Address = []byte(ip.Address.IP.To16())
+            prefix, _ := ip.Address.Mask.Size()
+            req.AddressLength = byte(prefix)
+        }
 
-		// Only one address is currently supported.
-		if req.AddressLength != 0 {
-			break
-		}
-	}
+        // Only one address is currently supported.
+        if req.AddressLength != 0 {
+            break
+        }
+    }
 
-	reply := &interfaces.SwInterfaceAddDelAddressReply{}
+    reply := &interfaces.SwInterfaceAddDelAddressReply{}
 
-	err := ch.SendRequest(req).ReceiveReply(reply)
+    err := ch.SendRequest(req).ReceiveReply(reply)
 
-	if err != nil {
-		if debugInterface {
-			fmt.Println("Error:", err)
-		}
-		return err
-	}
+    if err != nil {
+        if debugInterface {
+            fmt.Println("Error:", err)
+        }
+        return err
+    }
 
-	return nil
+    return nil
 }

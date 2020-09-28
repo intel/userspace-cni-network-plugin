@@ -20,13 +20,13 @@ package vppinfra
 //go:generate binapi-generator --input-dir=../../bin_api --output-dir=../../bin_api
 
 import (
-	"fmt"
+    "fmt"
 
-	"github.com/sirupsen/logrus"
+    "github.com/sirupsen/logrus"
 
-	"git.fd.io/govpp.git"
-	"git.fd.io/govpp.git/api"
-	"git.fd.io/govpp.git/core"
+    "git.fd.io/govpp.git"
+    "git.fd.io/govpp.git/api"
+    "git.fd.io/govpp.git/core"
 )
 
 //
@@ -38,10 +38,10 @@ const debugInfra = false
 // Types
 //
 type ConnectionData struct {
-	conn           *core.Connection
-	disconnectFlag bool
-	Ch             api.Channel
-	closeFlag      bool
+    conn           *core.Connection
+    disconnectFlag bool
+    Ch             api.Channel
+    closeFlag      bool
 }
 
 //
@@ -51,47 +51,47 @@ type ConnectionData struct {
 // Open a Connection and Channel to VPP to allow communication to VPP.
 func VppOpenCh() (ConnectionData, error) {
 
-	var vppCh ConnectionData
-	var err error
+    var vppCh ConnectionData
+    var err error
 
-	// Set log level
-	//   Logrus has six logging levels: DebugLevel, InfoLevel, WarningLevel, ErrorLevel, FatalLevel and PanicLevel.
-	core.SetLogger(&logrus.Logger{Level: logrus.ErrorLevel})
+    // Set log level
+    //   Logrus has six logging levels: DebugLevel, InfoLevel, WarningLevel, ErrorLevel, FatalLevel and PanicLevel.
+    core.SetLogger(&logrus.Logger{Level: logrus.ErrorLevel})
 
-	// Connect to VPP
-	vppCh.conn, err = govpp.Connect("")
-	if err != nil {
-		if debugInfra {
-			fmt.Println("Error:", err)
-		}
-		return vppCh, err
-	}
-	vppCh.disconnectFlag = true
+    // Connect to VPP
+    vppCh.conn, err = govpp.Connect("")
+    if err != nil {
+        if debugInfra {
+            fmt.Println("Error:", err)
+        }
+        return vppCh, err
+    }
+    vppCh.disconnectFlag = true
 
-	// Create an API channel to VPP
-	vppCh.Ch, err = vppCh.conn.NewAPIChannel()
-	if err != nil {
-		VppCloseCh(vppCh)
-		if debugInfra {
-			fmt.Println("Error:", err)
-		}
-		return vppCh, err
-	}
-	vppCh.closeFlag = true
+    // Create an API channel to VPP
+    vppCh.Ch, err = vppCh.conn.NewAPIChannel()
+    if err != nil {
+        VppCloseCh(vppCh)
+        if debugInfra {
+            fmt.Println("Error:", err)
+        }
+        return vppCh, err
+    }
+    vppCh.closeFlag = true
 
-	return vppCh, err
+    return vppCh, err
 }
 
 // Close the Connection and Channel to VPP.
 func VppCloseCh(vppCh ConnectionData) {
 
-	if vppCh.closeFlag {
-		vppCh.Ch.Close()
-		vppCh.closeFlag = false
-	}
+    if vppCh.closeFlag {
+        vppCh.Ch.Close()
+        vppCh.closeFlag = false
+    }
 
-	if vppCh.disconnectFlag {
-		vppCh.conn.Disconnect()
-		vppCh.disconnectFlag = false
-	}
+    if vppCh.disconnectFlag {
+        vppCh.conn.Disconnect()
+        vppCh.disconnectFlag = false
+    }
 }
