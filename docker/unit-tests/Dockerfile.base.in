@@ -23,11 +23,6 @@ ENV GOROOT="/usr/local/go"
 RUN mkdir $GOPATH
 
 // install unit test specific go modules
-RUN go get "github.com/davecgh/go-spew/spew"
-RUN go get "github.com/pborman/uuid"
-RUN go get "github.com/stretchr/testify/assert"
-RUN go get "github.com/stretchr/testify/require"
-RUN go get "k8s.io/kube-openapi/pkg/util/proto"
 RUN go get -u "github.com/msoap/go-carpet"
 RUN ln -s $(go env GOPATH)/bin/go-carpet /usr/local/bin/go-carpet
 
