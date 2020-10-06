@@ -206,10 +206,12 @@ func TestGetPodAndSharedDir(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			var kubeClient *fake.Clientset
+
 			if tc.pod == nil {
 				kubeClient = fake.NewSimpleClientset()
 			} else {
 				kubeClient = fake.NewSimpleClientset(tc.pod)
+				args.Args = fmt.Sprintf("K8S_POD_NAME=%s;K8S_POD_NAMESPACE=%s", tc.pod.Name, tc.pod.Namespace)
 			}
 
 			resClient, resPod, sharedDir, err := getPodAndSharedDir(tc.netConf, args, kubeClient)
@@ -247,7 +249,7 @@ func TestCmdAdd(t *testing.T) {
 			name:       "fail to connect to vpp",
 			netConfStr: `{"host":{"engine":"vpp"},"sharedDir":"#sharedDir#"}`,
 			netNS:      "generate",
-			expError:   "dial unix /run/vpp-api.sock: connect: no such file or directory",
+			expError:   "VPP API socket file /run/vpp/api.sock does not exist",
 		},
 		{
 			name:       "fail to connect to ovs-dpdk",
@@ -298,7 +300,7 @@ func TestCmdAdd(t *testing.T) {
 			netConfStr: `{"ipam":{"type":"host-local"},"host":{"engine":"ovs-dpdk","iftype":"vhostuser","vhost":{"mode":"client"}},"sharedDir":"#sharedDir#"}`,
 			netNS:      "generate",
 			fakeExec:   true,
-			expError:   "CNI_COMMAND is not",
+			expError:   "no paths provided",
 		},
 	}
 	for _, tc := range testCases {
@@ -323,6 +325,10 @@ func TestCmdAdd(t *testing.T) {
 
 			pod := testdata.GetTestPod(sharedDir)
 			kubeClient = fake.NewSimpleClientset(pod)
+
+			if pod != nil {
+				args.Args = fmt.Sprintf("K8S_POD_NAME=%s;K8S_POD_NAMESPACE=%s", pod.Name, pod.Namespace)
+			}
 
 			args.StdinData = []byte(tc.netConfStr)
 
@@ -392,7 +398,7 @@ func TestCmdDel(t *testing.T) {
 		{
 			name:       "fail to connect to vpp",
 			netConfStr: `{"host":{"engine":"vpp"},"sharedDir":"#sharedDir#"}`,
-			expError:   "dial unix /run/vpp-api.sock: connect: no such file or directory",
+			expError:   "VPP API socket file /run/vpp/api.sock does not exist",
 		},
 		{
 			name:       "fail to connect to ovs-dpdk",

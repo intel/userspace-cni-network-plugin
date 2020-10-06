@@ -16,6 +16,7 @@ package k8sclient
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -226,8 +227,8 @@ func TestGetPod(t *testing.T) {
 				require.NoError(t, dirErr, "Can't create temporary directory")
 				defer os.RemoveAll(sharedDir)
 
-				args = testdata.GetTestArgs()
 				pod = testdata.GetTestPod(sharedDir)
+				args = &skel.CmdArgs{Args: fmt.Sprintf("K8S_POD_NAME=%s;K8S_POD_NAMESPACE=%s", pod.Name, pod.Namespace)}
 				kubeClient = fake.NewSimpleClientset(pod)
 			}
 
