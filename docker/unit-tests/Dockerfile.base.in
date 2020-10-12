@@ -30,4 +30,8 @@ RUN ln -s $(go env GOPATH)/bin/go-carpet /usr/local/bin/go-carpet
 RUN mkdir -p $GOPATH/src/github.com/intel/userspace-cni-network-plugin
 COPY ./ $GOPATH/src/github.com/intel/userspace-cni-network-plugin/
 
+// download dependencies and generate VPP binapi code
 WORKDIR $GOPATH/src/github.com/intel/userspace-cni-network-plugin
+RUN make install-dep
+RUN make install
+RUN make

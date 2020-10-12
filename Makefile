@@ -283,7 +283,7 @@ $(TEST_TARGETS): test-%: test-build-%
 			cd -; \
 		done'
 
-test: install generate test-$(UT_OS)
+test: test-$(UT_OS)
 
 test-all: $(TEST_TARGETS)
 
