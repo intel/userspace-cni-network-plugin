@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -208,7 +209,7 @@ func setPodAnnotationMappedDir(pod *v1.Pod,
 	// it should be the same as the input data.
 	annotDataStr := pod.Annotations[AnnotKeyUsrspMappedDir]
 	if len(annotDataStr) != 0 {
-		if annotDataStr == mappedDir {
+		if filepath.Clean(annotDataStr) == filepath.Clean(mappedDir) {
 			logging.Verbosef("SetPodAnnotationMappedDir: Existing matches input. Do nothing.")
 			return modified, nil
 		} else {

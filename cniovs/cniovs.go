@@ -225,8 +225,9 @@ func getShortSharedDir(sharedDir string) string {
 	if len(sharedDir) >= 89 && strings.Contains(sharedDir, "empty-dir") {
 		// Format - /var/lib/kubelet/pods/<podID>/volumes/kubernetes.io~empty-dir/shared-dir
 		parts := strings.Split(sharedDir, "/")
+		// FIXME: it's not safe; can we assure that shareDir with "empty-dir" will always have at least 5 dirs?
 		podID := parts[5]
-		newSharedDir := DefaultHostVhostuserBaseDir + podID
+		newSharedDir := filepath.Join(DefaultHostVhostuserBaseDir, podID)
 		logging.Infof("getShortSharedDir: Short shared directory: %s", newSharedDir)
 		return newSharedDir
 	}

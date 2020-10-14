@@ -17,6 +17,7 @@ package cniovs
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/intel/userspace-cni-network-plugin/logging"
@@ -69,11 +70,7 @@ func createVhostPort(sock_dir string, sock_name string, client bool, bridge_name
 	args := []string{"add-port", bridge_name, sock_name, "--", "set", "Interface", sock_name, type_str}
 
 	if client == true {
-		socketarg := "options:vhost-server-path=" + sock_dir
-		if sock_dir[len(sock_dir)-1] != '/' {
-			socketarg += "/"
-		}
-		socketarg += sock_name
+		socketarg := "options:vhost-server-path=" + filepath.Join(sock_dir, sock_name)
 		logging.Debugf("Additional string: %s", socketarg)
 
 		args = append(args, socketarg)
@@ -92,7 +89,7 @@ func createVhostPort(sock_dir string, sock_name string, client bool, bridge_name
 		}
 
 		// Move socket to defined dir for easier mounting
-		err = os.Rename(ovs_socket_dir+sock_name, sock_dir+sock_name)
+		err = os.Rename(filepath.Join(ovs_socket_dir, sock_name), filepath.Join(sock_dir, sock_name))
 		if err != nil {
 			logging.Errorf("Rename ERROR: %v", err)
 			err = nil
