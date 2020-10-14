@@ -17,7 +17,7 @@
 package vppmemif
 
 // Generates Go bindings for all VPP APIs located in the json directory.
-//go:generate binapi-generator --input-dir=../../bin_api --output-dir=../../bin_api
+//go:generate go run git.fd.io/govpp.git/cmd/binapi-generator --output-dir=../../bin_api
 
 import (
 	"net"
@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 
 	"git.fd.io/govpp.git/api"
-	"git.fd.io/govpp.git/core/bin_api/memif"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/memif"
 
 	"github.com/intel/userspace-cni-network-plugin/logging"
 )
