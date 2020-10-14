@@ -1,4 +1,4 @@
-// Copyright 2017 Intel Corp.
+// Copyright 2017-2020 Intel Corp.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,11 +40,14 @@ type k8sArgs struct {
 	K8S_POD_INFRA_CONTAINER_ID cnitypes.UnmarshallableString
 }
 
-
 func getK8sArgs(args *skel.CmdArgs) (*k8sArgs, error) {
 	k8sArgs := &k8sArgs{}
 
 	logging.Verbosef("getK8sArgs: %v", args)
+
+	if args == nil {
+		return nil, logging.Errorf("getK8sArgs: failed to get k8s args for CmdArgs set to %v", args)
+	}
 	err := cnitypes.LoadArgs(args.Args, k8sArgs)
 	if err != nil {
 		return nil, err
@@ -113,8 +116,7 @@ func GetPod(args *skel.CmdArgs,
 	}
 
 	if kubeClient == nil {
-		logging.Errorf("GetPod: No kubeClient: %v", err)
-		return nil, kubeClient, err
+		return nil, nil, logging.Errorf("GetPod: No kubeClient: %v", err)
 	}
 
 	// Get the pod info. If cannot get it, we use cached delegates
@@ -135,8 +137,10 @@ func WritePodAnnotation(kubeClient kubernetes.Interface, pod *v1.Pod) (*v1.Pod, 
 	var err error
 
 	if kubeClient == nil {
-		logging.Errorf("WritePodAnnotation: No kubeClient: %v", err)
-		return pod, err
+		return pod, logging.Errorf("WritePodAnnotation: No kubeClient: %v", err)
+	}
+	if pod == nil {
+		return pod, logging.Errorf("WritePodAnnotation: No pod: %v", err)
 	}
 
 	// Update the pod

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Red Hat.
+// Copyright (c) 2018-2020 Red Hat, Intel Corp.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -123,17 +123,11 @@ func (cniOvs CniOvs) AddOnHost(conf *types.NetConf,
 		logging.Debugf("AddOnHost(ovs): %v", err)
 		return err
 	}
-	if err != nil {
-		return err
-	}
 
 	//
 	// Save Config - Save Create Data for Delete
 	//
 	err = SaveConfig(conf, args, &data)
-	if err != nil {
-		return err
-	}
 
 	return err
 }
