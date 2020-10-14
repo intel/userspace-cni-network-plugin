@@ -77,7 +77,7 @@ func (cniOvs CniOvs) AddOnHost(conf *types.NetConf,
 	logging.Infof("OVS AddOnHost: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
 	//
-	// Manditory attribute of "ovs-vsctl add-port" is a BridgeName. So even if
+	// Mandatory attribute of "ovs-vsctl add-port" is a BridgeName. So even if
 	// NetType is not set to "bridge", "conf.HostConf.BridgeConf.BridgeName"
 	// should be set. If it is not, set it to default value.
 	//
@@ -219,9 +219,10 @@ func generateRandomMacAddress() string {
 }
 
 func getShortSharedDir(sharedDir string) string {
-	// sun_path for unix domain socket has a array size of 108
-	// When the sharedDir path length greater than 89 (108 - 19)
-	// 19 is the possible vhostuser socke file name length "/abcdefghijkl-net99" (1 + 12 + 1 + 3 + 2)
+	// sun_path for unix domain socket has an array size of 108
+	// When the sharedDir path length is greater than 89 (108 - 19)
+	// 19 is the possible vhostuser socket file name length "/abcdefghijkl-net99" (1 + 12 + 1 + 3 + 2)
+	// FIXME: why shareddir is shortened only in case that it contains "empty-dir"?
 	if len(sharedDir) >= 89 && strings.Contains(sharedDir, "empty-dir") {
 		// Format - /var/lib/kubelet/pods/<podID>/volumes/kubernetes.io~empty-dir/shared-dir
 		parts := strings.Split(sharedDir, "/")
@@ -250,7 +251,7 @@ func createSharedDir(sharedDir, oldSharedDir string) error {
 			logging.Debugf("createSharedDir: Mount from %s to %s", oldSharedDir, sharedDir)
 			err = unix.Mount(oldSharedDir, sharedDir, "", unix.MS_BIND, "")
 			if err != nil {
-				logging.Errorf("createSharedDir: Failed to bind mout: %s", err)
+				logging.Errorf("createSharedDir: Failed to bind mount: %s", err)
 				return err
 			}
 		}
@@ -295,7 +296,7 @@ func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, actualSharedDi
 	sharedDir := getShortSharedDir(actualSharedDir)
 	err = createSharedDir(sharedDir, actualSharedDir)
 	if err != nil {
-		logging.Errorf("addLocalDeviceVhost: Failed to create shared dir group: %v", err)
+		logging.Errorf("addLocalDeviceVhost: Failed to create shared dir: %v", err)
 		return err
 	}
 
@@ -349,7 +350,7 @@ func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, actualSharedDi
 		logging.Debugf("delLocalDeviceVhost: Unmount shared directory: %v", sharedDir)
 		_, err = os.Stat(sharedDir)
 		if os.IsNotExist(err) {
-			logging.Errorf("delLocalDeviceVhost: shared directory %s does not existt to unmount", sharedDir)
+			logging.Errorf("delLocalDeviceVhost: shared directory %s does not exist to unmount", sharedDir)
 			return nil
 		}
 		err = unix.Unmount(sharedDir, 0)

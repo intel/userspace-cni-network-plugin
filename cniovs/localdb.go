@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Red Hat.
+// Copyright (c) 2018-2020 Red Hat, Intel Corp.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ func SaveConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) err
 
 		return ioutil.WriteFile(path, dataBytes, 0644)
 	} else {
-		return fmt.Errorf("ERROR: serializing delegate VPP saved data: %v", err)
+		return fmt.Errorf("ERROR: serializing delegate OVS saved data: %v", err)
 	}
 }
 
@@ -91,10 +91,10 @@ func LoadConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) err
 	if _, err := os.Stat(path); err == nil {
 		if dataBytes, err := ioutil.ReadFile(path); err == nil {
 			if err = json.Unmarshal(dataBytes, data); err != nil {
-				return fmt.Errorf("ERROR: Failed to parse VPP saved data: %v", err)
+				return fmt.Errorf("ERROR: Failed to parse OVS saved data: %v", err)
 			}
 		} else {
-			return fmt.Errorf("ERROR: Failed to read VPP saved data: %v", err)
+			return fmt.Errorf("ERROR: Failed to read OVS saved data: %v", err)
 		}
 
 	} else {

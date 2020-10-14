@@ -163,7 +163,7 @@ func SaveRemoteConfig(conf *types.NetConf,
 			err = ioutil.WriteFile(path, dataBytes, 0644)
 		} else {
 			return pod, fmt.Errorf("ERROR: serializing REMOTE NetConf data: %v", err)
-		}		
+		}
 	}
 
 	return pod, err
