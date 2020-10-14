@@ -1,3 +1,17 @@
+// Copyright 2018-2020 Red Hat, Intel Corp.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cniovs
 
 import (
@@ -10,8 +24,32 @@ import (
 
 const defaultOvSSocketDir = "/usr/local/var/run/openvswitch/"
 
-func execCommand(cmd string, args []string) ([]byte, error) {
+/*
+OVS command execution handling and its public interface
+*/
+
+type ExecCommandInterface interface {
+	execCommand(cmd string, args []string) ([]byte, error)
+}
+
+type realExecCommand struct{}
+
+func (e *realExecCommand) execCommand(cmd string, args []string) ([]byte, error) {
 	return exec.Command(cmd, args...).Output()
+}
+
+var ovsCommand ExecCommandInterface = &realExecCommand{}
+
+func SetExecCommand(o ExecCommandInterface) {
+	ovsCommand = o
+}
+
+func SetDefaultExecCommand() {
+	ovsCommand = &realExecCommand{}
+}
+
+func execCommand(cmd string, args []string) ([]byte, error) {
+	return ovsCommand.execCommand(cmd, args)
 }
 
 /*

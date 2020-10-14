@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Red Hat.
+// Copyright (c) 2018-2020 Red Hat, Intel Corp.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -211,18 +211,18 @@ type InterfaceData struct {
 	IPResult  current.Result
 }
 
-func GetRemoteConfig() ([]*InterfaceData, string, error) {
+func GetRemoteConfig(annotFile string) ([]*InterfaceData, string, error) {
 	var ifaceList []*InterfaceData
 
 	// Retrieve the directory that is shared between host and container.
 	// No conversion necessary
-	mappedDir, err := annotations.GetFileAnnotationMappedDir()
+	mappedDir, err := annotations.GetFileAnnotationMappedDir(annotFile)
 	if err != nil {
 		return ifaceList, mappedDir, err
 	}
 
 	// Retrieve the configuration data for each interface. This is a list of 1 to n interfaces.
-	configDataList, err := annotations.GetFileAnnotationConfigData()
+	configDataList, err := annotations.GetFileAnnotationConfigData(annotFile)
 	if err != nil {
 		// If annotation is not found, need to see if data was written
 		// to a file.
