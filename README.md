@@ -34,6 +34,9 @@
          * [1. Build the image to be used](#1-build-the-image-to-be-used)
          * [2. Create pod with multiple vhostuser interfaces](#2-create-pod-with-multiple-vhostuser-interfaces)
          * [3. Open terminal to pod and start testpmd](#3-open-terminal-to-pod-and-start-testpmd)
+   * [Unit Testing](#unit-testing)
+      * [Unit Tests Overview](#unit-tests-overview)
+      * [Unit Tests Inside Container](#unit-tests-inside-container)
 
 # Summary
 The Userspace CNI is a Container Network Interface (CNI) plugin
@@ -1027,3 +1030,150 @@ To exit:
 Pktgen:/> stop 0
 Pktgen:/> quit
 ```
+
+# Unit Testing
+
+## Unit Tests Overview
+
+The Userspace CNI networking plugin is written in [GO](https://golang.org/) and
+it uses [GO Testing](https://golang.org/pkg/testing) package for unit testing.
+In order to simplify unit test code, a [testify](https://github.com/stretchr/testify)
+toolkit is also used for [assertions](https://godoc.org/github.com/stretchr/testify/assert).
+Unit test files have suffix *_test.go* and they are located at the same directory
+as the production code.
+
+For example *userspace* package have one source file and one file with unit tests:
+
+```bash
+   userspace/userspace.go
+   userspace/userspace_test.go
+```
+
+In the file `userspace_test.go` you can find a set of test functions with the same
+name as functions from `userspace.go` with prefix `Test`. Each test function
+implements a set of tests to test production code thoroughly with different
+input data, etc.
+
+Testing binary is built and tests executed by `go test` command at directory
+with test files.
+
+For example, unit tests for userspace package with verbose output can be executed
+as follows:
+
+```bash
+cd userspace
+go test -v
+```
+
+An example of verbose output of userspace unit tests:
+
+```bash
+=== RUN   TestPrintVersionString
+=== RUN   TestPrintVersionString/verify_version_string
+--- PASS: TestPrintVersionString (0.00s)
+    --- PASS: TestPrintVersionString/verify_version_string (0.00s)
+=== RUN   TestLoadNetConf
+=== RUN   TestLoadNetConf/fail_to_parse_netConf_1
+=== RUN   TestLoadNetConf/fail_to_parse_netConf_2
+=== RUN   TestLoadNetConf/fail_to_parse_netConf_3
+=== RUN   TestLoadNetConf/fail_to_parse_netConf_4
+=== RUN   TestLoadNetConf/fail_to_parse_netConf_5
+=== RUN   TestLoadNetConf/fail_to_parse_netConf_6
+=== RUN   TestLoadNetConf/fail_to_set_default_logging_level
+=== RUN   TestLoadNetConf/fail_to_set_log_file
+=== RUN   TestLoadNetConf/load_correct_netConf
+--- PASS: TestLoadNetConf (0.00s)
+    --- PASS: TestLoadNetConf/fail_to_parse_netConf_1 (0.00s)
+    --- PASS: TestLoadNetConf/fail_to_parse_netConf_2 (0.00s)
+    --- PASS: TestLoadNetConf/fail_to_parse_netConf_3 (0.00s)
+    --- PASS: TestLoadNetConf/fail_to_parse_netConf_4 (0.00s)
+    --- PASS: TestLoadNetConf/fail_to_parse_netConf_5 (0.00s)
+    --- PASS: TestLoadNetConf/fail_to_parse_netConf_6 (0.00s)
+    --- PASS: TestLoadNetConf/fail_to_set_default_logging_level (0.00s)
+    --- PASS: TestLoadNetConf/fail_to_set_log_file (0.00s)
+    --- PASS: TestLoadNetConf/load_correct_netConf (0.00s)
+...
+```
+
+It is possible to execute unit tests directly from the host where the code is
+being developed. However it is strongly recommended to execute them from within
+a container. It will assure that unit tests will be isolated from the host
+and thus avoid any collision with the host environment (e.g. k8s or OVS).
+Another advantage is a possibility to easily execute unit tests at various Linux
+OS distributions. Support of unit test execution inside containers is implemented
+by project Makefile and described in following paragraphs.
+
+## Unit Tests Inside Container
+
+Project `Makefile` defines a set of targets suitable for unit testing inside
+containers. In order to build and use testing containers, both `docker` and
+`gcc` (C preprocessor is used to assemble Dockerfiles) have to be installed
+at the host.
+
+Example of tools installation at Ubuntu:
+
+```bash
+   apt install docker.io gcc
+```
+
+After the installation is completed, then any of unit test specific targets
+can be executed in order to:
+
+* build test containers and update them in case that new commit is detected
+* execute unit tests
+* calculate code coverage
+* cleanup unit test container images and generated docker files
+
+Targets for container building, unit testing and code coverage calculation
+are prepared in three different versions to be executed at:
+
+* Linux OS distribution defined by `UT_OS` environment variable
+
+  e.g. execute build of container image for CentOS8
+
+  ```bash
+     export UT_OS=centos8
+     make test-build
+  ```
+
+* Linux OS distribution specified by target suffix
+
+  e.g. calculate code coverage at Ubuntu 20.04
+
+  ```bash
+     make coverage-ubuntu20.04
+  ```
+
+* all supported OS distributions
+
+  e.g. execute unit tests at all supported OS distros:
+
+  ```bash
+     make test-all
+  ```
+
+The list of supported `make` targets is also documented as part of `make help`
+as follows:
+
+```
+Make Targets for unit testing inside containers:
+ make test-clean      - Remove test container images and generated Dockerfiles.
+ make test-build      - Build container image for unit tests with OS defined by UT_OS: UT_OS=ubuntu20.04
+ make test            - Run unit tests inside container with OS defined by UT_OS: UT_OS=ubuntu20.04
+ make coverage        - Calculate code coverage in container with OS defined by UT_OS: UT_OS=ubuntu20.04
+ make test-build-<os> - Build container image for unit tests with <os>, e.g. make test-build-centos8
+ make test-<os>       - Run unit tests inside container with <os>, e.g. make test-centos8
+ make coverage-<os>   - Calculate code coverage inside container with <os>, e.g. make coverage-centos8
+ make test-build-all  - Build container images for unit tests for all supported OS distributions
+                        e.g. make -j 5 test-build-all
+ make test-all        - Run unit tests inside container for all supported OS distributions
+                        e.g. make -j 5 test-all
+ make coverage-all    - Calculate code coverage inside container for all supported OS distributions.
+                        e.g. make -j 5 coverage-all
+```
+
+Following Linux OS distributions are supported for unit testing inside containers:
+
+* CentOS 7, 8
+* Fedora 31, 32
+* Ubuntu 16.04, 18.04, 20.04
