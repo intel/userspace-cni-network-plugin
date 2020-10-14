@@ -8,6 +8,31 @@ else ifeq ($(filter rhel centos fedora opensuse opensuse-leap opensuse-tumblewee
 	PKG=rpm
 endif
 
+#
+# Unit test specific variables
+#
+UT_IMAGE=userspace_cni_plugin
+UT_GO_VERSION=1.14.3
+UT_OS_CENTOS=centos7 centos8
+UT_OS_FEDORA=fedora31 fedora32
+UT_OS_UBUNTU=ubuntu16.04 ubuntu18.04 ubuntu20.04
+UT_OS_DEFAULT=ubuntu20.04
+UT_OS_ALL=$(UT_OS_CENTOS) $(UT_OS_FEDORA) $(UT_OS_UBUNTU)
+TEST_TARGETS=$(addprefix test-,$(UT_OS_ALL))
+TEST_BUILD_TARGETS=$(addprefix test-build-,$(UT_OS_ALL))
+COVERAGE_TARGETS=$(addprefix coverage-,$(UT_OS_ALL))
+
+# Get hash of recent commit for IMAGE tagging
+GIT_HASH=$(shell git rev-parse --short HEAD)
+
+# Fail in case that unsupported UT_OS is set
+ifeq ($(filter $(UT_OS), $(UT_OS_ALL)),)
+ifneq ($(UT_OS),)
+$(warning Unsupported unit test OS was selected: UT_OS=$(UT_OS))
+$(error Supported values are: $(UT_OS_ALL))
+endif
+UT_OS=$(UT_OS_DEFAULT)
+endif
 
 #
 # VPP Variables
@@ -56,13 +81,30 @@ all: build
 
 help:
 	@echo "Make Targets:"
-	@echo " make                - Build UserSpace CNI."
-	@echo " make clean          - Cleanup all build artifacts. Will remove VPP files installed from *make install*."
-	@echo " make install        - If VPP is not installed, install the minimum set of files to build."
-	@echo "                       CNI-VPP will fail because VPP is still not installed."
-	@echo " make install-dep    - Install software dependencies, currently only needed for *make install*."
-	@echo " make extras         - Build *usrsp-app*, small binary to run in Docker container for testing."
-	@echo " make test           - Build test code."
+	@echo " make                 - Build UserSpace CNI."
+	@echo " make clean           - Cleanup all build artifacts. Will remove VPP files installed from *make install*."
+	@echo " make install         - If VPP is not installed, install the minimum set of files to build."
+	@echo "                        CNI-VPP will fail because VPP is still not installed."
+	@echo " make install-dep     - Install software dependencies, currently only needed for *make install*."
+	@echo " make extras          - Build *usrsp-app*, small binary to run in Docker container for testing."
+	@echo " make test-app        - Build test code."
+	@echo ""
+	@echo "Make Targets for unit testing inside containers:"
+	@echo " make test-clean      - Remove test container images and generated Dockerfiles."
+	@echo " make test-build      - Build container image for unit tests with OS defined by UT_OS: UT_OS="$(UT_OS)
+	@echo " make test            - Run unit tests inside container with OS defined by UT_OS: UT_OS="$(UT_OS)
+	@echo " make coverage        - Calculate code coverage in container with OS defined by UT_OS: UT_OS="$(UT_OS)
+	@echo " make test-build-<os> - Build container image for unit tests with <os>, e.g. make test-build-centos8"
+	@echo " make test-<os>       - Run unit tests inside container with <os>, e.g. make test-centos8"
+	@echo " make coverage-<os>   - Calculate code coverage inside container with <os>, e.g. make coverage-centos8"
+	@echo " make test-build-all  - Build container images for unit tests for all supported OS distributions"
+	@echo "                        e.g. make -j 5 test-build-all"
+	@echo " make test-all        - Run unit tests inside container for all supported OS distributions"
+	@echo "                        e.g. make -j 5 test-all"
+	@echo " make coverage-all    - Calculate code coverage inside container for all supported OS distributions."
+	@echo "                        e.g. make -j 5 coverage-all"
+	@echo ""
+	@echo " Supported OS distributions for unit testing are: $(UT_OS_ALL)"
 	@echo ""
 	@echo "Other:"
 	@echo " glide update --strip-vendor - Recalculate dependancies and update *vendor\* with proper packages."
@@ -84,7 +126,7 @@ endif
 		--output-dir=vendor/git.fd.io/govpp.git/core/bin_api/
 	@cd userspace && go build -v
 
-test:
+test-app:
 	@cd cnivpp/test/memifAddDel && go build -v
 	@cd cnivpp/test/vhostUserAddDel && go build -v
 	@cd cnivpp/test/ipAddDel && go build -v
@@ -185,7 +227,7 @@ extras:
 		--output-dir=vendor/git.fd.io/govpp.git/core/bin_api/
 	@cd docker/usrsp-app && go build -v
 
-clean:
+clean: test-clean
 	@rm -f docker/usrsp-app/usrsp-app
 	@rm -f cnivpp/test/memifAddDel/memifAddDel
 	@rm -f cnivpp/test/vhostUserAddDel/vhostUserAddDel
@@ -207,5 +249,65 @@ generate:
 
 lint:
 
-.PHONY: build test install extras clean generate
+check-test-dep:
+	@for TEST_DEP in docker cpp git ; do \
+		if ! which $$TEST_DEP > /dev/null ; then \
+			echo "$$TEST_DEP is required for unit test execution, please install it."; \
+			exit 1; \
+		fi \
+	done
 
+$(TEST_BUILD_TARGETS): test-build-%: check-test-dep
+	@# Skip image build in case that image with recent code changes exists
+	@if [ "`docker images -q $(UT_IMAGE):$*_$(GIT_HASH)`" = "" ] ; then \
+		echo Build unit test image for $*; \
+		cpp -o docker/unit-tests/Dockerfile.$* docker/unit-tests/Dockerfile.$*.in; \
+		docker build . \
+			-t $(UT_IMAGE):$* \
+			-t $(UT_IMAGE):$*_$(GIT_HASH) \
+			--build-arg UT_GO_VERSION=$(UT_GO_VERSION) \
+			-f docker/unit-tests/Dockerfile.$*; \
+	fi
+
+test-build: test-build-$(UT_OS)
+
+test-build-all: $(TEST_BUILD_TARGETS)
+
+$(TEST_TARGETS): test-%: test-build-%
+	@echo Run unit tests at $*
+	@$(SUDO) docker run --rm --privileged $(UT_IMAGE):$*_$(GIT_HASH) bash -c \
+		'UT_LIST=`find . -name "*_test.go" -not -path "./vendor/*" -exec dirname \{\} \; | sort -u`; \
+		for UT_DIR in $$UT_LIST ; do \
+			cd $${UT_DIR}; \
+			go test -v || exit 1; \
+			cd -; \
+		done'
+
+test: test-$(UT_OS)
+
+test-all: $(TEST_TARGETS)
+
+$(COVERAGE_TARGETS): coverage-%: test-build-%
+	@echo Calculate code coverage at $*
+	@$(SUDO) docker run --rm --privileged $(UT_IMAGE):$* bash -c "go-carpet -summary | sort"
+
+coverage: coverage-$(UT_OS)
+
+coverage-all: $(COVERAGE_TARGETS)
+
+test-clean:
+	@if which docker > /dev/null ; then \
+		echo Remove unit test container images with name $(UT_IMAGE); \
+		for IMAGE in `docker images -a -q --filter=reference=$(UT_IMAGE) | sort -u`; do \
+			docker rmi -f $$IMAGE; \
+		done; \
+		echo Remove generated dockerfiles; \
+		for IMAGEOS in $(UT_OS_ALL) ; do \
+			rm -f docker/unit-tests/Dockerfile.$$IMAGEOS; \
+		done; \
+	else \
+		echo "Docker is not installed, nothing to delete."; \
+	fi
+
+.PHONY: build test-app install extras clean generate check-test-dep test-clean test-build test-build-all \
+	test test-all coverage coverage-all $(TEST_TARGETS) $(TEST_BUILD_TARGETS) $(COVERAGE_TARGETS)
