@@ -374,15 +374,6 @@ func TestCmdAdd(t *testing.T) {
 	}
 }
 
-func TestCmdGet(t *testing.T) {
-	t.Run("test placeholder until GetCmd will be implemented", func(t *testing.T) {
-		var exec invoke.Exec
-		args := testdata.GetTestArgs()
-		kubeClient := fake.NewSimpleClientset()
-		assert.NoError(t, cmdGet(args, exec, kubeClient), "Unexpected error")
-	})
-}
-
 func TestCmdDel(t *testing.T) {
 	testCases := []struct {
 		name       string

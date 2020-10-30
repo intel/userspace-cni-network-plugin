@@ -286,27 +286,6 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 	return cnitypes.PrintResult(result, current.ImplementedSpecVersion)
 }
 
-
-func cmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
-/*
-	netConf, err := loadNetConf(args.StdinData)
-
-	logging.Infof("cmdGet: (AFTER LOAD) - Container %s Iface %s", args.ContainerID[:12], args.IfName)
-	logging.Verbosef("   Args=%v netConf=%v, exec=%v, kubeClient%v",
-		args, netConf, exec, kubeClient)
-
-	if err != nil {
-		return err
-	}
-
-	// FIXME: call all delegates
-
-	return cnitypes.PrintResult(netConf.PrevResult, netConf.CNIVersion)
-*/
-	return nil
-}
-
-
 func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
 	var netConf *types.NetConf
 	var containerEngine string
