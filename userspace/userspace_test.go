@@ -434,7 +434,7 @@ func TestCmdDel(t *testing.T) {
 		{
 			name:       "fail ipam call",
 			netConfStr: `{"ipam":{"type":"host-local"},"host":{"engine":"ovs-dpdk","iftype":"vhostuser"},"container":{"engine":"ovs-dpdk","iftype":"vhostuser"},"sharedDir":"#sharedDir#"}`,
-			expError:   "environment variable CNI_COMMAND must be specified",
+			expError:   "no paths provided",
 			fakeExec:   true,
 		},
 		{
