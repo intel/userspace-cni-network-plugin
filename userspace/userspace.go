@@ -272,9 +272,9 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 
 	// Add the requested interface and network
 	if containerEngine == "vpp" {
-		pod, err = vpp.AddOnContainer(netConf, args, kubeClient, sharedDir, pod, result)
+		_, err = vpp.AddOnContainer(netConf, args, kubeClient, sharedDir, pod, result)
 	} else if containerEngine == "ovs-dpdk" {
-		pod, err = ovs.AddOnContainer(netConf, args, kubeClient, sharedDir, pod, result)
+		_, err = ovs.AddOnContainer(netConf, args, kubeClient, sharedDir, pod, result)
 	} else {
 		err = fmt.Errorf("ERROR: Unknown Container Engine:" + containerEngine)
 	}
@@ -329,7 +329,7 @@ func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 
 	// Retrieve the "SharedDir", directory to create the socketfile in.
 	// Save off kubeClient and pod for later use if needed.
-	kubeClient, pod, sharedDir, err := getPodAndSharedDir(netConf, args, kubeClient)
+	_, pod, sharedDir, err := getPodAndSharedDir(netConf, args, kubeClient)
 	if err != nil {
 		logging.Errorf("cmdDel: Unable to determine \"SharedDir\" - %v", err)
 		return err
