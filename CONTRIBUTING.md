@@ -51,7 +51,5 @@ Signed-off-by: Abc Xyz <abc.xyz@intel.com>
 
 We accept github pull requests.
 
-## Email and Chat
-
-The project uses the Slack chat:
-- Slack: #[Intel-Corp](https://intel-corp.herokuapp.com/) channel on slack
+## Contact Us
+- #General channel on [NPWG](https://npwg-team.slack.com/) Slack

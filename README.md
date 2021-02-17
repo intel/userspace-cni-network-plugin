@@ -66,14 +66,14 @@ Weekly Meeting Details:
 
 Since it currently a small group, we are some what flexible and move the meeting
 time around from time to time. Any meeting time/date changes will be broadcast
-on the Intel slack channel and updated meeting times will be posted in the
+on the NPWG slack channel and updated meeting times will be posted in the
 [Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
 document as soon as possible.  
 
 ## Contacts
 For any questions about Userspace CNI, please reach out.
 * Report issue via Github: [userspace-cni-network-plugin/issues](https://github.com/intel/userspace-cni-network-plugin/issues)
-* Contact via slack: [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
+* Contact via slack: [NPWG Slack](https://npwg-team.slack.com/)
   * Feel free to contact the developer @garyloug or @bmcfall in slack
 * Contact via Google Group: https://groups.google.com/forum/#!forum/userspace-cni
 
