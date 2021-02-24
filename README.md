@@ -51,29 +51,17 @@ Useful Links:
 * Source Code: https://github.com/intel/userspace-cni-network-plugin
 * Design Document: [Userspace Design Document](https://docs.google.com/document/d/1jAFDNWhf6flTlPHmbWavlyLrkFJtAdQlcOnG3qhRYtU/edit?usp=sharing) 
 
-## Weekly Meeting
-Weekly Meeting Details:
-* Meeting Time: 12:00 PM UTC every other Wednesday
-  * 8:00 AM EST / 1:00 PM GMT
-* Meeting Dates:
-  * 08/14/2019     08/28/2019
-  * 09/11/2019     09/25/2019
-  * 10/09/2019     10/23/2019
-  * 11/06/2019     (No 11/20/2019 meeting, KubeCon NA - San Diego)
-  * 12/04/2019     12/18/2019
-* Meeting Bridge: https://zoom.us/j/2392609689
-* Meeting Minute Document: [Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
+## Biweekly Meeting
+Join us for project discussions at _K8s Network & Resource management_ meetings
 
-Since it currently a small group, we are some what flexible and move the meeting
-time around from time to time. Any meeting time/date changes will be broadcast
-on the Intel slack channel and updated meeting times will be posted in the
-[Userspace CNI: Weekly Meeting Minutes](https://docs.google.com/document/d/1-lj-y9hIFTwmA9hKo2T7y-fyql2Uv64J7VhiZG0H3ag/edit?usp=sharing)
-document as soon as possible.  
+Time: 15:00 - 16:00 GMT / 10:00-11:00 ET /  07:00-08:00 PST  every other Monday
+* [Meeting notes and agenda](https://docs.google.com/document/d/1sJQMHbxZdeYJPgAWK1aSt6yzZ4K_8es7woVIrwinVwI/edit?usp=sharing)
+* [Zoom channel](https://zoom.us/j/2392609689?pwd=K1R4ZEQyWWJVSGV3V1pmVThLMlhqQT09)
 
 ## Contacts
 For any questions about Userspace CNI, please reach out.
 * Report issue via Github: [userspace-cni-network-plugin/issues](https://github.com/intel/userspace-cni-network-plugin/issues)
-* Contact via slack: [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
+* Contact via slack: [NPWG Slack](https://npwg-team.slack.com/)
   * Feel free to contact the developer @garyloug or @bmcfall in slack
 * Contact via Google Group: https://groups.google.com/forum/#!forum/userspace-cni
 
