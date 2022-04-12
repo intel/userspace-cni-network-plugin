@@ -4,11 +4,11 @@ go 1.14
 
 require (
 	git.fd.io/govpp.git v0.3.5
-	github.com/containernetworking/cni v0.8.0
+	github.com/containernetworking/cni v0.8.1
 	github.com/containernetworking/plugins v0.8.0
 	github.com/coreos/go-iptables v0.4.5 // indirect
 	github.com/go-logfmt/logfmt v0.5.0
-	github.com/lunixbochs/struc v0.0.0-20200707160740-784aaebc1d40
+	github.com/lunixbochs/struc v0.0.0-20200707160740-784aaebc1d40 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/safchain/ethtool v0.0.0-20200804214954-8f958a28363a // indirect
