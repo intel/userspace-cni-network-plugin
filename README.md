@@ -377,7 +377,7 @@ VPP GO-API. When the CNI is invoked, VPP CNI library opens a GO Channel to the
 local VPP instance and passes gRPC messages between the two.
 
 As mentioned above, to build the Userspace CNI, VPP needs to be installed, or
-serveral VPP files to compile against. When VPP is installed, it copies it's
+several VPP files to compile against. When VPP is installed, it copies it's
 json API files to */usr/share/vpp/api/*. VPP CNI Libary uses these files to
 compile against and generate the properly versioned messages to the local VPP
 Instance. So to build the VPP CNI, VPP must be installed (or the proper json
