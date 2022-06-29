@@ -75,7 +75,7 @@ interfaces in a container.
 
 Userspace networking requires additional considerations. For one, the interface
 needs to be created/configured on a local vswitch (running on the host). There
-may also be a desire to add the interface to a specfic network on the host
+may also be a desire to add the interface to a specific network on the host
 through the local vswitch. Second, when the interface is inserted into the
 container, it is not owned by the kernel, so additional work needs to be done
 in the container to consume the interface and add to a network within the
@@ -102,7 +102,7 @@ This plugin is recommended to be built with Go 1.11.10 and either OVS-DPDK 2.9.0
 or VPP 19.04. Other versions of Go, OVS-DPDK and VPP are theoretically
 supported, but MIGHT cause unknown issue.
 
-There are a few environmental variables used in building and teating this plugin.
+There are a few environmental variables used in building and testing this plugin.
 Here is an example:
 ```
    cat ~/.bashrc
@@ -142,7 +142,7 @@ code, perform a make clean:
 ## Update dependencies
 This project is currently using [go modules](https://github.com/golang/go/wiki/Modules)
 to manage dependencies. Please refer to official documentation to learn more
-about **go modules** behavior and typical [workflow](https://github.com/golang/go/wiki/Modules#daily-workflow).
+about **Go Modules** behaviour and typical [workflow](https://github.com/golang/go/wiki/Modules#daily-workflow).
 
 
 # Network Configuration Reference
@@ -206,7 +206,7 @@ EOF
 
 
 ## Integrated with Multus Plugin
-Integrate with the Multus plugin for a high performance container networking
+Integrate with the Multus plugin for a high-performance container networking
 solution for NFV Environments. Refer to Multus (NFV based Multi - Network
 plugin), DPDK-SRIOV CNI plugins:
 * [Multus - Multi Network plugin](https://github.com/Intel-Corp/multus-cni)
@@ -378,7 +378,7 @@ local VPP instance and passes gRPC messages between the two.
 
 As mentioned above, to build the Userspace CNI, VPP needs to be installed, or
 several VPP files to compile against. When VPP is installed, it copies it's
-json API files to */usr/share/vpp/api/*. VPP CNI Libary uses these files to
+json API files to */usr/share/vpp/api/*. VPP CNI Library uses these files to
 compile against and generate the properly versioned messages to the local VPP
 Instance. So to build the VPP CNI, VPP must be installed (or the proper json
 files must be in */usr/share/vpp/api/*).
@@ -442,7 +442,7 @@ hugepages to 512, use:
 containers, work still needs to be done. Set SELinux to permissive.
 
 
-### Install on CentOS
+### Install On CentOS
 To install VPP on CentOS from https://packagecloud.io/fdio/ repository:
 ```
 curl -s https://packagecloud.io/install/repositories/fdio/1904/script.rpm.sh | sudo bash
@@ -462,7 +462,7 @@ sudo systemctl start vpp
 sudo systemctl enable vpp
 ```
 
-### Install on Ubuntu
+### Install On Ubuntu
 **OLD - Needs to be updated!**
 
 To install on Ubuntu 16.04 (Xenial) as an example to demonstrate how to install VPP from pre-build packages:
@@ -476,7 +476,7 @@ sudo apt-get install vpp vpp-lib
 ```
 
 
-### Install on Other Distros
+### Install On Other Distros
 For installing VPP on other distros, see:
 https://wiki.fd.io/view/VPP/Installing_VPP_binaries_from_packages
 
@@ -484,7 +484,7 @@ https://wiki.fd.io/view/VPP/Installing_VPP_binaries_from_packages
 
 # Testing
 
-## Testing with VPP Docker Image and CNI
+## Testing With VPP Docker Image And CNI
 
 There are a few environmental variables used in this test. Here is an example:
 ```
@@ -564,9 +564,9 @@ To run script:
   * Current implementation is to write the remote configuration into a file and share the directory
 with the container, which is the volume mapping. Directory is currently hard coded.
 * *--device=/dev/hugepages:/dev/hugepages*
-  * VPP requires hugepages, so need to map hugepoages into container.
+  * VPP requires hugepages, so need to map hugepages into container.
 
-In the container, you should see the usrsp-app ouput the message sequence of
+In the container, you should see the usrsp-app output the message sequence of
 its communication with local VPP (VPP in the container) and some database
 dumps interleaved.
 
@@ -707,7 +707,7 @@ run VPP and *usrsp-app* manually:
 
 ## Testing with DPDK Testpmd Application
 
-To follow this example you should have a system with kubernetes available and
+To follow this example, you should have a system with kubernetes available and
 configured to support native 1 GB hugepages. You should also have multus-cni and
 userspace-cni-network-plugin up and running. See `examples/crd-userspace-net-ovs-no-ipam.yaml` for
 example config to use with multus. If using OVS,
@@ -715,7 +715,7 @@ check that you have bridge named `br0` in your OVS with `ovs-vsctl show` and if
 not, create it with
 `ovs-vsctl add-br br0 -- set bridge br0 datapath_type=netdev`.
 
-### 1. Build the image to be used
+### 1. Build The Image To Be Used
 
 Build container image from
 
@@ -733,7 +733,7 @@ Dockerfile and tag it as `ubuntu-dpdk`:
 docker build . -t ubuntu-dpdk
 ```
 
-### 2. Create pod with multiple vhostuser interfaces
+### 2. Create Pod With Multiple vhostuser Interfaces
 
 Copy `get-prefix.sh` script from userspace-cni-network-plugin repo to
 `/var/lib/cni/vhostuser/`. See `examples/pod-multi-vhost.yaml`and start the
@@ -743,7 +743,7 @@ pod:
 kubectl create -f examples/pod-multi-vhost.yaml
 ```
 
-### 3. Open terminal to pod and start testpmd
+### 3. Open Terminal To Pod And Start testpmd
 
 Open terminal to the created pod once it is running:
 
@@ -786,7 +786,7 @@ flow, for example, from port 1 to port 2 with
 
 To follow this example you should have a system with kubernetes available and configured to support native 1 GB hugepages. You should also have multus-cni and userspace-cni-network-plugin up and running. See `examples/crd-userspace-net-ovs-no-ipam.yaml` for example config to use with multus. If using OVS, check that you have bridge named `br0` in your OVS with `ovs-vsctl show` and if not, create it with `ovs-vsctl add-br br0 -- set bridge br0 datapath_type=netdev`.
 
-### 1. Build the images to be used
+### 1. Build The Images To Be Used
 
 Create the l3fwd Dockerfile:
 ```bash
@@ -868,7 +868,7 @@ Build the pktgen Docker image, tag it as`dpdk-pktgen`:
 docker build -t dpdk-pktgen -f pktgen-dockerfile .
 ```
 
-### 2. Create the pods to be used
+### 2. Create The Pods To Be Used
 
 Create the l3fwd Pod Spec:
 ```bash
@@ -966,7 +966,7 @@ dpdk-l3fwd-vj4hj      1/1        Running   0                 51s
 dpdk-pktgen-xrsz9   1/1        Running   0                 2s
 ```
 
-### 3. Run L3FWD and Pktgen
+### 3. Run L3FWD And pktgen
 
 Using your pod ID, open a bash shell in the pktgen pod:
 ```bash
@@ -1080,7 +1080,7 @@ An example of verbose output of userspace unit tests:
 ```
 
 It is possible to execute unit tests directly from the host where the code is
-being developed. However it is strongly recommended to execute them from within
+being developed. However, it is strongly recommended to execute them from within
 a container. It will assure that unit tests will be isolated from the host
 and thus avoid any collision with the host environment (e.g. k8s or OVS).
 Another advantage is a possibility to easily execute unit tests at various Linux
@@ -1091,7 +1091,7 @@ by project Makefile and described in following paragraphs.
 
 Project `Makefile` defines a set of targets suitable for unit testing inside
 containers. In order to build and use testing containers, both `docker` and
-`gcc` (C preprocessor is used to assemble Dockerfiles) have to be installed
+`gcc` (C pre-processor is used to assemble Dockerfiles) have to be installed
 at the host.
 
 Example of tools installation at Ubuntu:
@@ -1106,7 +1106,7 @@ can be executed in order to:
 * build test containers and update them in case that new commit is detected
 * execute unit tests
 * calculate code coverage
-* cleanup unit test container images and generated docker files
+* clean-up unit test container images and generated docker files
 
 Targets for container building, unit testing and code coverage calculation
 are prepared in three different versions to be executed at:
