@@ -139,7 +139,7 @@ code, perform a make clean:
 ```
 
 
-## Update dependencies
+## Update Dependencies
 This project is currently using [go modules](https://github.com/golang/go/wiki/Modules)
 to manage dependencies. Please refer to official documentation to learn more
 about **Go Modules** behaviour and typical [workflow](https://github.com/golang/go/wiki/Modules#daily-workflow).
@@ -205,7 +205,7 @@ EOF
 ```
 
 
-## Integrated with Multus Plugin
+## Integrated With Multus Plugin
 Integrate with the Multus plugin for a high-performance container networking
 solution for NFV Environments. Refer to Multus (NFV based Multi - Network
 plugin), DPDK-SRIOV CNI plugins:
@@ -300,7 +300,7 @@ or isn't working with a particular configuration. Userspace CNI always log via
 `STDERR`, which is the standard method by which CNI plugins communicate errors,
 and these errors are logged by the Kubelet. This method is always enabled.
 
-### Writing to a Log File
+### Writing To A Log File
 Optionally, Userspace CNI can log to a file on the filesystem. This file will
 be written locally on each node where CNI is executed. Configure this via the
 `LogFile` option in the CNI configuration. By default this additional logging
@@ -338,7 +338,6 @@ CNI configuration. For example:
     "LogLevel": "debug",
 ```
 
-
 # OVS CNI Library Intro
 OVS CNI Library is written in GO and used by UserSpace CNI to interface with the
 OVS. OVS currently does not have a GO-API, though there are some external
@@ -350,14 +349,14 @@ To install the DPDK-OVS, the source codes contains a
 [document](https://github.com/openvswitch/ovs/blob/master/Documentation/intro/install/dpdk.rst)
 for how to install the DPDK-OVS.
 
-## Running OVS CNI Library with OVS
+## Running OVS CNI Library With OVS
 The Userspace CNI plugin builds the OVS CNI Library from the cniovs
 sub-folder. In order to run with the OVS CNI Library, the OVS python script
 must be installed on the system. To install the script, run *make install*
 as described in
 [Building VPP CNI Library with OVS](#building-vpp-cni-library-with-ovs). 
 
-## Configuring the System
+## Configuring The System
 DPDK-OVS is a DPDK based application, so some detailed system requirements can
 be found at
 [DPDK requirements](http://dpdk.org/doc/guides/linux_gsg/sys_reqs.html).
@@ -369,7 +368,6 @@ Or add the following configuration to the grub configuration:
 ```
 default_hugepagesz=2m hugepagesz=2m hugepages=2048
 ```
-
 
 # VPP CNI Library Intro
 VPP CNI Library is written in GO and used by UserSpace CNI to interface with the
@@ -383,8 +381,7 @@ compile against and generate the properly versioned messages to the local VPP
 Instance. So to build the VPP CNI, VPP must be installed (or the proper json
 files must be in */usr/share/vpp/api/*).
 
-
-## Building VPP CNI Library with OVS
+## Building VPP CNI Library With OVS
 The Userspace CNI plugin builds the VPP CNI Library from the cnivpp
 sub-folder. In order to run with the VPP CNI Library, VPP must be installed
 on the system. If VPP should be installed but is not installed, see the
@@ -416,12 +413,10 @@ systems. Other platforms will be made to work long term. If there is an
 immediate need for other platforms, please open an issue to expedite the
 feature (https://github.com/intel/userspace-cni-network-plugin/issues).
 
-
 ## Installing VPP
 There are several ways to install VPP. This code is based on a fixed release
 VPP (VPP 19.04 initially), so it is best to install a released version (even
 though it is possible to build your own).
-
 
 ### Prerequisites
 Below are the VPP prerequisites:
@@ -440,7 +435,6 @@ hugepages to 512, use:
 ```  
 * **SELinux:** VPP works with SELinux enabled, but when running with
 containers, work still needs to be done. Set SELinux to permissive.
-
 
 ### Install On CentOS
 To install VPP on CentOS from https://packagecloud.io/fdio/ repository:
@@ -475,12 +469,9 @@ sudo apt-get update
 sudo apt-get install vpp vpp-lib
 ```
 
-
 ### Install On Other Distros
 For installing VPP on other distros, see:
 https://wiki.fd.io/view/VPP/Installing_VPP_binaries_from_packages
-
-
 
 # Testing
 
@@ -703,7 +694,6 @@ run VPP and *usrsp-app* manually:
    vpp -c /etc/vpp/startup.conf &
    usrsp-app
 ```
-
 
 ## Testing with DPDK Testpmd Application
 
