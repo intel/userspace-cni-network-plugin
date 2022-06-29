@@ -95,7 +95,6 @@ for more information.
 
 ![Vhostuser plugin](doc/images/userspace-plugin.png)
 
-
 # Build & Clean
 
 This plugin is recommended to be built with Go 1.11.10 and either OVS-DPDK 2.9.0-3
@@ -110,7 +109,6 @@ Here is an example:
    export GOPATH=~/go
    export CNI_PATH=$GOPATH/src/github.com/containernetworking/plugins/bin
 ```
-
 
 The Userspace CNI requires several files from VPP in-order to build. If VPP
 should be installed but is not installed, see [Installing VPP](#installing-vpp)
@@ -138,12 +136,10 @@ code, perform a make clean:
    make clean
 ```
 
-
 ## Update Dependencies
 This project is currently using [go modules](https://github.com/golang/go/wiki/Modules)
 to manage dependencies. Please refer to official documentation to learn more
 about **Go Modules** behaviour and typical [workflow](https://github.com/golang/go/wiki/Modules#daily-workflow).
-
 
 # Network Configuration Reference
 
@@ -156,7 +152,6 @@ should be injected into.
 userspace interface configuration data as well as container network data
 userspace interface should be injected into. Defaults used when data omitted.
 * `ipam` (dictionary, optional): IPAM configuration to be used for this network.
-
 
 ## Work Standalone
 
@@ -203,7 +198,6 @@ sudo cat > /etc/cni/net.d/90-userspace.conf <<EOF
 }
 EOF
 ```
-
 
 ## Integrated With Multus Plugin
 Integrate with the Multus plugin for a high-performance container networking
