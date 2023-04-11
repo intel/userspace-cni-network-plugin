@@ -1,6 +1,7 @@
 SUDO?=sudo
 OS_ID        = $(shell grep '^ID=' /etc/os-release | cut -f2- -d= | sed -e 's/\"//g')
 OS_VERSION_ID= $(shell grep '^VERSION_ID=' /etc/os-release | cut -f2- -d= | sed -e 's/\"//g')
+OS_RELEASE   = $(shell lsb_release -c -s || true)
 
 ifeq ($(filter ubuntu debian,$(OS_ID)),$(OS_ID))
 	PKG=deb
@@ -15,7 +16,7 @@ UT_IMAGE=userspace_cni_plugin
 UT_GO_VERSION=1.14.3
 UT_OS_CENTOS=centos7 centos8
 UT_OS_FEDORA=fedora31 fedora32
-UT_OS_UBUNTU=ubuntu16.04 ubuntu18.04 ubuntu20.04
+UT_OS_UBUNTU=ubuntu20.04 ubuntu22.04
 UT_OS_DEFAULT=ubuntu20.04
 UT_OS_ALL=$(UT_OS_CENTOS) $(UT_OS_FEDORA) $(UT_OS_UBUNTU)
 TEST_TARGETS=$(addprefix test-,$(UT_OS_ALL))
@@ -34,13 +35,14 @@ endif
 UT_OS=$(UT_OS_DEFAULT)
 endif
 
+
 #
 # VPP Variables
 #
 VPPGPG=ge4a0f9f~b72
-VPPMAJOR=19
-VPPMINOR=04
-VPPDOTRL=1
+VPPMAJOR=23
+VPPMINOR=02
+VPPDOTRL=0
 
 VPPVERSION=$(VPPMAJOR)$(VPPMINOR)
 VPPDOTVERSION=$(VPPMAJOR).$(VPPMINOR).$(VPPDOTRL)
@@ -151,10 +153,10 @@ ifeq ($(PKG),rpm)
 		./usr/share/vpp/api/vhost_user.api.json \
 		./usr/share/vpp/api/vpe.api.json
 else ifeq ($(PKG),deb)
-	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/xenial/vpp_$(VPPDOTVERSION)-release_amd64.deb/download.deb
-	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/xenial/vpp-dev_$(VPPDOTVERSION)-release_amd64.deb/download.deb
-	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/xenial/libvppinfra_$(VPPDOTVERSION)-release_amd64.deb/download.deb
-	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/xenial/vpp-plugin-core_$(VPPDOTVERSION)-release_amd64.deb/download.deb
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/$(OS_RELEASE)/vpp_$(VPPDOTVERSION)-release_amd64.deb/download.deb
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/$(OS_RELEASE)/vpp-dev_$(VPPDOTVERSION)-release_amd64.deb/download.deb
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/$(OS_RELEASE)/libvppinfra_$(VPPDOTVERSION)-release_amd64.deb/download.deb
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/release/packages/ubuntu/$(OS_RELEASE)/vpp-plugin-core_$(VPPDOTVERSION)-release_amd64.deb/download.deb
 	@cd tmpvpp && dpkg-deb --fsys-tarfile vpp-dev_$(VPPDOTVERSION)-release_amd64.deb | tar -x \
 		./usr/include/vpp-api/client/vppapiclient.h
 	@cd tmpvpp && dpkg-deb --fsys-tarfile libvppinfra_$(VPPDOTVERSION)-release_amd64.deb | tar -x \
