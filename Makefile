@@ -40,9 +40,9 @@ endif
 # VPP Variables
 #
 VPPGPG=ge4a0f9f~b72
-VPPMAJOR=23
-VPPMINOR=02
-VPPDOTRL=0
+VPPMAJOR=22
+VPPMINOR=06
+VPPDOTRL=1
 
 VPPVERSION=$(VPPMAJOR)$(VPPMINOR)
 VPPDOTVERSION=$(VPPMAJOR).$(VPPMINOR).$(VPPDOTRL)
@@ -132,21 +132,23 @@ endif
 endif
 
 install:
-	go get git.fd.io/govpp.git/cmd/binapi-generator@v0.3.5
+	go get go.fd.io/govpp/cmd/binapi-generator@v0.7.0
 ifeq ($(VPPINSTALLED),0)
 	@echo VPP not installed, installing required files. Run *sudo make clean* to remove installed files.
 	@mkdir -p tmpvpp/
 ifeq ($(PKG),rpm)
-	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/$(VPPVERSION)/packages/el/7/vpp-lib-$(VPPDOTVERSION)-1~$(VPPGPG).x86_64.rpm/download.rpm
-	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/$(VPPVERSION)/packages/el/7/vpp-devel-$(VPPDOTVERSION)-1~$(VPPGPG).x86_64.rpm/download.rpm
-	@cd tmpvpp && rpm2cpio ./vpp-devel-$(VPPDOTVERSION)-1~$(VPPGPG).x86_64.rpm | cpio -ivd \
+	VPPVERSION=2001
+	VPPDOTVERSION=20.01
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/$(VPPVERSION)/packages/el/7/vpp-lib-$(VPPDOTVERSION)-release.x86_64.rpm/download.rpm
+	@cd tmpvpp && wget --content-disposition https://packagecloud.io/fdio/$(VPPVERSION)/packages/el/7/vpp-devel-$(VPPDOTVERSION)-release.x86_64.rpm/download.rpm
+	@cd tmpvpp && rpm2cpio ./vpp-devel-$(VPPDOTVERSION)-release.x86_64.rpm | cpio -ivd \
 		./usr/include/vpp-api/client/vppapiclient.h
-	@cd tmpvpp && rpm2cpio ./vpp-lib-$(VPPDOTVERSION)-1~$(VPPGPG).x86_64.rpm | cpio -ivd \
+	@cd tmpvpp && rpm2cpio ./vpp-lib-$(VPPDOTVERSION)-release.x86_64.rpm | cpio -ivd \
 		./usr/lib64/libsvm.so.$(VPPDOTVERSION) \
 		./usr/lib64/libvlibmemoryclient.so.$(VPPDOTVERSION) \
 		./usr/lib64/libvppapiclient.so.$(VPPDOTVERSION) \
 		./usr/lib64/libvppinfra.so.$(VPPDOTVERSION)
-	@cd tmpvpp && rpm2cpio ./vpp-lib-$(VPPDOTVERSION)-1~$(VPPGPG).x86_64.rpm | cpio -ivd \
+	@cd tmpvpp && rpm2cpio ./vpp-lib-$(VPPDOTVERSION)-release.x86_64.rpm | cpio -ivd \
 		./usr/share/vpp/api/interface.api.json \
 		./usr/share/vpp/api/l2.api.json \
 		./usr/share/vpp/api/memif.api.json \
