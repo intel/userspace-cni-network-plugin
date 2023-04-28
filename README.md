@@ -1,5 +1,5 @@
 [![OpenSSF
-Scorecard](https://api.securityscorecards.dev/projects/github.com/{owner}/{repo}/badge)](https://api.securityscorecards.dev/projects/github.com/{owner}/{repo})
+Scorecard](https://api.securityscorecards.dev/projects/github.com/johnoloughlin/userspace-cni-network-plugin/badge)](https://api.securityscorecards.dev/projects/github.com/johnoloughlin/userspace-cni-network-plugin)
 
    * [Summary](#summary)
       * [Links](#links)
