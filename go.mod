@@ -15,7 +15,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1
 	github.com/vishvananda/netlink v1.1.0
-	golang.org/x/sys v0.0.0-20201112073958-5cba982894dd
+	golang.org/x/sys v0.1.0
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	k8s.io/api v0.20.0
 	k8s.io/apimachinery v0.20.0
