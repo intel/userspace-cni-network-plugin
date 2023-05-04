@@ -28,9 +28,7 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interfaces"
 )
 
-//
 // Constants
-//
 const debugInterface = false
 
 //
@@ -38,12 +36,12 @@ const debugInterface = false
 //
 
 // Attempt to set an interface state. isUp (1 = up, 0 = down)
-func SetState(ch api.Channel, swIfIndex uint32, isUp uint8) error {
+func SetState(ch api.Channel, swIfIndex interfaces.InterfaceIndex, isUp interfaces.IfStatusFlags) error {
 	// Populate the Add Structure
 	req := &interfaces.SwInterfaceSetFlags{
 		SwIfIndex: swIfIndex,
 		// 1 = up, 0 = down
-		AdminUpDown: isUp,
+		Flags: isUp,
 	}
 
 	reply := &interfaces.SwInterfaceSetFlagsReply{}
@@ -60,33 +58,33 @@ func SetState(ch api.Channel, swIfIndex uint32, isUp uint8) error {
 	return nil
 }
 
-func AddDelIpAddress(ch api.Channel, swIfIndex uint32, isAdd uint8, ipResult *current.Result) error {
+func AddDelIpAddress(ch api.Channel, swIfIndex interfaces.InterfaceIndex, isAdd bool, ipResult *current.Result) error {
 
 	// Populate the Add Structure
 	req := &interfaces.SwInterfaceAddDelAddress{
 		SwIfIndex: swIfIndex,
 		IsAdd:     isAdd, // 1 = add, 0 = delete
-		DelAll:    0,
+		DelAll:    false,
 	}
 
-	for _, ip := range ipResult.IPs {
-		if ip.Version == "4" {
-			req.IsIPv6 = 0
-			req.Address = []byte(ip.Address.IP.To4())
-			prefix, _ := ip.Address.Mask.Size()
-			req.AddressLength = byte(prefix)
-		} else if ip.Version == "6" {
-			req.IsIPv6 = 1
-			req.Address = []byte(ip.Address.IP.To16())
-			prefix, _ := ip.Address.Mask.Size()
-			req.AddressLength = byte(prefix)
-		}
+	// for _, ip := range ipResult.IPs {
+	// 	if ip.Version == "4" {
+	// 		req.IsIPv6 = 0
+	// 		req.Address = []byte(ip.Address.IP.To4())
+	// 		prefix, _ := ip.Address.Mask.Size()
+	// 		req.AddressLength = byte(prefix)
+	// 	} else if ip.Version == "6" {
+	// 		req.IsIPv6 = 1
+	// 		req.Address = []byte(ip.Address.IP.To16())
+	// 		prefix, _ := ip.Address.Mask.Size()
+	// 		req.AddressLength = byte(prefix)
+	// 	}
 
-		// Only one address is currently supported.
-		if req.AddressLength != 0 {
-			break
-		}
-	}
+	// 	// Only one address is currently supported.
+	// 	if req.AddressLength != 0 {
+	// 		break
+	// 	}
+	// }
 
 	reply := &interfaces.SwInterfaceAddDelAddressReply{}
 
