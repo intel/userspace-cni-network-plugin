@@ -26,7 +26,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/containernetworking/cni/pkg/types/current"
+	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/intel/userspace-cni-network-plugin/pkg/annotations"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 	"github.com/intel/userspace-cni-network-plugin/userspace/testdata"

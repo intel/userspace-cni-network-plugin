@@ -17,13 +17,14 @@
 package vppbridge
 
 // Generates Go bindings for all VPP APIs located in the json directory.
-//go:generate go run git.fd.io/govpp.git/cmd/binapi-generator --output-dir=../../bin_api
+//go:generate go run go.fd.io/govpp/cmd/binapi-generator --output-dir=../../bin_api
 
 import (
 	"fmt"
 
-	"git.fd.io/govpp.git/api"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/l2"
+	"go.fd.io/govpp/api"
 )
 
 // Constants
@@ -101,7 +102,7 @@ func DeleteBridge(ch api.Channel, bridgeDomain uint32) error {
 }
 
 // Attempt to add an interface to a Bridge Domain.
-func AddBridgeInterface(ch api.Channel, bridgeDomain uint32, swIfId l2.InterfaceIndex) error {
+func AddBridgeInterface(ch api.Channel, bridgeDomain uint32, swIfId interface_types.InterfaceIndex) error {
 	var err error
 
 	// Determine if bridge domain exists, and if not, create it. CreateBridge()
@@ -135,7 +136,7 @@ func AddBridgeInterface(ch api.Channel, bridgeDomain uint32, swIfId l2.Interface
 }
 
 // Attempt to remove an interface from a Bridge Domain.
-func RemoveBridgeInterface(ch api.Channel, bridgeDomain uint32, swIfId l2.InterfaceIndex) error {
+func RemoveBridgeInterface(ch api.Channel, bridgeDomain uint32, swIfId interface_types.InterfaceIndex) error {
 
 	// Populate the Request Structure
 	req := &l2.SwInterfaceSetL2Bridge{

@@ -31,21 +31,18 @@ import (
 	"path/filepath"
 	"strconv"
 
-	//	"git.fd.io/govpp.git/examples/binapi/memif"
-
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/containernetworking/cni/pkg/skel"
-	"github.com/containernetworking/cni/pkg/types/current"
+	current "github.com/containernetworking/cni/pkg/types/100"
 
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/bridge"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/l2"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/memif"
-
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/pkg/configdata"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
@@ -129,7 +126,7 @@ func (cniVpp CniVpp) AddOnHost(conf *types.NetConf,
 
 		// Add Interface to Bridge. If Bridge does not exist, AddBridgeInterface()
 		// will create.
-		err = vppbridge.AddBridgeInterface(vppCh.Ch, bridgeDomain, l2.InterfaceIndex(data.interfaceSwIfIndex))
+		err = vppbridge.AddBridgeInterface(vppCh.Ch, bridgeDomain, interface_types.InterfaceIndex(data.interfaceSwIfIndex))
 		if err != nil {
 			logging.Debugf("AddOnHost(vpp): Error adding interface to bridge: %v", err)
 			return err
@@ -211,7 +208,7 @@ func (cniVpp CniVpp) DelFromHost(conf *types.NetConf, args *skel.CmdArgs, shared
 
 		// Remove MemIf from Bridge. RemoveBridgeInterface() will delete Bridge if
 		// no more interfaces are associated with the Bridge.
-		err = vppbridge.RemoveBridgeInterface(vppCh.Ch, bridgeDomain, l2.InterfaceIndex(data.interfaceSwIfIndex))
+		err = vppbridge.RemoveBridgeInterface(vppCh.Ch, bridgeDomain, interface_types.InterfaceIndex(data.interfaceSwIfIndex))
 
 		if err != nil {
 			logging.Debugf("DelFromHost(vpp): Error removing interface from bridge: %v", err)
@@ -323,7 +320,7 @@ func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *types.NetConf, arg
 	memifSocketPath := getMemifSocketfileName(conf, sharedDir, args.ContainerID, args.IfName)
 
 	// Delete the memif interface
-	err = vppmemif.DeleteMemifInterface(vppCh.Ch, memif.InterfaceIndex(data.interfaceSwIfIndex))
+	err = vppmemif.DeleteMemifInterface(vppCh.Ch, interface_types.InterfaceIndex(data.interfaceSwIfIndex))
 	if err != nil {
 		logging.Debugf("delLocalDeviceMemif(vpp): Error deleting memif inteface: %v", err)
 		return

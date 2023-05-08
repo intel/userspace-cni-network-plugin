@@ -17,7 +17,7 @@
 package vppmemif
 
 // Generates Go bindings for all VPP APIs located in the json directory.
-//go:generate go run git.fd.io/govpp.git/cmd/binapi-generator --output-dir=../../bin_api
+//go:generate go run go.fd.io/govpp/cmd/binapi-generator --output-dir=../../bin_api
 
 import (
 	// "net"
@@ -25,11 +25,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"git.fd.io/govpp.git/api"
+	"go.fd.io/govpp/api"
 
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interfaces"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/memif"
-
 	"github.com/intel/userspace-cni-network-plugin/logging"
 )
 
@@ -69,7 +68,7 @@ var stateStr = [...]string{"dn", "up"}
 //	ch api.Channel
 //	socketId uint32
 //	role MemifRole - RoleMaster or RoleSlave
-func CreateMemifInterface(ch api.Channel, socketId uint32, role memif.MemifRole, mode memif.MemifMode) (swIfIndex interfaces.InterfaceIndex, err error) {
+func CreateMemifInterface(ch api.Channel, socketId uint32, role memif.MemifRole, mode memif.MemifMode) (swIfIndex interface_types.InterfaceIndex, err error) {
 
 	// Populate the Add Structure
 	req := &memif.MemifCreate{
@@ -95,7 +94,7 @@ func CreateMemifInterface(ch api.Channel, socketId uint32, role memif.MemifRole,
 		}
 		return
 	} else {
-		swIfIndex = interfaces.InterfaceIndex(reply.SwIfIndex)
+		swIfIndex = interface_types.InterfaceIndex(reply.SwIfIndex)
 	}
 
 	return
@@ -104,7 +103,7 @@ func CreateMemifInterface(ch api.Channel, socketId uint32, role memif.MemifRole,
 // Attempt to delete a memif interface. If the deleted MemIf Interface
 // is the last interface associated with a socketfile, this function
 // will attempt to delete it.
-func DeleteMemifInterface(ch api.Channel, swIfIndex memif.InterfaceIndex) (err error) {
+func DeleteMemifInterface(ch api.Channel, swIfIndex interface_types.InterfaceIndex) (err error) {
 
 	// Determine if memif interface exists
 	socketId, exist := findMemifInterface(ch, swIfIndex)
@@ -306,7 +305,7 @@ func DumpMemifSocket(ch api.Channel) {
 //
 
 // Find the given memif interface and return socketId if it exists
-func findMemifInterface(ch api.Channel, swIfIndex memif.InterfaceIndex) (socketId uint32, found bool) {
+func findMemifInterface(ch api.Channel, swIfIndex interface_types.InterfaceIndex) (socketId uint32, found bool) {
 
 	// Populate the Message Structure
 	req := &memif.MemifDump{}

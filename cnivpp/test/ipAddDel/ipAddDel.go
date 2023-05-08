@@ -27,7 +27,7 @@ import (
 	"time"
 
 	_ "git.fd.io/govpp.git/core"
-	"github.com/containernetworking/cni/pkg/types/current"
+	current "github.com/containernetworking/cni/pkg/types/100"
 	_ "github.com/sirupsen/logrus"
 
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"

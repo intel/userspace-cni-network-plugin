@@ -17,15 +17,15 @@
 package vppinterface
 
 // Generates Go bindings for all VPP APIs located in the json directory.
-//go:generate go run git.fd.io/govpp.git/cmd/binapi-generator --output-dir=../../bin_api
+//go:generate go run go.fd.io/govpp/cmd/binapi-generator --output-dir=../../bin_api
 
 import (
 	"fmt"
 
-	"github.com/containernetworking/cni/pkg/types/current"
-
-	"git.fd.io/govpp.git/api"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interfaces"
+	current "github.com/containernetworking/cni/pkg/types/100"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
+	"go.fd.io/govpp/api"
 )
 
 // Constants
@@ -36,7 +36,7 @@ const debugInterface = false
 //
 
 // Attempt to set an interface state. isUp (1 = up, 0 = down)
-func SetState(ch api.Channel, swIfIndex interfaces.InterfaceIndex, isUp interfaces.IfStatusFlags) error {
+func SetState(ch api.Channel, swIfIndex interface_types.InterfaceIndex, isUp interface_types.IfStatusFlags) error {
 	// Populate the Add Structure
 	req := &interfaces.SwInterfaceSetFlags{
 		SwIfIndex: swIfIndex,
@@ -58,7 +58,7 @@ func SetState(ch api.Channel, swIfIndex interfaces.InterfaceIndex, isUp interfac
 	return nil
 }
 
-func AddDelIpAddress(ch api.Channel, swIfIndex interfaces.InterfaceIndex, isAdd bool, ipResult *current.Result) error {
+func AddDelIpAddress(ch api.Channel, swIfIndex interface_types.InterfaceIndex, isAdd bool, ipResult *current.Result) error {
 
 	// Populate the Add Structure
 	req := &interfaces.SwInterfaceAddDelAddress{
