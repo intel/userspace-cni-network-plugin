@@ -34,8 +34,7 @@ import (
 
 	"github.com/containernetworking/cni/pkg/skel"
 
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interfaces"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/l2"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
 	"github.com/intel/userspace-cni-network-plugin/pkg/annotations"
 	"github.com/intel/userspace-cni-network-plugin/pkg/configdata"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
@@ -53,8 +52,7 @@ const debugVppDb = false
 // This structure is a union of all the VPP data (for all types of
 // interfaces) that need to be preserved for later use.
 type VppSavedData struct {
-	l2SwIfIndex        l2.InterfaceIndex         `json:"swIfIndex"`
-	interfaceSwIfIndex interfaces.InterfaceIndex `json:"swIfIndex"`     // Software Index, used to access the created interface, needed to delete interface.
+	interfaceSwIfIndex interface_types.InterfaceIndex `json:"swIfIndex"`     // Software Index, used to access the created interface, needed to delete interface.
 	MemifSocketId      uint32                    `json:"memifSocketId"` // Memif SocketId, used to access the created memif Socket File, used for debug only.
 }
 
