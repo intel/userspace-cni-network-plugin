@@ -1,4 +1,4 @@
-
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin/badge)](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin)
    * [Summary](#summary)
       * [Links](#links)
       * [Weekly Meeting](#weekly-meeting)
