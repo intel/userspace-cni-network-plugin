@@ -1,4 +1,4 @@
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin/badge)](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin)
+[ ![CodeQL](https://github.com/intel/userspace-cni-network-plugin/actions/workflows/codeQL_v2.yml/badge.svg?branch=main)![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin/badge)](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin)
    * [Summary](#summary)
       * [Links](#links)
       * [Weekly Meeting](#weekly-meeting)
