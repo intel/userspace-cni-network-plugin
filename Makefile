@@ -130,7 +130,7 @@ endif
 endif
 
 install:
-	go get git.fd.io/govpp.git/cmd/binapi-generator@v0.3.5
+	go get go.fd.io/govpp/cmd/binapi-generator@v0.3.5
 ifeq ($(VPPINSTALLED),0)
 	@echo VPP not installed, installing required files. Run *sudo make clean* to remove installed files.
 	@mkdir -p tmpvpp/

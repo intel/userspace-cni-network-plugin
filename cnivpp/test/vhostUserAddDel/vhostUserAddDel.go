@@ -17,7 +17,7 @@
 package main
 
 // Generates Go bindings for all VPP APIs located in the json directory.
-//go:generate go run git.fd.io/govpp.git/cmd/binapi-generator --output-dir=../../bin_api
+//go:generate go run go.fd.io/govpp/cmd/binapi-generator --output-dir=../../bin_api
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ import (
 	"runtime"
 	"time"
 
-	_ "git.fd.io/govpp.git/core"
+	_ "go.fd.io/govpp/core"
 	_ "github.com/sirupsen/logrus"
 
 	vppbridge "github.com/intel/userspace-cni-network-plugin/cnivpp/api/bridge"

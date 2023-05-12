@@ -26,7 +26,7 @@ import (
 	"runtime"
 	"time"
 
-	_ "git.fd.io/govpp.git/core"
+	_ "go.fd.io/govpp/core"
 	current "github.com/containernetworking/cni/pkg/types/100"
 	_ "github.com/sirupsen/logrus"
 
