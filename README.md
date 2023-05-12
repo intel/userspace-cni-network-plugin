@@ -1,7 +1,8 @@
-[![CodeQL](https://github.com/intel/userspace-cni-network-plugin/actions/workflows/codeQL_v2.yml/badge.svg?branch=main) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin/badge)](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin)  [![Go Report Card](https://goreportcard.com/badge/github.com/intel/userspace-cni-network-plugin)](https://goreportcard.com/report/github.com/intel/userspace-cni-network-plugin) [![Go Reference](https://pkg.go.dev/badge/github.com/intel/userspace-cni-network-plugin.svg)](https://pkg.go.dev/github.com/intel/userspace-cni-network-plugin) 
-      * [Links](#links)
-      * [Weekly Meeting](#weekly-meeting)
-      * [Contacts](#contacts)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin/badge)](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin) ![CodeQL](https://github.com/intel/userspace-cni-network-plugin/actions/workflows/codeQL_v2.yml/badge.svg?branch=main) [![Go Report Card](https://goreportcard.com/badge/github.com/intel/userspace-cni-network-plugin)](https://goreportcard.com/report/github.com/intel/userspace-cni-network-plugin) [![Go Reference](https://pkg.go.dev/badge/github.com/intel/userspace-cni-network-plugin.svg)](https://pkg.go.dev/github.com/intel/userspace-cni-network-plugin) 
+
+   * [Links](#links)
+   * [BiWeekly Meeting](#biweekly-meeting)
+   * [Contacts](#contacts)
    * [Userspace CNI plugin](#userspace-cni-plugin)
    * [Build & Clean](#build--clean)
       * [Update dependencies](#update-dependencies)
