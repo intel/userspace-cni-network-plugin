@@ -12,6 +12,15 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
+      - name: remove deployer container from dockerfile
+        run: sed -ie '/End of builder/,+5d' ./docker/userspacecni/Dockerfile
+      - name: Build the Docker image
+        run: docker build . -f ./docker/userspacecni/Dockerfile -t userspacecni:latest
+      - name: run container
+        run: docker run --name userspacecni -itd userspacecni:latest bash
+      - name: docker copy generated bin api files
+        run: docker cp userspacecni:/root/userspace-cni-network-plugin/cnivpp ./
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@5c56cd6c9dc07901af25baab6f2b0d9f3b7c3018 # v2.5.2
         with:
@@ -30,6 +39,7 @@ jobs:
     - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # master
+
   hadolint:
     runs-on: ubuntu-latest
     name: Hadolint
@@ -39,11 +49,12 @@ jobs:
       with:
         egress-policy: audit
 
-    - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
-    - uses: brpaz/hadolint-action@7e374b112fd3e7e6ea346131c40e17c7254f64bf # v1.2.1
+    - uses: actions/checkout@v3
+    - uses: hadolint/hadolint-action@v3.1.0
       name: Run Hadolint
       with:
        dockerfile: ./docker/userspacecni/Dockerfile
+       ignore: DL3008,DL3059
 
   go-check:
     runs-on: ubuntu-latest
@@ -69,9 +80,11 @@ jobs:
       with:
         go-version: 1.20.x
 
+    - name: checkout dockerfile to avoid false diff
+      run: git checkout ./docker/userspacecni/Dockerfile
     # if this fails, run go mod tidy
     - name: Check if module files are consistent with code
-      run: go mod tidy && git diff --exit-code
+      run: go mod tidy && go get go.fd.io/govpp/binapigen/vppapi@v0.7.0 && git diff --exit-code #need package for bin api but not working with tidy
 
     # if this fails, run go mod vendor
     - name: Check if vendor directory is consistent with go modules

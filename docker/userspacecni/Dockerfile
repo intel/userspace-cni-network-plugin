@@ -1,8 +1,9 @@
 FROM ligato/vpp-base:23.02 as builder
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 COPY . /root/userspace-cni-network-plugin
 WORKDIR /root/userspace-cni-network-plugin
-RUN apt update -y 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y binutils wget make git
+RUN apt-get update -y 
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y binutils wget make git
 RUN wget -qO- https://golang.org/dl/go1.20.1.linux-amd64.tar.gz | tar -C /usr/local -xz
 ENV PATH="${PATH}:/usr/local/go/bin"
 RUN go mod download
