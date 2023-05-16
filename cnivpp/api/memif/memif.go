@@ -38,14 +38,14 @@ import (
 
 const debugMemif = false
 
-type MemifRole uint8
+type MemifRole uint32
 
 const (
 	RoleMaster MemifRole = 0
 	RoleSlave  MemifRole = 1
 )
 
-type MemifMode uint8
+type MemifMode uint32
 
 const (
 	ModeEthernet   MemifMode = 0
@@ -56,7 +56,6 @@ const (
 // Dump Strings
 var modeStr = [...]string{"eth", "ip ", "pnt"}
 var roleStr = [...]string{"master", "slave "}
-var stateStr = [...]string{"dn", "up"}
 
 //
 // API Functions
@@ -108,7 +107,7 @@ func DeleteMemifInterface(ch api.Channel, swIfIndex interface_types.InterfaceInd
 	// Determine if memif interface exists
 	socketId, exist := findMemifInterface(ch, swIfIndex)
 	if debugMemif {
-		if exist == false {
+		if !exist {
 			logging.Verbosef("Error deleting memif interface: memif interface (swIfIndex=%d) Does NOT Exist", swIfIndex)
 		} else {
 			logging.Verbosef("Attempting to delete memif interface %d with SocketId %d", swIfIndex, socketId)
@@ -173,7 +172,7 @@ func DumpMemif(ch api.Channel) {
 		//logging.Verbosef("%+v", reply)
 
 		macAddr := reply.HwAddr
-		logging.Verbosef("    SwIfId=%d ID=%d Socket=%d Role=%s Mode=%s IfName=%s HwAddr=%v RingSz=%d BufferSz=%d",
+		logging.Verbosef("    SwIfId=%d ID=%d Socket=%d Role=%s Mode=%s IfName=%s HwAddr=%v RingSz=%d ",
 			reply.SwIfIndex,
 			reply.ID,
 			reply.SocketID,
@@ -428,10 +427,10 @@ func findMemifSocket(ch api.Channel, socketFilename string) (found bool, socketI
 	// If input SocketFilename has not been created, then loop
 	// through the list of existing SocketIds and find an unused Id.
 	//
-	if found == false {
+	if !found {
 		socketId = 1
 
-		for done == false {
+		for !done {
 
 			done = true
 			for i := 0; i < count; i++ {

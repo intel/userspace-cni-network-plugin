@@ -17,7 +17,6 @@ package cniovs
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"path"
@@ -83,7 +82,7 @@ func TestAddOnHost(t *testing.T) {
 			var result *current.Result
 			args := testdata.GetTestArgs()
 
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
+			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cniovs-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			defer os.RemoveAll(sharedDir)
 
@@ -113,7 +112,7 @@ func TestAddOnContainer(t *testing.T) {
 		args := testdata.GetTestArgs()
 		ovs := CniOvs{}
 
-		sharedDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
+		sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cniovs-")
 		require.NoError(t, dirErr, "Can't create temporary directory")
 		defer os.RemoveAll(sharedDir)
 
@@ -131,7 +130,7 @@ func TestDelOnContainer(t *testing.T) {
 		args := testdata.GetTestArgs()
 		ovs := CniOvs{}
 
-		sharedDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
+		sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cniovs-")
 		require.NoError(t, dirErr, "Can't create temporary directory")
 		// just in case that DelFromContainer fails
 		defer os.RemoveAll(sharedDir)
@@ -191,10 +190,10 @@ func TestDelFromHost(t *testing.T) {
 			}
 			path := path.Join(localDir, fileName)
 
-			require.NoError(t, ioutil.WriteFile(path, []byte(tc.savedData), 0644), "Can't create test file")
+			require.NoError(t, os.WriteFile(path, []byte(tc.savedData), 0644), "Can't create test file")
 			defer os.Remove(path)
 
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
+			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cniovs-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			defer os.RemoveAll(sharedDir)
 
@@ -217,10 +216,10 @@ func TestGenerateRandomMacAddress(t *testing.T) {
 	nr := 10
 	t.Run(fmt.Sprintf("generate %v random MAC addresses", nr), func(t *testing.T) {
 		macs := make(map[string]int)
+		mac_regex := regexp.MustCompile("^[0-9a-fA-F]{2}(:([0-9a-fA-F]){2}){5}$")
 		for i := 0; i < nr; i++ {
 			mac := generateRandomMacAddress()
-			ok, err := regexp.Match("^[0-9a-fA-F]{2}(:([0-9a-fA-F]){2}){5}$", []byte(mac))
-			require.NoError(t, err, fmt.Sprintf("MAC is incorrect. MAC: %q", mac))
+			ok := mac_regex.Match([]byte(mac))
 			require.True(t, ok, fmt.Sprintf("MAC is incorrect. MAC: %q", mac))
 			macs[mac]++
 		}
@@ -315,7 +314,7 @@ func TestCreateSharedDir(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
+			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cniovs-")
 			sharedDirNoPath := strings.Split(sharedDir, "/")[2]
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			tc.sharedDir = strings.Replace(tc.sharedDir, "#sharedDir#", sharedDir, -1)
@@ -332,7 +331,7 @@ func TestCreateSharedDir(t *testing.T) {
 			}
 
 			// cleanup
-			unix.Unmount(tc.sharedDir, 0)
+			_ = unix.Unmount(tc.sharedDir, 0)
 			os.RemoveAll(tc.sharedDir)
 			os.RemoveAll(tc.oldSharedDir)
 
@@ -368,7 +367,7 @@ func TestSetSharedDirGroup(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
+			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cniovs-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			tc.sharedDir = strings.Replace(tc.sharedDir, "#sharedDir#", sharedDir, -1)
 			defer os.RemoveAll(sharedDir)
@@ -377,7 +376,7 @@ func TestSetSharedDirGroup(t *testing.T) {
 			if tc.group == "#group#" {
 				dirInfo, _ := os.Stat(sharedDir)
 				dirSys := dirInfo.Sys().(*syscall.Stat_t)
-				group, _ := user.LookupGroupId(string(48 + dirSys.Gid))
+				group, _ := user.LookupGroupId(string(rune(48 + dirSys.Gid)))
 				tc.group = group.Name
 			}
 
@@ -458,7 +457,7 @@ func TestAddLocalDeviceVhost(t *testing.T) {
 			args := testdata.GetTestArgs()
 			execCommand := &FakeExecCommand{Err: tc.fakeErr}
 
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
+			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cniovs-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			if !tc.createDir {
 				require.NoError(t, os.RemoveAll(sharedDir))
@@ -483,7 +482,7 @@ func TestAddLocalDeviceVhost(t *testing.T) {
 					defer os.RemoveAll(defaultOvSSocketDir)
 				}
 				path := path.Join(defaultOvSSocketDir, socketFile)
-				require.NoError(t, ioutil.WriteFile(path, []byte(""), 0644), "Can't create test file")
+				require.NoError(t, os.WriteFile(path, []byte(""), 0644), "Can't create test file")
 				defer os.Remove(path)
 
 			}
@@ -515,9 +514,9 @@ func createSocket(t *testing.T, dir, socket string, isDir bool) (socketPath stri
 	if isDir {
 		// error case - create dir instead of file and create file inside it
 		require.NoError(t, os.MkdirAll(socketPath, 0700), "Can't create test directory")
-		require.NoError(t, ioutil.WriteFile(path.Join(socketPath, socket), []byte(""), 0644), "Can't create test file")
+		require.NoError(t, os.WriteFile(path.Join(socketPath, socket), []byte(""), 0644), "Can't create test file")
 	} else {
-		require.NoError(t, ioutil.WriteFile(socketPath, []byte(""), 0644), "Can't create test file")
+		require.NoError(t, os.WriteFile(socketPath, []byte(""), 0644), "Can't create test file")
 	}
 	return
 }
@@ -658,10 +657,12 @@ func TestDelLocalDeviceVhost(t *testing.T) {
 				// cleanup if needed
 				defer os.RemoveAll(tc.sharedDir)
 				defer os.RemoveAll(sharedDir)
-				defer unix.Unmount(sharedDir, 0)
+				defer func () {
+					_ = unix.Unmount(sharedDir, 0)
+				}()
 			} else {
 				var dirErr error
-				sharedDir, dirErr = ioutil.TempDir("/tmp", "test-cniovs-")
+				sharedDir, dirErr = os.MkdirTemp("/tmp", "test-cniovs-")
 				require.NoError(dirErr, "Can't create temporary directory")
 				switch tc.brokenDir {
 				case "proc":
@@ -669,7 +670,7 @@ func TestDelLocalDeviceVhost(t *testing.T) {
 					sharedDir = "/proc/broken_shared_dir"
 				case "file":
 					require.NoError(os.RemoveAll(sharedDir))
-					require.NoError(ioutil.WriteFile(sharedDir, []byte(""), 0644), "Can't create test file")
+					require.NoError(os.WriteFile(sharedDir, []byte(""), 0644), "Can't create test file")
 					defer os.Remove(sharedDir)
 				}
 				// cleanup if needed
@@ -690,7 +691,7 @@ func TestDelLocalDeviceVhost(t *testing.T) {
 			// prepare noise files, which shall remain and avoid shared dir removal
 			for i := 0; i < tc.noiseFiles; i++ {
 				path := path.Join(sharedDir, fmt.Sprintf("noise-file-%v", i))
-				require.NoError(ioutil.WriteFile(path, []byte(""), 0644), "Can't create test file")
+				require.NoError(os.WriteFile(path, []byte(""), 0644), "Can't create test file")
 				defer os.Remove(path)
 			}
 

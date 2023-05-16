@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -124,7 +123,7 @@ func TestLoadNetConf(t *testing.T) {
 			os.Stderr = origStdErr
 			stdW.Close()
 			var buf bytes.Buffer
-			io.Copy(&buf, stdR)
+			_, _ = io.Copy(&buf, stdR)
 			stdError := buf.String()
 
 			if tc.expStdErr == "" {
@@ -312,13 +311,15 @@ func TestCmdAdd(t *testing.T) {
 			if tc.netNS == "generate" {
 				netNS, nsErr := testutils.NewNS()
 				require.NoError(t, nsErr, "Can't create NewNS")
-				defer testutils.UnmountNS(netNS)
+				defer func() {
+					_ = testutils.UnmountNS(netNS)
+				}()
 				args.Netns = netNS.Path()
 			} else {
 				args.Netns = tc.netNS
 			}
 
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-userspace-")
+			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-userspace-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			tc.netConfStr = strings.Replace(tc.netConfStr, "#sharedDir#", sharedDir, -1)
 			defer os.RemoveAll(sharedDir)
@@ -348,7 +349,7 @@ func TestCmdAdd(t *testing.T) {
 			os.Stdout = origStdout
 			stdW.Close()
 			var buf bytes.Buffer
-			io.Copy(&buf, stdR)
+			_, _ = io.Copy(&buf, stdR)
 			stdOut := buf.String()
 
 			if tc.expError == "" {
@@ -453,9 +454,10 @@ func TestCmdDel(t *testing.T) {
 
 			netNS, nsErr := testutils.NewNS()
 			require.NoError(t, nsErr, "Can't create NewNS")
-			defer testutils.UnmountNS(netNS)
-
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-userspace-")
+			defer func() {
+				_ = testutils.UnmountNS(netNS)
+			}()
+			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-userspace-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			testDir := filepath.Join(sharedDir, args.ContainerID[:12])
 			require.NoError(t, os.MkdirAll(testDir, os.ModePerm), "Can't create shared directory")

@@ -48,23 +48,17 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 )
 
-//
 // Constants
-//
 const (
 	defaultBridge               = "br0"
 	DefaultHostVhostuserBaseDir = "/var/lib/vhost_sockets/"
 )
 
-//
 // Types
-//
 type CniOvs struct {
 }
 
-//
 // API Functions
-//
 func (cniOvs CniOvs) AddOnHost(conf *types.NetConf,
 	args *skel.CmdArgs,
 	kubeClient kubernetes.Interface,
@@ -196,7 +190,11 @@ func (cniOvs CniOvs) DelFromHost(conf *types.NetConf, args *skel.CmdArgs, shared
 func (cniOvs CniOvs) DelFromContainer(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, pod *v1.Pod) error {
 	logging.Infof("OVS DelFromContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
-	configdata.FileCleanup(sharedDir, "")
+	var err = configdata.FileCleanup(sharedDir, "")
+
+	if err != nil {
+		logging.Debugf("DelFromContainer(ovs): %v", err)
+	}
 
 	return nil
 }
@@ -243,7 +241,7 @@ func createSharedDir(sharedDir, oldSharedDir string) error {
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(sharedDir, 0750)
 		if err != nil {
-			logging.Errorf("createSharedDir: Failed to create dir (%s): %v", sharedDir, err)
+			_ = logging.Errorf("createSharedDir: Failed to create dir (%s): %v", sharedDir, err)
 			return err
 		}
 
@@ -251,7 +249,7 @@ func createSharedDir(sharedDir, oldSharedDir string) error {
 			logging.Debugf("createSharedDir: Mount from %s to %s", oldSharedDir, sharedDir)
 			err = unix.Mount(oldSharedDir, sharedDir, "", unix.MS_BIND, "")
 			if err != nil {
-				logging.Errorf("createSharedDir: Failed to bind mount: %s", err)
+				_ = logging.Errorf("createSharedDir: Failed to bind mount: %s", err)
 				return err
 			}
 		}
@@ -296,7 +294,7 @@ func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, actualSharedDi
 	sharedDir := getShortSharedDir(actualSharedDir)
 	err = createSharedDir(sharedDir, actualSharedDir)
 	if err != nil {
-		logging.Errorf("addLocalDeviceVhost: Failed to create shared dir: %v", err)
+		_ = logging.Errorf("addLocalDeviceVhost: Failed to create shared dir: %v", err)
 		return err
 	}
 
@@ -304,7 +302,7 @@ func addLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, actualSharedDi
 	if group != "" {
 		err = setSharedDirGroup(sharedDir, group)
 		if err != nil {
-			logging.Errorf("addLocalDeviceVhost: Failed to set shared dir group: %v", err)
+			_ = logging.Errorf("addLocalDeviceVhost: Failed to set shared dir group: %v", err)
 			return err
 		}
 	}
@@ -341,7 +339,7 @@ func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, actualSharedDi
 	// ovs-vsctl --if-exists del-port
 	err := deleteVhostPort(data.Vhostname, conf.HostConf.BridgeConf.BridgeName)
 	if err != nil {
-		logging.Errorf("delLocalDeviceVhost: Failed to delete port: %v", err)
+		_ = logging.Errorf("delLocalDeviceVhost: Failed to delete port: %v", err)
 		return err
 	}
 
@@ -350,17 +348,17 @@ func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, actualSharedDi
 		logging.Debugf("delLocalDeviceVhost: Unmount shared directory: %v", sharedDir)
 		_, err = os.Stat(sharedDir)
 		if os.IsNotExist(err) {
-			logging.Errorf("delLocalDeviceVhost: shared directory %s does not exist to unmount", sharedDir)
+			_ = logging.Errorf("delLocalDeviceVhost: shared directory %s does not exist to unmount", sharedDir)
 			return nil
 		}
 		err = unix.Unmount(sharedDir, 0)
 		if err != nil {
-			logging.Errorf("Failed to unmount dir: %v", err)
+			_ = logging.Errorf("Failed to unmount dir: %v", err)
 			return err
 		}
 		err = os.Remove(sharedDir)
 		if err != nil {
-			logging.Errorf("Failed to remove dir: %v", err)
+			_ = logging.Errorf("Failed to remove dir: %v", err)
 			return err
 		}
 	} else {
@@ -379,7 +377,7 @@ func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, actualSharedDi
 
 		// Remove files with matching container ID and IfName
 		for _, fileName := range filesForContainerID {
-			if match, _ := regexp.MatchString(fileBaseName+"*", fileName); match == true {
+			if match, _ := regexp.MatchString(fileBaseName+"*", fileName); match {
 				logging.Debugf("OVS DelFromContainer: %s matches file %s", fileBaseName, fileName)
 				file := filepath.Join(sharedDir, fileName)
 				if err = os.Remove(file); err != nil {
@@ -392,7 +390,7 @@ func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, actualSharedDi
 
 			// In case the Socketfile name was passed in:
 			if conf.HostConf.VhostConf.Socketfile != fileBaseName {
-				if match, _ := regexp.MatchString(conf.HostConf.VhostConf.Socketfile+"*", fileName); match == true {
+				if match, _ := regexp.MatchString(conf.HostConf.VhostConf.Socketfile+"*", fileName); match {
 					file := filepath.Join(sharedDir, fileName)
 					if err = os.Remove(file); err != nil {
 						return err
@@ -415,7 +413,7 @@ func delLocalDeviceVhost(conf *types.NetConf, args *skel.CmdArgs, actualSharedDi
 func addLocalNetworkBridge(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
 	var err error
 
-	if found := findBridge(conf.HostConf.BridgeConf.BridgeName); found == false {
+	if found := findBridge(conf.HostConf.BridgeConf.BridgeName); !found {
 		logging.Debugf("addLocalNetworkBridge(): Bridge %s not found, creating", conf.HostConf.BridgeConf.BridgeName)
 		err = createBridge(conf.HostConf.BridgeConf.BridgeName)
 
@@ -438,7 +436,7 @@ func addLocalNetworkBridge(conf *types.NetConf, args *skel.CmdArgs, data *OvsSav
 func delLocalNetworkBridge(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
 	var err error
 
-	if containInterfaces := doesBridgeContainInterfaces(conf.HostConf.BridgeConf.BridgeName); containInterfaces == false {
+	if containInterfaces := doesBridgeContainInterfaces(conf.HostConf.BridgeConf.BridgeName); !containInterfaces {
 		logging.Debugf("delLocalNetworkBridge(): No interfaces found, deleting Bridge %s", conf.HostConf.BridgeConf.BridgeName)
 		err = deleteBridge(conf.HostConf.BridgeConf.BridgeName)
 	} else {

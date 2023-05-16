@@ -17,7 +17,6 @@ package logging
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -322,7 +321,7 @@ func TestLogFunctions(t *testing.T) {
 			case "Warningf":
 				Warningf(tc.format, tc.arguments...)
 			case "Errorf":
-				Errorf(tc.format, tc.arguments...)
+				_ = Errorf(tc.format, tc.arguments...)
 			case "Panicf":
 				Panicf(tc.format, tc.arguments...)
 			default:
@@ -332,7 +331,7 @@ func TestLogFunctions(t *testing.T) {
 			os.Stderr = origStdErr
 			stdW.Close()
 			var buf bytes.Buffer
-			io.Copy(&buf, stdR)
+			_, _ = io.Copy(&buf, stdR)
 
 			if tc.expResultStdE != "" {
 				assert.Regexp(t, tc.expResultStdE, buf.String(), "Unexpected stderr log")
@@ -342,7 +341,7 @@ func TestLogFunctions(t *testing.T) {
 
 			if tc.expResultFile != "" {
 				logW.Close()
-				io.Copy(&buf, logR)
+				_, _ = io.Copy(&buf, logR)
 				assert.Regexp(t, tc.expResultFile, buf.String(), "Unexpected file log")
 			}
 		})
@@ -509,7 +508,7 @@ func TestSetLogFile(t *testing.T) {
 			}()
 
 			if tc.file == "#random#" {
-				logFile, err := ioutil.TempFile("/tmp", "test-logging-")
+				logFile, err := os.CreateTemp("/tmp", "test-logging-")
 				require.NoError(t, err, "Can't create log file")
 				logFile.Close()
 				os.Remove(logFile.Name())
@@ -527,7 +526,7 @@ func TestSetLogFile(t *testing.T) {
 			os.Stderr = origStdErr
 			stdW.Close()
 			var buf bytes.Buffer
-			io.Copy(&buf, stdR)
+			_, _ = io.Copy(&buf, stdR)
 
 			if tc.expError == "" {
 				assert.Empty(t, buf.String(), "Unexpected error")

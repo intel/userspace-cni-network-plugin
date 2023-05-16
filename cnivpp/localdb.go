@@ -28,7 +28,6 @@ package cnivpp
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -40,9 +39,7 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 )
 
-//
 // Constants
-//
 const debugVppDb = false
 
 //
@@ -52,8 +49,8 @@ const debugVppDb = false
 // This structure is a union of all the VPP data (for all types of
 // interfaces) that need to be preserved for later use.
 type VppSavedData struct {
-	interfaceSwIfIndex interface_types.InterfaceIndex `json:"swIfIndex"`     // Software Index, used to access the created interface, needed to delete interface.
-	MemifSocketId      uint32                    `json:"memifSocketId"` // Memif SocketId, used to access the created memif Socket File, used for debug only.
+	InterfaceSwIfIndex interface_types.InterfaceIndex `json:"swIfIndex"`     // Software Index, used to access the created interface, needed to delete interface.
+	MemifSocketId      uint32                         `json:"memifSocketId"` // Memif SocketId, used to access the created memif Socket File, used for debug only.
 }
 
 //
@@ -61,7 +58,8 @@ type VppSavedData struct {
 //
 
 // saveVppConfig() - Some data needs to be saved, like the swIfIndex, for cmdDel().
-//  This function squirrels the data away to be retrieved later.
+//
+//	This function squirrels the data away to be retrieved later.
 func SaveVppConfig(conf *types.NetConf, args *skel.CmdArgs, data *VppSavedData) error {
 
 	// Current implementation is to write data to a file with the name:
@@ -84,9 +82,9 @@ func SaveVppConfig(conf *types.NetConf, args *skel.CmdArgs, data *VppSavedData) 
 		path := filepath.Join(localDir, fileName)
 
 		if debugVppDb {
-			fmt.Printf("SAVE FILE: swIfIndex=%d path=%s dataBytes=%s\n", data.interfaceSwIfIndex, path, dataBytes)
+			fmt.Printf("SAVE FILE: swIfIndex=%d path=%s dataBytes=%s\n", data.InterfaceSwIfIndex, path, dataBytes)
 		}
-		return ioutil.WriteFile(path, dataBytes, 0644)
+		return os.WriteFile(path, dataBytes, 0644)
 	} else {
 		return fmt.Errorf("ERROR: serializing delegate VPP saved data: %v", err)
 	}
@@ -99,7 +97,7 @@ func LoadVppConfig(conf *types.NetConf, args *skel.CmdArgs, data *VppSavedData) 
 	path := filepath.Join(localDir, fileName)
 
 	if _, err := os.Stat(path); err == nil {
-		if dataBytes, err := ioutil.ReadFile(path); err == nil {
+		if dataBytes, err := os.ReadFile(path); err == nil {
 			if err = json.Unmarshal(dataBytes, data); err != nil {
 				return fmt.Errorf("ERROR: Failed to parse VPP saved data: %v", err)
 			}
@@ -112,7 +110,7 @@ func LoadVppConfig(conf *types.NetConf, args *skel.CmdArgs, data *VppSavedData) 
 	}
 
 	// Delete file (and directory if empty)
-	configdata.FileCleanup(localDir, path)
+	_ = configdata.FileCleanup(localDir, path)
 
 	return nil
 }

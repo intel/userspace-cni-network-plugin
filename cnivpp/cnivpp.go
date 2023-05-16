@@ -37,12 +37,12 @@ import (
 	"github.com/containernetworking/cni/pkg/skel"
 	current "github.com/containernetworking/cni/pkg/types/100"
 
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/bridge"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/memif"
+	vppbridge "github.com/intel/userspace-cni-network-plugin/cnivpp/api/bridge"
+	vppinfra "github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
+	vppinterface "github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
+	vppmemif "github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/memif"
 	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/pkg/configdata"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
@@ -93,7 +93,7 @@ func (cniVpp CniVpp) AddOnHost(conf *types.NetConf,
 	//
 	// Set interface to up (1)
 	//
-	err = vppinterface.SetState(vppCh.Ch, data.interfaceSwIfIndex, 1)
+	err = vppinterface.SetState(vppCh.Ch, data.InterfaceSwIfIndex, 1)
 	if err != nil {
 		logging.Debugf("AddOnHost(vpp): Error bringing interface UP: %v", err)
 		return err
@@ -126,20 +126,20 @@ func (cniVpp CniVpp) AddOnHost(conf *types.NetConf,
 
 		// Add Interface to Bridge. If Bridge does not exist, AddBridgeInterface()
 		// will create.
-		err = vppbridge.AddBridgeInterface(vppCh.Ch, bridgeDomain, interface_types.InterfaceIndex(data.interfaceSwIfIndex))
+		err = vppbridge.AddBridgeInterface(vppCh.Ch, bridgeDomain, interface_types.InterfaceIndex(data.InterfaceSwIfIndex))
 		if err != nil {
 			logging.Debugf("AddOnHost(vpp): Error adding interface to bridge: %v", err)
 			return err
 		} else {
 			if dbgBridge {
-				logging.Debugf("INTERFACE %d added to BRIDGE %d\n", data.interfaceSwIfIndex, bridgeDomain)
+				logging.Debugf("INTERFACE %d added to BRIDGE %d\n", data.InterfaceSwIfIndex, bridgeDomain)
 				vppbridge.DumpBridge(vppCh.Ch, bridgeDomain)
 			}
 		}
 		// Add L3 Network if supplied
 	} else if conf.HostConf.NetType == "interface" {
 		if ipResult != nil && len(ipResult.IPs) != 0 {
-			err = vppinterface.AddDelIpAddress(vppCh.Ch, data.interfaceSwIfIndex, true, ipResult)
+			err = vppinterface.AddDelIpAddress(vppCh.Ch, data.InterfaceSwIfIndex, true, ipResult)
 			if err != nil {
 				logging.Debugf("AddOnHost(vpp): Error adding IP: %v", err)
 				return err
@@ -203,19 +203,19 @@ func (cniVpp CniVpp) DelFromHost(conf *types.NetConf, args *skel.CmdArgs, shared
 		var bridgeDomain uint32 = uint32(conf.HostConf.BridgeConf.BridgeId)
 
 		if dbgBridge {
-			logging.Verbosef("INTERFACE %d retrieved from CONF - attempt to DELETE Bridge %d\n", data.interfaceSwIfIndex, bridgeDomain)
+			logging.Verbosef("INTERFACE %d retrieved from CONF - attempt to DELETE Bridge %d\n", data.InterfaceSwIfIndex, bridgeDomain)
 		}
 
 		// Remove MemIf from Bridge. RemoveBridgeInterface() will delete Bridge if
 		// no more interfaces are associated with the Bridge.
-		err = vppbridge.RemoveBridgeInterface(vppCh.Ch, bridgeDomain, interface_types.InterfaceIndex(data.interfaceSwIfIndex))
+		err = vppbridge.RemoveBridgeInterface(vppCh.Ch, bridgeDomain, interface_types.InterfaceIndex(data.InterfaceSwIfIndex))
 
 		if err != nil {
 			logging.Debugf("DelFromHost(vpp): Error removing interface from bridge: %v", err)
 			return err
 		} else {
 			if dbgBridge {
-				logging.Verbosef("INTERFACE %d removed from BRIDGE %d\n", data.interfaceSwIfIndex, bridgeDomain)
+				logging.Verbosef("INTERFACE %d removed from BRIDGE %d\n", data.InterfaceSwIfIndex, bridgeDomain)
 				vppbridge.DumpBridge(vppCh.Ch, bridgeDomain)
 			}
 		}
@@ -231,14 +231,12 @@ func (cniVpp CniVpp) DelFromHost(conf *types.NetConf, args *skel.CmdArgs, shared
 	} else {
 		return fmt.Errorf("ERROR: Unknown HostConf.Type:" + conf.HostConf.IfType)
 	}
-
-	return err
 }
 
 func (cniVpp CniVpp) DelFromContainer(conf *types.NetConf, args *skel.CmdArgs, sharedDir string, pod *v1.Pod) error {
 	logging.Infof("VPP DelFromContainer: ENTER - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 
-	configdata.FileCleanup(sharedDir, "")
+	_ = configdata.FileCleanup(sharedDir, "")
 
 	return nil
 }
@@ -295,19 +293,19 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData,
 		return
 	} else {
 		if dbgInterface {
-			logging.Verbosef("MEMIF SOCKET", data.MemifSocketId, memifSocketPath, "created")
+			logging.Verbosef("MEMIF SOCKET %d %s %s", data.MemifSocketId, memifSocketPath, "created")
 			vppmemif.DumpMemifSocket(vppCh.Ch)
 		}
 	}
 
 	// Create MemIf Interface
-	data.interfaceSwIfIndex, err = vppmemif.CreateMemifInterface(vppCh.Ch, data.MemifSocketId, memif.MemifRole(memifRole), memif.MemifMode(memifMode))
+	data.InterfaceSwIfIndex, err = vppmemif.CreateMemifInterface(vppCh.Ch, data.MemifSocketId, memif.MemifRole(memifRole), memif.MemifMode(memifMode))
 	if err != nil {
 		logging.Debugf("addLocalDeviceMemif(vpp): Error creating memif inteface: %v", err)
 		return
 	} else {
 		if dbgInterface {
-			logging.Verbosef("MEMIF", data.interfaceSwIfIndex, "created", args.IfName)
+			logging.Verbosef("MEMIF %d %s %s ", data.InterfaceSwIfIndex, "created", args.IfName)
 			vppmemif.DumpMemif(vppCh.Ch)
 		}
 	}
@@ -320,13 +318,13 @@ func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *types.NetConf, arg
 	memifSocketPath := getMemifSocketfileName(conf, sharedDir, args.ContainerID, args.IfName)
 
 	// Delete the memif interface
-	err = vppmemif.DeleteMemifInterface(vppCh.Ch, interface_types.InterfaceIndex(data.interfaceSwIfIndex))
+	err = vppmemif.DeleteMemifInterface(vppCh.Ch, interface_types.InterfaceIndex(data.InterfaceSwIfIndex))
 	if err != nil {
 		logging.Debugf("delLocalDeviceMemif(vpp): Error deleting memif inteface: %v", err)
 		return
 	} else {
 		if dbgInterface {
-			logging.Verbosef("INTERFACE %d deleted\n", data.interfaceSwIfIndex)
+			logging.Verbosef("INTERFACE %d deleted\n", data.InterfaceSwIfIndex)
 			vppmemif.DumpMemif(vppCh.Ch)
 			vppmemif.DumpMemifSocket(vppCh.Ch)
 		}

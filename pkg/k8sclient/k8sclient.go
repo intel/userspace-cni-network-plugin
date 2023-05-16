@@ -96,8 +96,8 @@ func getK8sClient(kubeClient kubernetes.Interface, kubeConfig string) (kubernete
 }
 
 func GetPod(args *skel.CmdArgs,
-			kubeClient kubernetes.Interface,
-			kubeConfig string) (*v1.Pod, kubernetes.Interface, error) {
+	kubeClient kubernetes.Interface,
+	kubeConfig string) (*v1.Pod, kubernetes.Interface, error) {
 	var err error
 
 	logging.Verbosef("GetPod: ENTER - %v, %v, %v", args, kubeClient, kubeConfig)
@@ -105,14 +105,14 @@ func GetPod(args *skel.CmdArgs,
 	// Get k8sArgs
 	k8sArgs, err := getK8sArgs(args)
 	if err != nil {
-		logging.Errorf("GetPod: Err in getting k8s args: %v", err)
+		_ = logging.Errorf("GetPod: Err in getting k8s args: %v", err)
 		return nil, kubeClient, err
 	}
 
 	// Get kubeClient. If passed in, GetK8sClient() will just return it back.
 	kubeClient, err = getK8sClient(kubeClient, kubeConfig)
 	if err != nil {
-		logging.Errorf("GetPod: Err in getting kubeClient: %v", err)
+		_ = logging.Errorf("GetPod: Err in getting kubeClient: %v", err)
 		return nil, kubeClient, err
 	}
 

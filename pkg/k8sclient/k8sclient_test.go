@@ -17,7 +17,6 @@ package k8sclient
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"testing"
@@ -223,7 +222,7 @@ func TestGetPod(t *testing.T) {
 				args = testdata.GetTestArgs()
 				kubeClient = fake.NewSimpleClientset()
 			default:
-				sharedDir, dirErr := ioutil.TempDir("/tmp", "test-k8sclient-")
+				sharedDir, dirErr := os.MkdirTemp("/tmp", "test-k8sclient-")
 				require.NoError(t, dirErr, "Can't create temporary directory")
 				defer os.RemoveAll(sharedDir)
 
@@ -277,7 +276,7 @@ func TestWritePodAnnotation(t *testing.T) {
 			var kubeClient kubernetes.Interface
 			var pod *v1.Pod
 
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-k8sclient-")
+			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-k8sclient-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			defer os.RemoveAll(sharedDir)
 

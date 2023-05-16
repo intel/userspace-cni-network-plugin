@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -42,7 +41,6 @@ import (
 //
 // Constants
 //
-const debugUsrSpDb = false
 
 const DefaultOvsCNIDir = "/usr/local/var/run/openvswitch"
 const DefaultVppCNIDir = "/var/run/vpp"
@@ -160,7 +158,7 @@ func SaveRemoteConfig(conf *types.NetConf,
 
 		dataBytes, jsonErr := json.Marshal(configData)
 		if jsonErr == nil {
-			err = ioutil.WriteFile(path, dataBytes, 0644)
+			err = os.WriteFile(path, dataBytes, 0644)
 		} else {
 			return pod, fmt.Errorf("ERROR: serializing REMOTE NetConf data: %v", err)
 		}

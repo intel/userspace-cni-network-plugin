@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -186,7 +185,7 @@ func TestSaveRemoteConfig(t *testing.T) {
 			var resPod *v1.Pod
 			var resErr error
 
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-configdata-")
+			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-configdata-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			// remove sharedDir if needed
 			defer os.RemoveAll(sharedDir)
@@ -235,7 +234,7 @@ func TestSaveRemoteConfig(t *testing.T) {
 					fileName = filepath.Join(sharedDir, fileName)
 					require.FileExists(t, fileName, "Container data were not saved to file")
 					var err error
-					data, err = ioutil.ReadFile(fileName)
+					data, err = os.ReadFile(fileName)
 					require.NoError(t, err, "Can't read saved container data")
 				} else {
 					// data saved to resPod Annotations
@@ -283,7 +282,7 @@ func TestCleanupRemoteConfig(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tempDir, dirErr := ioutil.TempDir("/tmp", "test-configdata-")
+			tempDir, dirErr := os.MkdirTemp("/tmp", "test-configdata-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			// remove tempDir if needed
 			defer os.RemoveAll(tempDir)
@@ -314,7 +313,7 @@ func TestCleanupRemoteConfig(t *testing.T) {
 			os.Stdout = origStdOut
 			stdW.Close()
 			var buf bytes.Buffer
-			io.Copy(&buf, stdR)
+			_, _ = io.Copy(&buf, stdR)
 
 			if tc.expOut != "" {
 				assert.Contains(t, buf.String(), tc.expOut, "Unexpected standard output")
@@ -375,7 +374,7 @@ func TestFileCleanup(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tempDir, dirErr := ioutil.TempDir("/tmp", "test-configdata-")
+			tempDir, dirErr := os.MkdirTemp("/tmp", "test-configdata-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			// remove tempDir if needed
 			defer os.RemoveAll(tempDir)
@@ -461,7 +460,7 @@ func TestGetRemoteConfig(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tempDir, dirErr := ioutil.TempDir("/tmp", "test-configdata-")
+			tempDir, dirErr := os.MkdirTemp("/tmp", "test-configdata-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			// remove tempDir if needed
 			defer os.RemoveAll(tempDir)
@@ -469,7 +468,7 @@ func TestGetRemoteConfig(t *testing.T) {
 			annotFile := filepath.Join(tempDir, "annotations")
 			if tc.annotations != "" {
 				tc.annotations = strings.Replace(tc.annotations, "#tempDir#", tempDir, -1)
-				ioutil.WriteFile(annotFile, []byte(tc.annotations), 0644)
+				_ = os.WriteFile(annotFile, []byte(tc.annotations), 0644)
 			}
 			tc.expDir = strings.Replace(tc.expDir, "#tempDir#", tempDir, -1)
 

@@ -35,9 +35,7 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/pkg/configdata"
 )
 
-//
 // Constants
-//
 const (
 	dbgApp = true
 )
@@ -50,9 +48,7 @@ const (
 // API Functions
 //
 
-//
 // Utility Functions
-//
 const DefaultAnnotationsFile = "/etc/podinfo/annotations"
 
 func cniContainerConfig() (bool, string, error) {
@@ -91,16 +87,14 @@ func cniContainerConfig() (bool, string, error) {
 			err = fmt.Errorf("ERROR: Unknown Host Engine:" + ifaceList[i].NetConf.HostConf.Engine)
 		}
 		if err != nil {
-			logging.Errorf("USRSP_APP: %v", err)
+			_ = logging.Errorf("USRSP_APP: %v", err)
 		}
 	}
 
 	return found, engine, err
 }
 
-//
 // main
-//
 func main() {
 	var count int = 0
 	var engine string

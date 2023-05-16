@@ -77,7 +77,7 @@ func DeleteBridge(ch api.Channel, bridgeDomain uint32) error {
 
 	// Determine if bridge domain exists
 	exists, count := findBridge(ch, bridgeDomain)
-	if exists == false || count != 0 {
+	if !exists || count != 0 {
 		return nil
 	}
 

@@ -17,7 +17,6 @@ package cniovs
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -77,7 +76,7 @@ func TestCreateVhostPort(t *testing.T) {
 			require := require.New(t)
 			execCommand := &FakeExecCommand{Err: tc.fakeErr}
 
-			socketDir, dirErr := ioutil.TempDir("/tmp", "test-cniovs-")
+			socketDir, dirErr := os.MkdirTemp("/tmp", "test-cniovs-")
 			require.NoError(dirErr, "Can't create temporary directory")
 			defer os.RemoveAll(socketDir)
 
