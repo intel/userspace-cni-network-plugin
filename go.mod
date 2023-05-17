@@ -3,7 +3,7 @@ module github.com/intel/userspace-cni-network-plugin
 go 1.14
 
 require (
-	git.fd.io/govpp.git v0.3.5
+	git.fd.io/govpp.git v0.5.0
 	github.com/containernetworking/cni v0.8.1
 	github.com/containernetworking/plugins v0.8.6
 	github.com/go-logfmt/logfmt v0.5.0
