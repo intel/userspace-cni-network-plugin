@@ -6,7 +6,7 @@ require (
 	git.fd.io/govpp.git v0.3.5
 	github.com/containernetworking/cni v0.8.1
 	github.com/containernetworking/plugins v0.8.6
-	github.com/go-logfmt/logfmt v0.5.0
+	github.com/go-logfmt/logfmt v0.6.0
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/lunixbochs/struc v0.0.0-20200707160740-784aaebc1d40 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
