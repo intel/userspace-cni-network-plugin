@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	git.fd.io/govpp.git v0.3.5
-	github.com/containernetworking/cni v0.8.1
+	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v0.8.6
 	github.com/go-logfmt/logfmt v0.5.0
 	github.com/gogo/protobuf v1.3.2 // indirect
