@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /docker/dpdk-app-centos
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /docker/vpp-centos-userspace-cni
+    schedule:
+      interval: daily
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: daily
