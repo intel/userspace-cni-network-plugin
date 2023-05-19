@@ -5,6 +5,7 @@ paths-ignore:
   - '**/README.md'
   - 'backup/**'
   - '**/*.draft.md'
+  - '.github/workflows/*.yml'
 jobs:
 
   golangci:
