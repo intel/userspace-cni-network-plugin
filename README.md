@@ -5,7 +5,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/intel/userspace-cni-network-plugin)](https://goreportcard.com/report/github.com/intel/userspace-cni-network-plugin) 
 [![Go Reference](https://pkg.go.dev/badge/github.com/intel/userspace-cni-network-plugin.svg)](https://pkg.go.dev/github.com/intel/userspace-cni-network-plugin) 
 
-Blah
+Blah blah
 
    * [Links](#links)
    * [BiWeekly Meeting](#biweekly-meeting)
