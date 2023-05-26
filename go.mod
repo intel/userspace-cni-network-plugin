@@ -1,23 +1,31 @@
 module github.com/intel/userspace-cni-network-plugin
+replace cloud.google.com/go => cloud.google.com/go v0.54.0
 
-go 1.14
+go 1.20
 
 require (
-	git.fd.io/govpp.git v0.3.5
-	github.com/containernetworking/cni v0.8.1
-	github.com/containernetworking/plugins v0.8.6
-	github.com/go-logfmt/logfmt v0.5.0
+	go.fd.io/govpp v0.7.0
+	github.com/containernetworking/cni v1.1.2
+	github.com/containernetworking/plugins v1.3.0
+	github.com/go-logfmt/logfmt v0.6.0
+	github.com/pkg/errors v0.9.1
+	github.com/sirupsen/logrus v1.9.2
+	github.com/stretchr/testify v1.8.3
+	github.com/vishvananda/netlink v1.2.1-beta.2
+	golang.org/x/sys v0.8.0
+	k8s.io/api v0.27.2
+	k8s.io/apimachinery v0.27.2
+	k8s.io/client-go v0.27.2
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/lunixbochs/struc v0.0.0-20200707160740-784aaebc1d40 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
-	github.com/pkg/errors v0.9.1
-	github.com/safchain/ethtool v0.0.0-20200804214954-8f958a28363a // indirect
-	github.com/sirupsen/logrus v1.7.0
-	github.com/stretchr/testify v1.6.1
-	github.com/vishvananda/netlink v1.1.0
-	golang.org/x/sys v0.1.0
-	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
-	k8s.io/api v0.20.0
-	k8s.io/apimachinery v0.20.0
-	k8s.io/client-go v0.20.0
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/safchain/ethtool v0.3.0 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
