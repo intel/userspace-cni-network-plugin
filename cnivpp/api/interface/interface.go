@@ -23,8 +23,9 @@ import (
 	"fmt"
 
 	current "github.com/containernetworking/cni/pkg/types/100"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface"
+	interfaces "github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/ip_types"
 	"go.fd.io/govpp/api"
 )
 
@@ -66,25 +67,25 @@ func AddDelIpAddress(ch api.Channel, swIfIndex interface_types.InterfaceIndex, i
 		IsAdd:     isAdd, // 1 = add, 0 = delete
 		DelAll:    false,
 	}
+	for _, ip := range ipResult.IPs {
+		var addressWithPrefix ip_types.AddressWithPrefix
 
-	// for _, ip := range ipResult.IPs {
-	// 	if ip.Version == "4" {
-	// 		req.IsIPv6 = 0
-	// 		req.Address = []byte(ip.Address.IP.To4())
-	// 		prefix, _ := ip.Address.Mask.Size()
-	// 		req.AddressLength = byte(prefix)
-	// 	} else if ip.Version == "6" {
-	// 		req.IsIPv6 = 1
-	// 		req.Address = []byte(ip.Address.IP.To16())
-	// 		prefix, _ := ip.Address.Mask.Size()
-	// 		req.AddressLength = byte(prefix)
-	// 	}
+		if prefix, _ := ip.Address.Mask.Size(); prefix == 4 {
+			addressWithPrefix = ip_types.AddressWithPrefix{Address: ip_types.AddressFromIP(ip.Address.IP.To4()), Len: 4}
 
-	// 	// Only one address is currently supported.
-	// 	if req.AddressLength != 0 {
-	// 		break
-	// 	}
-	// }
+		} else if prefix, _ := ip.Address.Mask.Size(); prefix == 16 {
+			addressWithPrefix = ip_types.AddressWithPrefix{Address: ip_types.AddressFromIP(ip.Address.IP.To16()), Len: 16}
+		} else {
+			break
+		}
+		fmt.Println(addressWithPrefix)
+		req.Prefix = addressWithPrefix
+
+		// Only one address is currently supported.
+		if req.Prefix.Len != 0 {
+			break
+		}
+	}
 
 	reply := &interfaces.SwInterfaceAddDelAddressReply{}
 
