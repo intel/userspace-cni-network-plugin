@@ -16,3 +16,4 @@ RUN make build
 FROM ubuntu:22.04
 RUN mkdir -p /root/userspace-cni-network-plugin/userspace
 COPY --from=builder /root/userspace-cni-network-plugin/userspace/userspace /root/userspace-cni-network-plugin/userspace/userspace
+CMD ["cp", "-rf", "/root/userspace-cni-network-plugin/userspace/userspace", "/opt/cni/bin"]
