@@ -24,6 +24,7 @@ import (
 
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/l2"
+	. "github.com/intel/userspace-cni-network-plugin/pkg/types"
 	"go.fd.io/govpp/api"
 )
 
@@ -174,7 +175,7 @@ func DumpBridge(ch api.Channel, bridgeDomain uint32) {
 
 	// Populate the Message Structure
 	req := &l2.BridgeDomainDump{
-		BdID: bridgeDomain,
+		BdID: bridgeDomain, SwIfIndex: DefaultSwIfIndex,
 	}
 
 	reply := &l2.BridgeDomainDetails{}
@@ -220,7 +221,7 @@ func findBridge(ch api.Channel, bridgeDomain uint32) (bool, uint32) {
 
 	// Populate the Message Structure
 	req := &l2.BridgeDomainDump{
-		BdID: bridgeDomain,
+		BdID: bridgeDomain, SwIfIndex: DefaultSwIfIndex,
 	}
 	reqCtx := ch.SendMultiRequest(req)
 

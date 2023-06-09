@@ -19,9 +19,7 @@ import (
 	current "github.com/containernetworking/cni/pkg/types/100"
 )
 
-//
 // Exported Types
-//
 type MemifConf struct {
 	Role string `json:"role,omitempty"` // Role of memif: master|slave
 	Mode string `json:"mode,omitempty"` // Mode of memif: ip|ethernet|inject-punt
@@ -115,9 +113,9 @@ type NetConf struct {
 }
 
 // Defines the JSON data written to container. It is either written to:
-//  1) Annotation - "userspace/configuration-data"
-//  -- OR --
-//  2) a file in the directory designated by NetConf.SharedDir.
+//  1. Annotation - "userspace/configuration-data"
+//     -- OR --
+//  2. a file in the directory designated by NetConf.SharedDir.
 type ConfigurationData struct {
 	ContainerId string         `json:"containerId"` // From args.ContainerId, used locally. Used in several place, namely in the socket filenames.
 	IfName      string         `json:"ifName"`      // From args.IfName, used locally. Used in several place, namely in the socket filenames.
@@ -125,3 +123,5 @@ type ConfigurationData struct {
 	Config      UserSpaceConf  `json:"config"`      // From NetConf.ContainerConf
 	IPResult    current.Result `json:"ipResult"`    // Network Status also has IP, but wrong format
 }
+
+const DefaultSwIfIndex = 4294967295 // vpp default interface id, used when querying bridges
