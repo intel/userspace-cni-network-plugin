@@ -182,9 +182,6 @@ func DumpMemif(ch api.Channel) {
 			macAddr,
 			reply.RingSize,
 		)
-		// reply.BufferSize,
-		// stateStr[reply.AdminUpDown],
-		// stateStr[reply.LinkUpDown])
 
 		count++
 	}
