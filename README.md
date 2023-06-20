@@ -313,7 +313,7 @@ to a flat file is disabled.
 
 For example in your CNI configuration, you may set:
 ```
-    "LogFile": "/var/log/userspace-cni.log",
+    "logFile": "/var/log/userspace-cni.log",
 ```
 
 ### Logging Level
@@ -340,7 +340,7 @@ You may configure the logging level by using the `LogLevel` option in your
 CNI configuration. For example:
 
 ```
-    "LogLevel": "debug",
+    "logLevel": "debug",
 ```
 
 
