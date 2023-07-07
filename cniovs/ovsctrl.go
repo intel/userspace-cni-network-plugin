@@ -69,7 +69,7 @@ func createVhostPort(sock_dir string, sock_name string, client bool, bridge_name
 	cmd := "ovs-vsctl"
 	args := []string{"add-port", bridge_name, sock_name, "--", "set", "Interface", sock_name, type_str}
 
-	if client == true {
+	if client {
 		socketarg := "options:vhost-server-path=" + filepath.Join(sock_dir, sock_name)
 		logging.Debugf("Additional string: %s", socketarg)
 
@@ -80,18 +80,18 @@ func createVhostPort(sock_dir string, sock_name string, client bool, bridge_name
 		return "", err
 	}
 
-	if client == false {
+	if !client {
 		// Determine the location OvS uses for Sockets. Default location can be
 		// overwritten with environmental variable: OVS_SOCKDIR
 		ovs_socket_dir, ok := os.LookupEnv("OVS_SOCKDIR")
-		if ok == false {
+		if !ok {
 			ovs_socket_dir = defaultOvSSocketDir
 		}
 
 		// Move socket to defined dir for easier mounting
 		err = os.Rename(filepath.Join(ovs_socket_dir, sock_name), filepath.Join(sock_dir, sock_name))
 		if err != nil {
-			logging.Errorf("Rename ERROR: %v", err)
+			_ = logging.Errorf("Rename ERROR: %v", err)
 			err = nil
 
 			//deleteVhostPort(sock_name, bridge_name)
@@ -159,7 +159,7 @@ func findBridge(bridge_name string) bool {
 	name, err := execCommand(cmd, args)
 	logging.Verbosef("ovsctl.findBridge(): return  name=%v err=%v", name, err)
 	if err == nil {
-		if name != nil && len(name) != 0 {
+		if len(name) != 0 {
 			found = true
 		}
 	}
@@ -177,7 +177,7 @@ func doesBridgeContainInterfaces(bridge_name string) bool {
 	name, err := execCommand(cmd, args)
 	logging.Verbosef("ovsctl.doesBridgeContainInterfaces(): return  name=%v err=%v", name, err)
 	if err == nil {
-		if name != nil && len(name) != 0 {
+		if len(name) != 0 {
 			found = true
 		}
 	}

@@ -16,9 +16,9 @@ package main
 
 import (
 	"encoding/json"
+	_ "flag"
 	"fmt"
 	"runtime"
-	_ "flag"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -26,7 +26,7 @@ import (
 	"github.com/containernetworking/cni/pkg/invoke"
 	"github.com/containernetworking/cni/pkg/skel"
 	cnitypes "github.com/containernetworking/cni/pkg/types"
-	"github.com/containernetworking/cni/pkg/types/current"
+	current "github.com/containernetworking/cni/pkg/types/100"
 	cniSpecVersion "github.com/containernetworking/cni/pkg/version"
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ipam"
@@ -34,11 +34,11 @@ import (
 
 	"github.com/intel/userspace-cni-network-plugin/cniovs"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp"
-	"github.com/intel/userspace-cni-network-plugin/pkg/k8sclient"
 	"github.com/intel/userspace-cni-network-plugin/logging"
-	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 	"github.com/intel/userspace-cni-network-plugin/pkg/annotations"
 	"github.com/intel/userspace-cni-network-plugin/pkg/configdata"
+	"github.com/intel/userspace-cni-network-plugin/pkg/k8sclient"
+	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 
 	_ "github.com/vishvananda/netlink"
 )
@@ -84,29 +84,29 @@ func loadNetConf(bytes []byte) (*types.NetConf, error) {
 	// Parse previous result
 	//
 	/*
-	if netconf.RawPrevResult != nil {
-		resultBytes, err := json.Marshal(netconf.RawPrevResult)
-		if err != nil {
-			return nil, logging.Errorf("could not serialize prevResult: %v", err)
+		if netconf.RawPrevResult != nil {
+			resultBytes, err := json.Marshal(netconf.RawPrevResult)
+			if err != nil {
+				return nil, logging.Errorf("could not serialize prevResult: %v", err)
+			}
+			res, err := cniSpecVersion.NewResult(netconf.CNIVersion, resultBytes)
+			if err != nil {
+				return nil, logging.Errorf("could not parse prevResult: %v", err)
+			}
+			netconf.RawPrevResult = nil
+			netconf.PrevResult, err = current.NewResultFromResult(res)
+			if err != nil {
+				return nil, logging.Errorf("could not convert result to current version: %v", err)
+			}
 		}
-		res, err := cniSpecVersion.NewResult(netconf.CNIVersion, resultBytes)
-		if err != nil {
-			return nil, logging.Errorf("could not parse prevResult: %v", err)
-		}
-		netconf.RawPrevResult = nil
-		netconf.PrevResult, err = current.NewResultFromResult(res)
-		if err != nil {
-			return nil, logging.Errorf("could not convert result to current version: %v", err)
-		}
-	}
 	*/
 
 	return netconf, nil
 }
 
 func getPodAndSharedDir(netConf *types.NetConf,
-						args *skel.CmdArgs,
-						kubeClient kubernetes.Interface) (kubernetes.Interface, *v1.Pod, string, error) {
+	args *skel.CmdArgs,
+	kubeClient kubernetes.Interface) (kubernetes.Interface, *v1.Pod, string, error) {
 
 	var found bool
 	var pod *v1.Pod
@@ -132,8 +132,7 @@ func getPodAndSharedDir(netConf *types.NetConf,
 
 	err = nil
 
-
-	if found == false {
+	if !found {
 		if netConf.SharedDir != "" {
 			if netConf.SharedDir[len(netConf.SharedDir)-1:] == "/" {
 				sharedDir = fmt.Sprintf("%s%s/", netConf.SharedDir, args.ContainerID[:12])
@@ -153,7 +152,7 @@ func getPodAndSharedDir(netConf *types.NetConf,
 				logging.Warningf("getPodAndSharedDir: Neither \"KubeConfig\" nor \"SharedDir\" provided, defaulting to %s", sharedDir)
 			} else {
 				logging.Warningf("getPodAndSharedDir: \"KubeConfig\" invalid and \"SharedDir\" not provided, defaulting to %s", sharedDir)
-			}	
+			}
 		}
 	}
 
@@ -175,7 +174,7 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 		args, netConf, exec, kubeClient)
 
 	if err != nil {
-		logging.Errorf("cmdAdd: Parse NetConf - %v", err)
+		_ = logging.Errorf("cmdAdd: Parse NetConf - %v", err)
 		return err
 	}
 
@@ -195,15 +194,13 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 		Sandbox: netns.Path(),
 	}}
 
-
 	// Retrieve the "SharedDir", directory to create the socketfile in.
 	// Save off kubeClient and pod for later use if needed.
 	kubeClient, pod, sharedDir, err := getPodAndSharedDir(netConf, args, kubeClient)
 	if err != nil {
-		logging.Errorf("cmdAdd: Unable to determine \"SharedDir\" - %v", err)
+		_ = logging.Errorf("cmdAdd: Unable to determine \"SharedDir\" - %v", err)
 		return err
 	}
-
 
 	//
 	// HOST:
@@ -218,7 +215,7 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 		err = fmt.Errorf("ERROR: Unknown Host Engine:" + netConf.HostConf.Engine)
 	}
 	if err != nil {
-		logging.Errorf("cmdAdd: Host ERROR - %v", err)
+		_ = logging.Errorf("cmdAdd: Host ERROR - %v", err)
 		return err
 	}
 
@@ -232,7 +229,7 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 		// run the IPAM plugin and get back the config to apply
 		ipamResult, err := ipam.ExecAdd(netConf.IPAM.Type, args.StdinData)
 		if err != nil {
-			logging.Errorf("cmdAdd: IPAM ERROR - %v", err)
+			_ = logging.Errorf("cmdAdd: IPAM ERROR - %v", err)
 			return err
 		}
 
@@ -240,14 +237,14 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 		newResult, err := current.NewResultFromResult(ipamResult)
 		if err != nil {
 			// TBD: CLEAN-UP
-			logging.Errorf("cmdAdd: IPAM Result ERROR - %v", err)
+			_ = logging.Errorf("cmdAdd: IPAM Result ERROR - %v", err)
 			return err
 		}
 
 		if len(newResult.IPs) == 0 {
 			// TBD: CLEAN-UP
 			err = fmt.Errorf("ERROR: Unable to get IP Address")
-			logging.Errorf("cmdAdd: IPAM ERROR - %v", err)
+			_ = logging.Errorf("cmdAdd: IPAM ERROR - %v", err)
 			return err
 		}
 
@@ -279,33 +276,31 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 		err = fmt.Errorf("ERROR: Unknown Container Engine:" + containerEngine)
 	}
 	if err != nil {
-		logging.Errorf("cmdAdd: Container ERROR - %v", err)
+		_ = logging.Errorf("cmdAdd: Container ERROR - %v", err)
 		return err
 	}
 
 	return cnitypes.PrintResult(result, current.ImplementedSpecVersion)
 }
 
-
 func cmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
-/*
-	netConf, err := loadNetConf(args.StdinData)
+	/*
+		netConf, err := loadNetConf(args.StdinData)
 
-	logging.Infof("cmdGet: (AFTER LOAD) - Container %s Iface %s", args.ContainerID[:12], args.IfName)
-	logging.Verbosef("   Args=%v netConf=%v, exec=%v, kubeClient%v",
-		args, netConf, exec, kubeClient)
+		logging.Infof("cmdGet: (AFTER LOAD) - Container %s Iface %s", args.ContainerID[:12], args.IfName)
+		logging.Verbosef("   Args=%v netConf=%v, exec=%v, kubeClient%v",
+			args, netConf, exec, kubeClient)
 
-	if err != nil {
-		return err
-	}
+		if err != nil {
+			return err
+		}
 
-	// FIXME: call all delegates
+		// FIXME: call all delegates
 
-	return cnitypes.PrintResult(netConf.PrevResult, netConf.CNIVersion)
-*/
+		return cnitypes.PrintResult(netConf.PrevResult, netConf.CNIVersion)
+	*/
 	return nil
 }
-
 
 func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
 	var netConf *types.NetConf
@@ -322,19 +317,17 @@ func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 		args, netConf, exec, kubeClient)
 
 	if err != nil {
-		logging.Errorf("cmdDel: Parse NetConf - %v", err)
+		_ = logging.Errorf("cmdDel: Parse NetConf - %v", err)
 		return err
 	}
-
 
 	// Retrieve the "SharedDir", directory to create the socketfile in.
 	// Save off kubeClient and pod for later use if needed.
 	_, pod, sharedDir, err := getPodAndSharedDir(netConf, args, kubeClient)
 	if err != nil {
-		logging.Errorf("cmdDel: Unable to determine \"SharedDir\" - %v", err)
+		_ = logging.Errorf("cmdDel: Unable to determine \"SharedDir\" - %v", err)
 		return err
 	}
-
 
 	//
 	// HOST:
@@ -349,7 +342,7 @@ func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 		err = fmt.Errorf("ERROR: Unknown Host Engine:" + netConf.HostConf.Engine)
 	}
 	if err != nil {
-		logging.Errorf("cmdDel: Host ERROR - %v", err)
+		_ = logging.Errorf("cmdDel: Host ERROR - %v", err)
 		return err
 	}
 
@@ -374,7 +367,7 @@ func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 		err = fmt.Errorf("ERROR: Unknown Container Engine:" + containerEngine)
 	}
 	if err != nil {
-		logging.Errorf("cmdDel: Container ERROR - %v", err)
+		_ = logging.Errorf("cmdDel: Container ERROR - %v", err)
 		return err
 	}
 
@@ -384,7 +377,7 @@ func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 	if netConf.IPAM.Type != "" {
 		err = ipam.ExecDel(netConf.IPAM.Type, args.StdinData)
 		if err != nil {
-			logging.Errorf("cmdDel: IPAM ERROR - %v", err)
+			_ = logging.Errorf("cmdDel: IPAM ERROR - %v", err)
 			return err
 		}
 	}

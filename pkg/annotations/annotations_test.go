@@ -17,7 +17,6 @@ package annotations
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -251,7 +250,7 @@ func TestWritePodAnnotation(t *testing.T) {
 			var kubeClient kubernetes.Interface
 			var pod *v1.Pod
 
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-annotation-")
+			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-annotation-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			defer os.RemoveAll(sharedDir)
 
@@ -475,7 +474,7 @@ func TestCommitAnnotation(t *testing.T) {
 			var kubeClient kubernetes.Interface
 			var pod *v1.Pod
 
-			sharedDir, dirErr := ioutil.TempDir("/tmp", "test-k8sclient-")
+			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-k8sclient-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			defer os.RemoveAll(sharedDir)
 
@@ -562,17 +561,17 @@ func TestGetFileAnnotation(t *testing.T) {
 			if tc.defaultFile {
 				// modify expected error in case that default file exists
 				if _, err = os.Stat("/etc/podinfo/annotations"); err == nil {
-					tc.expErr = errors.New(fmt.Sprintf(`ERROR: "%v" missing from pod annotation`, tc.annotIndex))
+					tc.expErr = fmt.Errorf(fmt.Sprintf(`ERROR: "%v" missing from pod annotation`, tc.annotIndex))
 				}
 				result, err = getFileAnnotation(tc.annotIndex, "")
 			} else {
-				testDir, err = ioutil.TempDir("/tmp", "test-annotation-")
+				testDir, err = os.MkdirTemp("/tmp", "test-annotation-")
 				require.NoError(t, err, "Can't create temporary directory")
 				defer os.RemoveAll(testDir)
 
 				annotFile = filepath.Join(testDir, "annotations")
 				if len(tc.annot) > 0 {
-					ioutil.WriteFile(annotFile, []byte(tc.annot), 0644)
+					_ = os.WriteFile(annotFile, []byte(tc.annot), 0644)
 				}
 				result, err = getFileAnnotation(annotFile, tc.annotIndex)
 			}
@@ -609,13 +608,13 @@ func TestGetFileAnnotationMappedDir(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			testDir, err := ioutil.TempDir("/tmp", "test-annotation-")
+			testDir, err := os.MkdirTemp("/tmp", "test-annotation-")
 			require.NoError(t, err, "Can't create temporary directory")
 			defer os.RemoveAll(testDir)
 
 			annotFile := filepath.Join(testDir, "annotations")
 			if len(tc.annot) > 0 {
-				ioutil.WriteFile(annotFile, []byte(tc.annot), 0644)
+				_ = os.WriteFile(annotFile, []byte(tc.annot), 0644)
 			}
 			result, err := GetFileAnnotationMappedDir(annotFile)
 
@@ -662,13 +661,13 @@ func TestGetFileAnnotationConfigData(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			testDir, err := ioutil.TempDir("/tmp", "test-annotation-")
+			testDir, err := os.MkdirTemp("/tmp", "test-annotation-")
 			require.NoError(t, err, "Can't create temporary directory")
 			defer os.RemoveAll(testDir)
 
 			annotFile := filepath.Join(testDir, "annotations")
 			if len(tc.annot) > 0 {
-				ioutil.WriteFile(annotFile, []byte(tc.annot), 0644)
+				_ = os.WriteFile(annotFile, []byte(tc.annot), 0644)
 			}
 			result, err := GetFileAnnotationConfigData(annotFile)
 

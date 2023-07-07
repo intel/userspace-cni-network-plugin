@@ -22,7 +22,6 @@ package cniovs
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -76,7 +75,7 @@ func SaveConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) err
 
 		path := filepath.Join(localDir, fileName)
 
-		return ioutil.WriteFile(path, dataBytes, 0644)
+		return os.WriteFile(path, dataBytes, 0644)
 	} else {
 		return fmt.Errorf("ERROR: serializing delegate OVS saved data: %v", err)
 	}
@@ -89,7 +88,7 @@ func LoadConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) err
 	path := filepath.Join(localDir, fileName)
 
 	if _, err := os.Stat(path); err == nil {
-		if dataBytes, err := ioutil.ReadFile(path); err == nil {
+		if dataBytes, err := os.ReadFile(path); err == nil {
 			if err = json.Unmarshal(dataBytes, data); err != nil {
 				return fmt.Errorf("ERROR: Failed to parse OVS saved data: %v", err)
 			}
@@ -102,7 +101,7 @@ func LoadConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) err
 	}
 
 	// Delete file (and directory if empty)
-	configdata.FileCleanup(localDir, path)
+	_ = configdata.FileCleanup(localDir, path)
 
 	return nil
 }

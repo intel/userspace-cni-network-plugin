@@ -26,26 +26,24 @@ import (
 	"runtime"
 	"time"
 
-	_ "git.fd.io/govpp.git/core"
-	"github.com/containernetworking/cni/pkg/types/current"
+	current "github.com/containernetworking/cni/pkg/types/100"
 	_ "github.com/sirupsen/logrus"
+	_ "go.fd.io/govpp/core"
 
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
+	vppinfra "github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
+	vppinterface "github.com/intel/userspace-cni-network-plugin/cnivpp/api/interface"
+	vppmemif "github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/memif"
 )
 
-//
 // Constants
-//
 const (
 	dbgIp    = true
 	dbgMemif = true
 )
 
-//
 // Functions
-//
 func init() {
 	// this ensures that main runs only on main thread (thread group leader).
 	// since namespace ops (unshare, setns) are done for a single thread, we
@@ -56,15 +54,15 @@ func init() {
 func main() {
 	var vppCh vppinfra.ConnectionData
 	var err error
-	var swIfIndex uint32
+	var swIfIndex interface_types.InterfaceIndex
 
 	// Dummy Input Data
 	var ipString string = "192.168.172.100/24"
 	var ipResult *current.Result
 	var memifSocketId uint32
 	var memifSocketFile string = "/var/run/vpp/123456/memif-3.sock"
-	var memifRole vppmemif.MemifRole = vppmemif.RoleMaster
-	var memifMode vppmemif.MemifMode = vppmemif.ModeEthernet
+	var memifRole memif.MemifRole = 0
+	var memifMode memif.MemifMode = 0
 
 	// Set log level
 	//   Logrus has six logging levels: DebugLevel, InfoLevel, WarningLevel, ErrorLevel, FatalLevel and PanicLevel.
@@ -112,7 +110,7 @@ func main() {
 	}
 
 	// Add IP to MemIf to Bridge.
-	err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, 1, ipResult)
+	err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, true, ipResult)
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
@@ -125,7 +123,7 @@ func main() {
 	fmt.Println("User Space VPP client wakeup.")
 
 	// Remove IP from MemIf.
-	err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, 0, ipResult)
+	err = vppinterface.AddDelIpAddress(vppCh.Ch, swIfIndex, false, ipResult)
 
 	if err != nil {
 		fmt.Println("Error:", err)

@@ -17,7 +17,7 @@
 package main
 
 // Generates Go bindings for all VPP APIs located in the json directory.
-//go:generate go run git.fd.io/govpp.git/cmd/binapi-generator --output-dir=../../bin_api
+//go:generate go run go.fd.io/govpp/cmd/binapi-generator --output-dir=../../bin_api
 
 import (
 	"fmt"
@@ -26,25 +26,22 @@ import (
 	"runtime"
 	"time"
 
-	_ "git.fd.io/govpp.git/core"
 	_ "github.com/sirupsen/logrus"
+	_ "go.fd.io/govpp/core"
 
 	vppbridge "github.com/intel/userspace-cni-network-plugin/cnivpp/api/bridge"
 	vppinfra "github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
 	vppvhostuser "github.com/intel/userspace-cni-network-plugin/cnivpp/api/vhostuser"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
 )
 
-//
 // Constants
-//
 const (
 	dbgBridge    = true
 	dbgVhostUser = true
 )
 
-//
 // Functions
-//
 func init() {
 	// this ensures that main runs only on main thread (thread group leader).
 	// since namespace ops (unshare, setns) are done for a single thread, we
@@ -55,13 +52,12 @@ func init() {
 func main() {
 	var vppCh vppinfra.ConnectionData
 	var err error
-	var swIfIndex uint32
+	var swIfIndex interface_types.InterfaceIndex
 
 	// Dummy Input Data
 	var bridgeDomain uint32 = 4
 	var vhostUserSocketFile string = "/var/run/vpp/123456/vhost3.sock"
-	var vhostUserMode vppvhostuser.VhostUserMode = vppvhostuser.ModeServer
-
+	var vhostUserMode bool = true
 	// Set log level
 	//   Logrus has six logging levels: DebugLevel, InfoLevel, WarningLevel, ErrorLevel, FatalLevel and PanicLevel.
 	//core.SetLogger(&logrus.Logger{Level: logrus.InfoLevel})

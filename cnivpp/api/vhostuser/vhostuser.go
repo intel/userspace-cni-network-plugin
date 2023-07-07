@@ -17,13 +17,14 @@
 package vppvhostuser
 
 // Generates Go bindings for all VPP APIs located in the json directory.
-//go:generate go run git.fd.io/govpp.git/cmd/binapi-generator --output-dir=../../bin_api
+//go:generate go run go.fd.io/govpp/cmd/binapi-generator --output-dir=../../bin_api
 
 import (
 	"fmt"
 
-	"git.fd.io/govpp.git/api"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
 	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/vhost_user"
+	"go.fd.io/govpp/api"
 )
 
 //
@@ -32,15 +33,12 @@ import (
 
 const debugVhost = false
 
-type VhostUserMode uint8
+type VhostUserMode bool
 
 const (
-	ModeClient VhostUserMode = 0
-	ModeServer VhostUserMode = 1
+	ModeClient VhostUserMode = false
+	ModeServer VhostUserMode = true
 )
-
-// Dump Strings
-var modeStr = [...]string{"client", "server"}
 
 //
 // API Functions
@@ -48,18 +46,19 @@ var modeStr = [...]string{"client", "server"}
 
 // Attempt to create a Vhost-User Interface.
 // Input:
-//   ch api.Channel
-//   mode VhostUserMode - ModeClient or ModeServer
-//   socketFile string - Directory and Filename of socket file
-func CreateVhostUserInterface(ch api.Channel, mode VhostUserMode, socketFile string) (swIfIndex uint32, err error) {
+//
+//	ch api.Channel
+//	mode VhostUserMode - ModeClient or ModeServer
+//	socketFile string - Directory and Filename of socket file
+func CreateVhostUserInterface(ch api.Channel, mode bool, socketFile string) (swIfIndex interface_types.InterfaceIndex, err error) {
 
 	// Populate the Add Structure
 	req := &vhost_user.CreateVhostUserIf{
-		IsServer:          uint8(mode),
-		SockFilename:      []byte(socketFile),
-		Renumber:          0,
+		IsServer:          mode,
+		SockFilename:      socketFile,
+		Renumber:          false,
 		CustomDevInstance: 0,
-		UseCustomMac:      0,
+		UseCustomMac:      false,
 		//MacAddress: "",
 		//Tag: "",
 	}
@@ -81,7 +80,7 @@ func CreateVhostUserInterface(ch api.Channel, mode VhostUserMode, socketFile str
 }
 
 // Attempt to delete a Vhost-User interface.
-func DeleteVhostUserInterface(ch api.Channel, swIfIndex uint32) (err error) {
+func DeleteVhostUserInterface(ch api.Channel, swIfIndex interface_types.InterfaceIndex) (err error) {
 
 	// Populate the Delete Structure
 	req := &vhost_user.DeleteVhostUserIf{
@@ -122,13 +121,14 @@ func DumpVhostUser(ch api.Channel) {
 		}
 		//fmt.Printf("%+v\n", reply)
 
-		fmt.Printf("    SwIfId=%d Mode=%s IfName=%s NumReg=%d SockErrno=%d Feature=0x16%x HdrSz=%d SockFile=%s\n",
+		fmt.Printf("    SwIfId=%d Mode=%t IfName=%s NumReg=%d SockErrno=%d FeaturesFirst32=%d FeaturesLast32=%d HdrSz=%d SockFile=%s\n",
 			reply.SwIfIndex,
-			modeStr[reply.IsServer],
+			reply.IsServer,
 			string(reply.InterfaceName),
 			reply.NumRegions,
 			reply.SockErrno,
-			reply.Features,
+			reply.FeaturesFirst32,
+			reply.FeaturesLast32,
 			reply.VirtioNetHdrSz,
 			string(reply.SockFilename))
 

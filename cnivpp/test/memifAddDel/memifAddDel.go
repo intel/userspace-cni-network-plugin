@@ -17,7 +17,7 @@
 package main
 
 // Generates Go bindings for all VPP APIs located in the json directory.
-//go:generate go run git.fd.io/govpp.git/cmd/binapi-generator --output-dir=../../bin_api
+//go:generate go run go.fd.io/govpp/cmd/binapi-generator --output-dir=../../bin_api
 
 import (
 	"fmt"
@@ -26,25 +26,23 @@ import (
 	"runtime"
 	"time"
 
-	_ "git.fd.io/govpp.git/core"
 	_ "github.com/sirupsen/logrus"
+	_ "go.fd.io/govpp/core"
 
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/bridge"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
+	vppbridge "github.com/intel/userspace-cni-network-plugin/cnivpp/api/bridge"
+	vppinfra "github.com/intel/userspace-cni-network-plugin/cnivpp/api/infra"
+	vppmemif "github.com/intel/userspace-cni-network-plugin/cnivpp/api/memif"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/memif"
 )
 
-//
 // Constants
-//
 const (
 	dbgBridge = true
 	dbgMemif  = true
 )
 
-//
 // Functions
-//
 func init() {
 	// this ensures that main runs only on main thread (thread group leader).
 	// since namespace ops (unshare, setns) are done for a single thread, we
@@ -55,14 +53,14 @@ func init() {
 func main() {
 	var vppCh vppinfra.ConnectionData
 	var err error
-	var swIfIndex uint32
+	var swIfIndex interface_types.InterfaceIndex
 
 	// Dummy Input Data
 	var bridgeDomain uint32 = 4
 	var memifSocketId uint32
 	var memifSocketFile string = "/var/run/vpp/123456/memif-3.sock"
-	var memifRole vppmemif.MemifRole = vppmemif.RoleMaster
-	var memifMode vppmemif.MemifMode = vppmemif.ModeEthernet
+	var memifRole memif.MemifRole = 0
+	var memifMode memif.MemifMode = 0
 
 	// Set log level
 	//   Logrus has six logging levels: DebugLevel, InfoLevel, WarningLevel, ErrorLevel, FatalLevel and PanicLevel.

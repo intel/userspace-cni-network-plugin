@@ -17,16 +17,16 @@
 package vppinfra
 
 // Generates Go bindings for all VPP APIs located in the json directory.
-//go:generate go run git.fd.io/govpp.git/cmd/binapi-generator --output-dir=../../bin_api
+//go:generate go run go.fd.io/govpp/cmd/binapi-generator --output-dir=../../bin_api
 
 import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
 
-	"git.fd.io/govpp.git"
-	"git.fd.io/govpp.git/api"
-	"git.fd.io/govpp.git/core"
+	"go.fd.io/govpp"
+	"go.fd.io/govpp/api"
+	"go.fd.io/govpp/core"
 )
 
 //

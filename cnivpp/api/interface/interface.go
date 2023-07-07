@@ -17,20 +17,19 @@
 package vppinterface
 
 // Generates Go bindings for all VPP APIs located in the json directory.
-//go:generate go run git.fd.io/govpp.git/cmd/binapi-generator --output-dir=../../bin_api
+//go:generate go run go.fd.io/govpp/cmd/binapi-generator --output-dir=../../bin_api
 
 import (
 	"fmt"
 
-	"github.com/containernetworking/cni/pkg/types/current"
-
-	"git.fd.io/govpp.git/api"
-	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interfaces"
+	current "github.com/containernetworking/cni/pkg/types/100"
+	interfaces "github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/ip_types"
+	"go.fd.io/govpp/api"
 )
 
-//
 // Constants
-//
 const debugInterface = false
 
 //
@@ -38,12 +37,12 @@ const debugInterface = false
 //
 
 // Attempt to set an interface state. isUp (1 = up, 0 = down)
-func SetState(ch api.Channel, swIfIndex uint32, isUp uint8) error {
+func SetState(ch api.Channel, swIfIndex interface_types.InterfaceIndex, isUp interface_types.IfStatusFlags) error {
 	// Populate the Add Structure
 	req := &interfaces.SwInterfaceSetFlags{
 		SwIfIndex: swIfIndex,
 		// 1 = up, 0 = down
-		AdminUpDown: isUp,
+		Flags: isUp,
 	}
 
 	reply := &interfaces.SwInterfaceSetFlagsReply{}
@@ -60,30 +59,30 @@ func SetState(ch api.Channel, swIfIndex uint32, isUp uint8) error {
 	return nil
 }
 
-func AddDelIpAddress(ch api.Channel, swIfIndex uint32, isAdd uint8, ipResult *current.Result) error {
+func AddDelIpAddress(ch api.Channel, swIfIndex interface_types.InterfaceIndex, isAdd bool, ipResult *current.Result) error {
 
 	// Populate the Add Structure
 	req := &interfaces.SwInterfaceAddDelAddress{
 		SwIfIndex: swIfIndex,
 		IsAdd:     isAdd, // 1 = add, 0 = delete
-		DelAll:    0,
+		DelAll:    false,
 	}
-
 	for _, ip := range ipResult.IPs {
-		if ip.Version == "4" {
-			req.IsIPv6 = 0
-			req.Address = []byte(ip.Address.IP.To4())
-			prefix, _ := ip.Address.Mask.Size()
-			req.AddressLength = byte(prefix)
-		} else if ip.Version == "6" {
-			req.IsIPv6 = 1
-			req.Address = []byte(ip.Address.IP.To16())
-			prefix, _ := ip.Address.Mask.Size()
-			req.AddressLength = byte(prefix)
+		var addressWithPrefix ip_types.AddressWithPrefix
+
+		if prefix, _ := ip.Address.Mask.Size(); prefix == 4 {
+			addressWithPrefix = ip_types.AddressWithPrefix{Address: ip_types.AddressFromIP(ip.Address.IP.To4()), Len: 4}
+
+		} else if prefix, _ := ip.Address.Mask.Size(); prefix == 16 {
+			addressWithPrefix = ip_types.AddressWithPrefix{Address: ip_types.AddressFromIP(ip.Address.IP.To16()), Len: 16}
+		} else {
+			break
 		}
+		fmt.Println(addressWithPrefix)
+		req.Prefix = addressWithPrefix
 
 		// Only one address is currently supported.
-		if req.AddressLength != 0 {
+		if req.Prefix.Len != 0 {
 			break
 		}
 	}

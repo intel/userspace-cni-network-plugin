@@ -13,10 +13,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
-
+	"os"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -152,7 +151,7 @@ func WritePodAnnotation(kubeClient kubernetes.Interface,
 
 		modifiedConfig, err = setPodAnnotationConfigData(pod, configData)
 		if err != nil {
-			logging.Errorf("SaveRemoteConfig: Error formatting annotation configData: %v", err)
+			_ = logging.Errorf("SaveRemoteConfig: Error formatting annotation configData: %v", err)
 			return pod, err
 		}
 
@@ -164,18 +163,17 @@ func WritePodAnnotation(kubeClient kubernetes.Interface,
 			mappedSharedDir = DefaultBaseCNIDir
 			logging.Warningf("SaveRemoteConfig: Error reading VolumeMount: %v", err)
 			logging.Warningf("SaveRemoteConfig: VolumeMount \"shared-dir\" not provided, defaulting to: %s", mappedSharedDir)
-			err = nil
 		}
 		modifiedMappedDir, err = setPodAnnotationMappedDir(pod, mappedSharedDir)
 		if err != nil {
-			logging.Errorf("SaveRemoteConfig: Error formatting annotation mappedSharedDir - %v", err)
+			_ = logging.Errorf("SaveRemoteConfig: Error formatting annotation mappedSharedDir - %v", err)
 			return pod, err
 		}
 
-		if modifiedConfig == true || modifiedMappedDir == true {
+		if modifiedConfig || modifiedMappedDir {
 			pod, err = commitAnnotation(kubeClient, pod)
 			if err != nil {
-				logging.Errorf("SaveRemoteConfig: Error writing annotations - %v", err)
+				_ = logging.Errorf("SaveRemoteConfig: Error writing annotations - %v", err)
 				return pod, err
 			}
 		}
@@ -186,9 +184,7 @@ func WritePodAnnotation(kubeClient kubernetes.Interface,
 	return pod, err
 }
 
-//
 // Local Utility Functions
-//
 func setPodAnnotationMappedDir(pod *v1.Pod,
 	mappedDir string) (bool, error) {
 	var modified bool
@@ -282,17 +278,15 @@ func commitAnnotation(kubeClient kubernetes.Interface,
 	return k8sclient.WritePodAnnotation(kubeClient, pod)
 }
 
-//
 // Container Access Functions
 // These functions can be called from code running in a container. It reads
 // the data from the exposed Downward API.
-//
 func getFileAnnotation(annotFile string, annotIndex string) ([]byte, error) {
 	var rawData []byte
 
-	fileData, err := ioutil.ReadFile(annotFile)
+	fileData, err := os.ReadFile(annotFile)
 	if err != nil {
-		logging.Errorf("getFileAnnotation: File Read ERROR - %v", err)
+		_ = logging.Errorf("getFileAnnotation: File Read ERROR - %v", err)
 		return rawData, fmt.Errorf("error reading %s: %s", annotFile, err)
 	}
 
@@ -334,7 +328,7 @@ func GetFileAnnotationConfigData(annotFile string) ([]*types.ConfigurationData, 
 	}
 
 	rawString := string(rawData)
-	if strings.IndexAny(rawString, "[{\"") >= 0 {
+	if strings.ContainsAny(rawString, "[{\"") {
 		if err := json.Unmarshal([]byte(rawString), &configDataList); err != nil {
 			return nil, logging.Errorf("GetFileAnnotationConfigData: Failed to parse ConfigData Annotation JSON format: %v", err)
 		}

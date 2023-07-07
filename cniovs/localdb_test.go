@@ -17,7 +17,6 @@ package cniovs
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -106,7 +105,7 @@ func TestLoadConfig(t *testing.T) {
 			case "none":
 				require.NoFileExists(t, path, "Saved configuration shall not exist")
 			case "corrupted":
-				require.NoError(t, ioutil.WriteFile(path, []byte("{"), 0644), "Can't create test file")
+				require.NoError(t, os.WriteFile(path, []byte("{"), 0644), "Can't create test file")
 				defer os.Remove(path)
 			case "directory":
 				require.NoError(t, os.Mkdir(path, 0700), "Can't create test dir")
