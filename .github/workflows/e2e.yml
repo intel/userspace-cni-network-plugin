@@ -1,0 +1,29 @@
+name: E2E
+on: [push, pull_request]
+jobs:
+
+  e2e:
+    name: E2E
+    runs-on: hugepage-runner
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: 1.20.1
+      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
+      - name: install_go_kubectl_kind
+        run: source ./ci/ci.sh && install_go_kubectl_kind
+      - name: create_kind_cluster
+        run: source ./ci/ci.sh && create_kind_cluster
+      - name: deploy_multus
+        run: source ./ci/ci.sh && deploy_multus
+      - name: vpp_e2e_test
+        run: source ./ci/ci.sh && vpp_e2e_test
+      - name: build_ovs_container
+        run: source ./ci/ci.sh && build_ovs_container
+      - name: build_test-pmd_container
+        run: source ./ci/ci.sh && build_testpmd_container
+      - name: ovs_e2e_test
+        run: source ./ci/ci.sh && ovs_e2e_test
+
+
