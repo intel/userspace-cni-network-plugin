@@ -1,0 +1,17 @@
+name: Go-static-analysis
+on: [push, pull_request]
+jobs:
+
+  e2e:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@128a63446a954579617e875aaab7d2978154e969 # v2.4.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
+      - name: run ci script
+        run: ./docker/ci.sh
+
