@@ -80,7 +80,7 @@ interfaces in a container.
 
 Userspace networking requires additional considerations. For one, the interface
 needs to be created/configured on a local vswitch (running on the host). There
-may also be a desire to add the interface to a specfic network on the host
+may also be a desire to add the interface to a specific network on the host
 through the local vswitch. Second, when the interface is inserted into the
 container, it is not owned by the kernel, so additional work needs to be done
 in the container to consume the interface and add to a network within the
@@ -107,7 +107,7 @@ This plugin is recommended to be built with Go 1.11.10 and either OVS-DPDK 2.9.0
 or VPP 19.04. Other versions of Go, OVS-DPDK and VPP are theoretically
 supported, but MIGHT cause unknown issue.
 
-There are a few environmental variables used in building and teating this plugin.
+There are a few environmental variables used in building and testing this plugin.
 Here is an example:
 ```
    cat ~/.bashrc
@@ -569,7 +569,7 @@ To run script:
   * Current implementation is to write the remote configuration into a file and share the directory
 with the container, which is the volume mapping. Directory is currently hard coded.
 * *--device=/dev/hugepages:/dev/hugepages*
-  * VPP requires hugepages, so need to map hugepoages into container.
+  * VPP requires hugepages, so need to map hugepages into container.
 
 In the container, you should see the usrsp-app ouput the message sequence of
 its communication with local VPP (VPP in the container) and some database
