@@ -1,6 +1,5 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin/badge)](https://api.securityscorecards.dev/projects/github.com/intel/userspace-cni-network-plugin) 
-[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7382/badge)](https://bestpractices.coreinfrastructure.org/projects/7382)
 ![CodeQL](https://github.com/intel/userspace-cni-network-plugin/actions/workflows/codeql.yml/badge.svg?branch=master) 
 [![Go Report Card](https://goreportcard.com/badge/github.com/intel/userspace-cni-network-plugin)](https://goreportcard.com/report/github.com/intel/userspace-cni-network-plugin) 
 [![Go Reference](https://pkg.go.dev/badge/github.com/intel/userspace-cni-network-plugin.svg)](https://pkg.go.dev/github.com/intel/userspace-cni-network-plugin) 
