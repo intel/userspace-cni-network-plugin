@@ -657,7 +657,7 @@ func TestDelLocalDeviceVhost(t *testing.T) {
 				// cleanup if needed
 				defer os.RemoveAll(tc.sharedDir)
 				defer os.RemoveAll(sharedDir)
-				defer func () {
+				defer func() {
 					_ = unix.Unmount(sharedDir, 0)
 				}()
 			} else {

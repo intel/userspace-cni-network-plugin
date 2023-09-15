@@ -24,9 +24,7 @@ import (
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
 )
 
-//
 // Exported Types
-//
 type UsrSpCni interface {
 	AddOnHost(conf *types.NetConf,
 		args *skel.CmdArgs,

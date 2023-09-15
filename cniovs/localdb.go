@@ -53,7 +53,8 @@ type OvsSavedData struct {
 //
 
 // SaveConfig() - Some data needs to be saved for cmdDel().
-//  This function squirrels the data away to be retrieved later.
+//
+//	This function squirrels the data away to be retrieved later.
 func SaveConfig(conf *types.NetConf, args *skel.CmdArgs, data *OvsSavedData) error {
 
 	// Current implementation is to write data to a file with the name:
