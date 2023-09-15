@@ -9,7 +9,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 RUN go mod download
 RUN make generate
 RUN go mod tidy
-RUN make build
+RUN make generate-bin
 #End of builder container
 
 # Copy build userspace cni bin to a small deployer container
