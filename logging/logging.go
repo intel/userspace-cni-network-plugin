@@ -29,13 +29,18 @@ type Level uint32
 // Common use of different level:
 // "panic": Code crash.
 // "error": Unusual event occurred (invalid input or system issue),
-//    so exiting code prematurely.
+//
+//	so exiting code prematurely.
+//
 // "warning":  Unusual event occurred (invalid input or system issue),
-//    but continuing.
+//
+//	but continuing.
+//
 // "info": Basic information, indication of major code paths.
 // "debug": Additional information, indication of minor code branches.
 // "verbose": Output of larger variables in code and debug of low level
-//    functions.
+//
+//	functions.
 const (
 	PanicLevel Level = iota
 	ErrorLevel

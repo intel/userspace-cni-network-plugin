@@ -33,9 +33,9 @@ import (
 	"github.com/containernetworking/cni/pkg/skel"
 	current "github.com/containernetworking/cni/pkg/types/100"
 
+	"github.com/intel/userspace-cni-network-plugin/logging"
 	"github.com/intel/userspace-cni-network-plugin/pkg/annotations"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
-	"github.com/intel/userspace-cni-network-plugin/logging"
 )
 
 //
@@ -49,7 +49,6 @@ const DefaultVppCNIDir = "/var/run/vpp"
 // Types
 //
 
-
 //
 // API Functions
 //
@@ -59,15 +58,16 @@ const DefaultVppCNIDir = "/var/run/vpp"
 //
 
 // saveRemoteConfig() - When a config read on the host is for a Container,
-//      flip the location and write the data to a file. When the Container
-//      comes up, it will read the file via () and delete the file. This function
-//      writes the file.
+//
+//	flip the location and write the data to a file. When the Container
+//	comes up, it will read the file via () and delete the file. This function
+//	writes the file.
 func SaveRemoteConfig(conf *types.NetConf,
-					  args *skel.CmdArgs,
-					  kubeClient kubernetes.Interface,
-					  sharedDir string,
-					  pod *v1.Pod,
-					  ipResult *current.Result) (*v1.Pod, error) {
+	args *skel.CmdArgs,
+	kubeClient kubernetes.Interface,
+	sharedDir string,
+	pod *v1.Pod,
+	ipResult *current.Result) (*v1.Pod, error) {
 	var configData types.ConfigurationData
 	var err error
 
@@ -168,8 +168,9 @@ func SaveRemoteConfig(conf *types.NetConf,
 }
 
 // CleanupRemoteConfig() - This function cleans up any remaining files
-//   in the passed in directory. Some of these files were used to squirrel
-//   data from the create so interface can be deleted properly.
+//
+//	in the passed in directory. Some of these files were used to squirrel
+//	data from the create so interface can be deleted properly.
 //
 // FIXME: parameter *conf* is not used. It shall be used or removed.
 func CleanupRemoteConfig(conf *types.NetConf, sharedDir string) {
@@ -185,10 +186,11 @@ func CleanupRemoteConfig(conf *types.NetConf, sharedDir string) {
 
 // This function deletes the input file (if provided) and the associated
 // directory (if provided) if the directory is empty.
-//  directory string - Directory file is located in, Use "" if directory
-//    should remain unchanged.
-//  filepath string - File (including directory) to be deleted. Use "" if
-//    only the directory should be deleted.
+//
+//	directory string - Directory file is located in, Use "" if directory
+//	  should remain unchanged.
+//	filepath string - File (including directory) to be deleted. Use "" if
+//	  only the directory should be deleted.
 func FileCleanup(directory string, filepath string) (err error) {
 
 	// If File is provided, delete it.
@@ -214,11 +216,10 @@ func FileCleanup(directory string, filepath string) (err error) {
 	return
 }
 
-
 type InterfaceData struct {
-	Args      skel.CmdArgs
-	NetConf   types.NetConf
-	IPResult  current.Result
+	Args     skel.CmdArgs
+	NetConf  types.NetConf
+	IPResult current.Result
 }
 
 func GetRemoteConfig(annotFile string) ([]*InterfaceData, string, error) {
@@ -257,7 +258,6 @@ func GetRemoteConfig(annotFile string) ([]*InterfaceData, string, error) {
 
 		ifaceList = append(ifaceList, &ifaceData)
 	}
-
 
 	return ifaceList, mappedDir, err
 }

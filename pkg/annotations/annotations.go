@@ -13,11 +13,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
-	"strings"
-	"os"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/go-logfmt/logfmt"
 

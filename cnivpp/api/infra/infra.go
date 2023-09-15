@@ -29,14 +29,10 @@ import (
 	"go.fd.io/govpp/core"
 )
 
-//
 // Constants
-//
 const debugInfra = false
 
-//
 // Types
-//
 type ConnectionData struct {
 	conn           *core.Connection
 	disconnectFlag bool
