@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: userspace-cni
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: userspace-cni
+  template:
+    metadata:
+      labels:
+        app: userspace-cni
+    spec:
+      containers:
+      - name: userspace-cni-plugin
+        image: localhost:5000/userspacecni #registory:imagename
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: cnibin
+          mountPath: /opt/cni/bin
+        command: ["/bin/sh","-c"]
+        args: ["cp -rf /root/userspace-cni-network-plugin/userspace/userspace /opt/cni/bin; sleep inf"]
+      volumes:
+        - name: cnibin
+          hostPath:
+            path: /opt/cni/bin
