@@ -53,7 +53,7 @@ spec:
   hostname: vpp-$worker
   subdomain: vpp
   containers:
-  - image: ligato/vpp-base
+  - image: ligato/vpp-base:23.02 #imagename
     imagePullPolicy: IfNotPresent
     name: vpp-$worker
     volumeMounts:

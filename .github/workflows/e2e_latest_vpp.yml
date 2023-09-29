@@ -1,14 +1,19 @@
-name: E2E
+name: E2E_vpp_latest
 on:
+  schedule:
+    - cron: "37 4 * * 0"
+  pull_request:
+    paths:
+      - '**e2e_latest_vpp.yml'
   push:
     branches:
     - master
-  pull_request:
-
+    paths:
+      - '**e2e_latest_vpp.yml'
 jobs:
 
   e2e:
-    name: E2E
+    name: E2E_vpp_latest
     runs-on: hugepage-runner
     steps:
       - name: Set up Go
@@ -16,6 +21,8 @@ jobs:
         with:
           go-version: 1.20.1
       - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - name: vpp_ligato_latest_container
+        run: source ./ci/ci.sh && vpp_ligato_latest_container
       - name: install_go_kubectl_kind
         run: source ./ci/ci.sh && install_go_kubectl_kind
       - name: create_kind_cluster
@@ -24,11 +31,4 @@ jobs:
         run: source ./ci/ci.sh && deploy_multus
       - name: vpp_e2e_test
         run: source ./ci/ci.sh && vpp_e2e_test
-      - name: build_ovs_container
-        run: source ./ci/ci.sh && build_ovs_container
-      - name: build_test-pmd_container
-        run: source ./ci/ci.sh && build_testpmd_container
-      - name: ovs_e2e_test
-        run: source ./ci/ci.sh && ovs_e2e_test
-
 
