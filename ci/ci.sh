@@ -1,6 +1,26 @@
 #!/bin/bash
 set -e
-CI_DIR="/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/ci/"
+USERSPACEDIR="/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/"
+CI_DIR="$USERSPACEDIR/ci/"
+
+vpp_ligato_latest_container()
+{
+IMAGE="ligato/vpp-base:latest"
+
+cd $USERSPACEDIR
+
+echo "Changing to latest tag in dockerfile"
+sed -i "s|\(FROM\).*\(as builder\)|\1 $IMAGE \2|g" ./docker/userspacecni/Dockerfile
+grep -n "$IMAGE" ./docker/userspacecni/Dockerfile
+
+echo "Changing to latest tag vpp pod"
+sed -i "s|\(image:\).*\(#imagename\)|\1 $IMAGE \2|g" ./ci/vpp_test_setup/vpp_pod.sh
+grep -n "$IMAGE" ./ci/vpp_test_setup/vpp_pod.sh
+
+echo "Changing to latest tag vpp host pod"
+sed -i "s|\(image:\).*\(#imagename\)|\1 $IMAGE \2|g" ./ci/vpp_test_setup/vpp_host.sh
+grep -n "$IMAGE" ./ci/vpp_test_setup/vpp_host.sh
+}
 
 install_go_kubectl_kind(){
 wget -qO- https://golang.org/dl/go1.20.1.linux-amd64.tar.gz |tar -C /home/runner -xz
