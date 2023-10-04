@@ -32,9 +32,13 @@ wget -q https://dl.k8s.io/release/v1.27.3/bin/linux/amd64/kubectl -O /home/runne
 chmod +x /home/runner/go/bin/kubectl
 }
 
-
 create_kind_cluster(){
-kind create cluster
+kubectl_version="v1.27.3"
+case "$1" in
+	-v | --version ) kubectl_version="$2";
+esac
+	
+kind create cluster --image "kindest/node:$kubectl_version"
 kubectl get all --all-namespaces
 
 #docker run -itd --device=/dev/hugepages:/dev/hugepages --privileged -v "$(pwd)/docker/vpp-centos-userspace-cni/:/etc/vpp/" --name vpp ligato/vpp-base
@@ -138,7 +142,7 @@ run_all(){
 # it gives much better logging breakdown on github
 # the run_all function is only used for manual deployment
 install_go_kubectl_kind
-create_kind_cluster
+create_kind_cluster -v v1.27.3
 deploy_multus
 vpp_e2e_test
 build_ovs_container
