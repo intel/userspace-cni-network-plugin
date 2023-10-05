@@ -24,7 +24,7 @@ char* myArgv[DPDK_ARGS_MAX_ARGS];
 //static const char DEFAULT_DIR[] = "/var/lib/cni/";
 
 static char STR_MASTER[] = "master";
-static char STR_SLAVE[] = "slave";
+static char STR_SLAVE[] = "client";
 static char STR_ETHERNET[] = "ethernet";
 
 /* Large enough to hold: ",mac=aa:bb:cc:dd:ee:ff" */
@@ -195,7 +195,7 @@ static int getInterfaces(int argc, int *pPortCnt, int *pPortMask) {
 							printf("  ");
 							printf("  Role=%s",
 								(ifaceRsp.pIface[i].Memif.Role == NETUTIL_MEMIF_ROLE_MASTER) ? "master" :
-								(ifaceRsp.pIface[i].Memif.Role == NETUTIL_MEMIF_ROLE_SLAVE) ? "slave" : "error");
+								(ifaceRsp.pIface[i].Memif.Role == NETUTIL_MEMIF_ROLE_SLAVE) ? "client" : "error");
 							printf("  Mode=%s",
 								(ifaceRsp.pIface[i].Memif.Mode == NETUTIL_MEMIF_MODE_ETHERNET) ? "ethernet" :
 								(ifaceRsp.pIface[i].Memif.Mode == NETUTIL_MEMIF_MODE_IP) ? "ip" :

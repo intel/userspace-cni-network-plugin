@@ -114,21 +114,21 @@ func TestSaveRemoteConfig(t *testing.T) {
 		{
 			name:    "save to pod with ifType memif and host role master",
 			netConf: &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "memif", MemifConf: types.MemifConf{Role: "master"}}},
-			expJson: `[{"containerId":"#UUID#","ifName":"#ifName#","name":"","config":{"iftype":"memif","memif":{"role":"slave"},"vhost":{},"bridge":{}},"ipResult":{"dns":{}}}]`,
+			expJson: `[{"containerId":"#UUID#","ifName":"#ifName#","name":"","config":{"iftype":"memif","memif":{"role":"client"},"vhost":{},"bridge":{}},"ipResult":{"dns":{}}}]`,
 		},
 		{
-			name:    "save to pod with ifType memif and host role slave",
-			netConf: &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "memif", MemifConf: types.MemifConf{Role: "slave"}}},
+			name:    "save to pod with ifType memif and host role client",
+			netConf: &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "memif", MemifConf: types.MemifConf{Role: "client"}}},
 			expJson: `[{"containerId":"#UUID#","ifName":"#ifName#","name":"","config":{"iftype":"memif","memif":{"role":"master"},"vhost":{},"bridge":{}},"ipResult":{"dns":{}}}]`,
 		},
 		{
 			name:    "save to pod with ifType memif and host role master and mode ip",
 			netConf: &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "memif", MemifConf: types.MemifConf{Role: "master", Mode: "ip"}}},
-			expJson: `[{"containerId":"#UUID#","ifName":"#ifName#","name":"","config":{"iftype":"memif","memif":{"role":"slave","mode":"ip"},"vhost":{},"bridge":{}},"ipResult":{"dns":{}}}]`,
+			expJson: `[{"containerId":"#UUID#","ifName":"#ifName#","name":"","config":{"iftype":"memif","memif":{"role":"client","mode":"ip"},"vhost":{},"bridge":{}},"ipResult":{"dns":{}}}]`,
 		},
 		{
 			name:    "save to pod with ifType memif and ContainerConf role master and mode ethernet",
-			netConf: &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "memif", MemifConf: types.MemifConf{Role: "slave", Mode: "ip"}}, ContainerConf: types.UserSpaceConf{IfType: "memif", MemifConf: types.MemifConf{Role: "master", Mode: "ethernet"}}},
+			netConf: &types.NetConf{HostConf: types.UserSpaceConf{Engine: "ovs-dpdk", IfType: "memif", MemifConf: types.MemifConf{Role: "client", Mode: "ip"}}, ContainerConf: types.UserSpaceConf{IfType: "memif", MemifConf: types.MemifConf{Role: "master", Mode: "ethernet"}}},
 
 			expJson: `[{"containerId":"#UUID#","ifName":"#ifName#","name":"","config":{"iftype":"memif","memif":{"role":"master","mode":"ethernet"},"vhost":{},"bridge":{}},"ipResult":{"dns":{}}}]`,
 		},
@@ -431,15 +431,15 @@ func TestGetRemoteConfig(t *testing.T) {
 		},
 		{
 			name:        "get config for two interfaces",
-			annotations: `userspace/mapped-dir=#tempDir# userspace/configuration-data="[{\"Name\":\"Container New Name\",\"containerId\":\"123-456-789-007\",\"ifName\":\"eth7\",\"config\":{\"iftype\":\"memif\",\"memif\":{\"role\":\"master\"}}},{\"Name\":\"Container New Name\",\"containerId\":\"123-456-789-007\",\"ifName\":\"eth9\",\"config\":{\"iftype\":\"memif\",\"memif\":{\"role\":\"slave\"}}}]"`,
+			annotations: `userspace/mapped-dir=#tempDir# userspace/configuration-data="[{\"Name\":\"Container New Name\",\"containerId\":\"123-456-789-007\",\"ifName\":\"eth7\",\"config\":{\"iftype\":\"memif\",\"memif\":{\"role\":\"master\"}}},{\"Name\":\"Container New Name\",\"containerId\":\"123-456-789-007\",\"ifName\":\"eth9\",\"config\":{\"iftype\":\"memif\",\"memif\":{\"role\":\"client\"}}}]"`,
 			expDir:      "#tempDir#",
-			expResult:   []*InterfaceData{&InterfaceData{Args: skel.CmdArgs{ContainerID: "123-456-789-007", IfName: "eth7"}, NetConf: types.NetConf{Name: "Container New Name", HostConf: types.UserSpaceConf{IfType: "memif", MemifConf: types.MemifConf{Role: "master"}}}}, &InterfaceData{Args: skel.CmdArgs{ContainerID: "123-456-789-007", IfName: "eth9"}, NetConf: types.NetConf{Name: "Container New Name", HostConf: types.UserSpaceConf{IfType: "memif", MemifConf: types.MemifConf{Role: "slave"}}}}},
+			expResult:   []*InterfaceData{&InterfaceData{Args: skel.CmdArgs{ContainerID: "123-456-789-007", IfName: "eth7"}, NetConf: types.NetConf{Name: "Container New Name", HostConf: types.UserSpaceConf{IfType: "memif", MemifConf: types.MemifConf{Role: "master"}}}}, &InterfaceData{Args: skel.CmdArgs{ContainerID: "123-456-789-007", IfName: "eth9"}, NetConf: types.NetConf{Name: "Container New Name", HostConf: types.UserSpaceConf{IfType: "memif", MemifConf: types.MemifConf{Role: "client"}}}}},
 		},
 		{
 			name:        "get config for two containers",
-			annotations: `userspace/mapped-dir=#tempDir# userspace/configuration-data="[{\"Name\":\"init-container\",\"containerId\":\"123-456-789-007\",\"ifName\":\"eth7\",\"config\":{\"iftype\":\"memif\",\"memif\":{\"role\":\"master\"}}},{\"Name\":\"worker container\",\"containerId\":\"123-456-789-042\",\"ifName\":\"vlan0\",\"config\":{\"iftype\":\"memif\",\"memif\":{\"role\":\"slave\"}}}]"`,
+			annotations: `userspace/mapped-dir=#tempDir# userspace/configuration-data="[{\"Name\":\"init-container\",\"containerId\":\"123-456-789-007\",\"ifName\":\"eth7\",\"config\":{\"iftype\":\"memif\",\"memif\":{\"role\":\"master\"}}},{\"Name\":\"worker container\",\"containerId\":\"123-456-789-042\",\"ifName\":\"vlan0\",\"config\":{\"iftype\":\"memif\",\"memif\":{\"role\":\"client\"}}}]"`,
 			expDir:      "#tempDir#",
-			expResult:   []*InterfaceData{&InterfaceData{Args: skel.CmdArgs{ContainerID: "123-456-789-007", IfName: "eth7"}, NetConf: types.NetConf{Name: "init-container", HostConf: types.UserSpaceConf{IfType: "memif", MemifConf: types.MemifConf{Role: "master"}}}}, &InterfaceData{Args: skel.CmdArgs{ContainerID: "123-456-789-042", IfName: "vlan0"}, NetConf: types.NetConf{Name: "worker container", HostConf: types.UserSpaceConf{IfType: "memif", MemifConf: types.MemifConf{Role: "slave"}}}}},
+			expResult:   []*InterfaceData{&InterfaceData{Args: skel.CmdArgs{ContainerID: "123-456-789-007", IfName: "eth7"}, NetConf: types.NetConf{Name: "init-container", HostConf: types.UserSpaceConf{IfType: "memif", MemifConf: types.MemifConf{Role: "master"}}}}, &InterfaceData{Args: skel.CmdArgs{ContainerID: "123-456-789-042", IfName: "vlan0"}, NetConf: types.NetConf{Name: "worker container", HostConf: types.UserSpaceConf{IfType: "memif", MemifConf: types.MemifConf{Role: "client"}}}}},
 		},
 		{
 			name:        "fail without annotation file",

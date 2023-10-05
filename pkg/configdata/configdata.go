@@ -107,7 +107,7 @@ func SaveRemoteConfig(conf *types.NetConf,
 	if configData.Config.IfType == "memif" {
 		if configData.Config.MemifConf.Role == "" {
 			if conf.HostConf.MemifConf.Role == "master" {
-				configData.Config.MemifConf.Role = "slave"
+				configData.Config.MemifConf.Role = "client"
 			} else {
 				configData.Config.MemifConf.Role = "master"
 			}

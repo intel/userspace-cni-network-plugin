@@ -188,7 +188,7 @@ sudo cat > /etc/cni/net.d/90-userspace.conf <<EOF
                 "iftype": "memif",
                 "netType": "interface",
                 "memif": {
-                        "role": "slave",
+                        "role": "client",
                         "mode": "ethernet"
                 }
         },
@@ -264,7 +264,7 @@ details refer the link:
 			"iftype": "memif",
 			"netType": "interface",
 			"memif": {
-				"role": "slave",
+				"role": "client",
 				"mode": "ethernet"
 			}
 		},
@@ -539,7 +539,7 @@ sudo vi /etc/cni/net.d/90-userspace.conf
                 "iftype": "memif",
                 "netType": "interface",
                 "memif": {
-                        "role": "slave",
+                        "role": "client",
                         "mode": "ethernet"
                 }
         },
@@ -629,10 +629,10 @@ interface memif1/0
   listener-fd 22 conn-fd 23
   num-s2m-rings 1 num-m2s-rings 1 buffer-size 0 num-regions 1
   region 0 size 4227328 fd 24
-    master-to-slave ring 0:
+    master-to-client ring 0:
       region 0 offset 16512 ring-size 1024 int-fd 26
       head 1024 tail 0 flags 0x0001 interrupts 0
-    slave-to-master ring 0:
+    client-to-master ring 0:
       region 0 offset 0 ring-size 1024 int-fd 25
       head 0 tail 0 flags 0x0001 interrupts 0
 ```
@@ -666,14 +666,14 @@ interface memif1/0
   remote-name "VPP 18.07-rc2~11-g18bde8a"
   remote-interface "memif1/0"
   socket-id 1 id 0 mode ethernet
-  flags admin-up slave connected
+  flags admin-up client connected
   listener-fd 0 conn-fd 17
   num-s2m-rings 1 num-m2s-rings 1 buffer-size 2048 num-regions 1
   region 0 size 4227328 fd 18
-    slave-to-master ring 0:
+    client-to-master ring 0:
       region 0 offset 0 ring-size 1024 int-fd 19
       head 0 tail 0 flags 0x0001 interrupts 0
-    master-to-slave ring 0:
+    master-to-client ring 0:
       region 0 offset 16512 ring-size 1024 int-fd 20
       head 1024 tail 0 flags 0x0001 interrupts 0
 ```

@@ -267,7 +267,7 @@ func addLocalDeviceMemif(vppCh vppinfra.ConnectionData,
 	// Apply default values to input configuration
 	if conf.HostConf.MemifConf.Role == "master" {
 		memifRole = vppmemif.RoleMaster
-	} else if conf.HostConf.MemifConf.Role == "slave" {
+	} else if conf.HostConf.MemifConf.Role == "client" {
 		memifRole = vppmemif.RoleSlave
 	} else {
 		return fmt.Errorf("ERROR: Invalid MEMIF Role:" + conf.HostConf.MemifConf.Role)

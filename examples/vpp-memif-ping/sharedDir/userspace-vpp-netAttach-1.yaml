@@ -27,7 +27,7 @@ spec:
                 "iftype": "memif",
                 "netType": "interface",
                 "memif": {
-                        "role": "slave",
+                        "role": "client",
                         "mode": "ethernet"
                 }
         },

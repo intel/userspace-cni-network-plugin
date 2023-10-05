@@ -55,7 +55,7 @@ const (
 
 // Dump Strings
 var modeStr = [...]string{"eth", "ip ", "pnt"}
-var roleStr = [...]string{"master", "slave "}
+var roleStr = [...]string{"master", "client "}
 
 //
 // API Functions
