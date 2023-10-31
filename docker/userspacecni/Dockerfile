@@ -7,6 +7,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y bi
 RUN wget -qO- https://golang.org/dl/go1.20.1.linux-amd64.tar.gz | tar -C /usr/local -xz
 ENV PATH="${PATH}:/usr/local/go/bin"
 RUN go mod download
+RUN go get go.fd.io/govpp/binapigen/vppapi@v0.7.0
 RUN make generate
 RUN go mod tidy
 RUN make generate-bin
