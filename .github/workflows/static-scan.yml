@@ -66,11 +66,13 @@ jobs:
       with:
         go-version: 1.20.1
 
-    - name: checkout dockerfile to avoid false diff
+    - name: Checkout dockerfile to avoid false diff
       run: git checkout ./docker/userspacecni/Dockerfile
     # if this fails, run go mod tidy
+    - name: Manually get binapi to avoid false fail
+      run: go mod tidy
     - name: Check if module files are consistent with code
-      run: go mod tidy && go get go.fd.io/govpp/binapigen/vppapi@v0.7.0 && git diff --exit-code #need package for bin api but not working with tidy
+      run: git diff --exit-code
 
     # if this fails, run go mod vendor
     - name: Check if vendor directory is consistent with go modules
