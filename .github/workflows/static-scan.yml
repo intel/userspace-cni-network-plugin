@@ -11,7 +11,7 @@ jobs:
         with:
           go-version: 1.20.1
 
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v3.5.3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v3.5.3
       - name: remove deployer container from dockerfile
         run: sed -ie '/End of builder/,+5d' ./docker/userspacecni/Dockerfile
       - name: Build the Docker image
@@ -32,7 +32,7 @@ jobs:
     name: Shellcheck
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v3.5.3
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v3.5.3
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # master
 
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Hadolint
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
     - uses: hadolint/hadolint-action@v3.1.0
       name: Run Hadolint
       with:
@@ -50,7 +50,7 @@ jobs:
   go-check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v3.5.2
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v3.5.2
 
     - name: remove deployer container from dockerfile
       run: sed -ie '/End of builder/,+5d' ./docker/userspacecni/Dockerfile
