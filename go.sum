@@ -128,8 +128,8 @@ github.com/vishvananda/netns v0.0.4 h1:Oeaw1EM2JMxD51g9uhtC0D7erkIjgmj8+JZc26m1Y
 github.com/vishvananda/netns v0.0.4/go.mod h1:SpkAiCQRtJ6TvvxPnOSyH3BMl6unz3xZlaprSwhNNJM=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.fd.io/govpp v0.7.0 h1:8qideC7G0xPeYz2sjwni8GKWWbNk45Ev73oR1igKDYY=
-go.fd.io/govpp v0.7.0/go.mod h1:VxUPq8HGQH6/9IL9saMURL3UcHsUuN8XmETuao5HA7o=
+go.fd.io/govpp v0.8.0 h1:eUzJCM34Y528+gfcNxAzKu4cw3MdEk5z59wxVuI4+ck=
+go.fd.io/govpp v0.8.0/go.mod h1:nuMKRRm5/uknVTKrRDhncrNJu0F+1AjMxLuC/+g+Z1k=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
