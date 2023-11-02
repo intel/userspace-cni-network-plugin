@@ -83,6 +83,10 @@ else
 	echo VPP ping test failed
 	exit 1
 fi
+
+kubectl delete -n vpp pod/vpp-app1-kind-control-plane
+kubectl delete -n vpp pod/vpp-app2-kind-control-plane
+kubectl delete -n vpp pod/vpp-kind-control-plane
 }
 
 build_ovs_container(){
