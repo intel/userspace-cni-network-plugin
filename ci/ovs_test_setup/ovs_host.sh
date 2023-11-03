@@ -34,12 +34,12 @@ spec:
     resources:
       requests:
         hugepages-2Mi: 1Gi
-        memory: "1Gi"
-        cpu: "10"
+        memory: "500Mi"
+        cpu: "5"
       limits:
         hugepages-2Mi: 1Gi
-        memory: "1Gi"
-        cpu: "10"
+        memory: "500Mi"
+        cpu: "5"
     securityContext:
       capabilities:
         add: ["NET_ADMIN", "SYS_TIME"]

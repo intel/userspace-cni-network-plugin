@@ -45,12 +45,12 @@ spec:
     resources:
       requests:
         hugepages-2Mi: 1Gi
-        memory: "1Gi"
-        cpu: "10"
+        memory: "500Mi"
+        cpu: "5"
       limits:
         hugepages-2Mi: 1Gi
-        memory: "1Gi"
-        cpu: "10"
+        memory: "500Mi"
+        cpu: "5"
 #    command: ["/bin/sh"]
 #    args: ["-c", "sleep inf"]
   restartPolicy: Always
