@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# Set USERSPACEDIR if not defined in parent script
+USERSPACEDIR="${USERSPACEDIR:=/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/}"
+
 kubectl delete ns vpp
 kubectl create ns vpp
-kubectl create -n vpp configmap vpp-startup-config --from-file=/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/docker/vpp-centos-userspace-cni/startup.conf
+kubectl create -n vpp configmap vpp-startup-config --from-file="${USERSPACEDIR}/docker/vpp-centos-userspace-cni/startup.conf"
 
 worker="kind-control-plane"
 

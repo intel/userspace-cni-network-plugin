@@ -1,8 +1,9 @@
 #!/bin/bash
 
-CI_DIR="/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/ci/"
-kubectl apply -f $CI_DIR/vpp_test_setup/network_attachment_definition.yaml
-kubectl create -n vpp configmap vpp-app-startup-config --from-file=$CI_DIR/vpp_test_setup/startup.conf
+# set CI_DIR if not defined in parent script
+CI_DIR="${CI_DIR:=/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/ci/}"
+kubectl apply -f "$CI_DIR/vpp_test_setup/network_attachment_definition.yaml"
+kubectl create -n vpp configmap vpp-app-startup-config --from-file="$CI_DIR/vpp_test_setup/startup.conf"
 worker="kind-control-plane"
 numbers=("1" "2")
 
@@ -74,6 +75,6 @@ spec:
         path: /run/vpp/app$number
     - name: scripts
       hostPath:
-        path: /runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/ci/vpp_test_setup/
+        path: $CI_DIR/vpp_test_setup/
 EOF
 done
