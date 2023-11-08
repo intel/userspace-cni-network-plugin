@@ -102,52 +102,27 @@ for more information.
 
 # Build & Clean
 
-This plugin is recommended to be built with Go 1.11.10 and either OVS-DPDK 2.9.0-3
-or VPP 19.04. Other versions of Go, OVS-DPDK and VPP are theoretically
+This plugin is recommended to be built with Go 1.20.1 and either OVS-DPDK 2.9.0-3
+or VPP 23.02. Other versions of Go, OVS-DPDK and VPP are theoretically
 supported, but MIGHT cause unknown issue.
 
-There are a few environmental variables used in building and testing this plugin.
-Here is an example:
-```
-   cat ~/.bashrc
-   :
-   export GOPATH=~/go
-   export CNI_PATH=$GOPATH/src/github.com/containernetworking/plugins/bin
-```
+The Userspace CNI requires several files from VPP in-order to build.
+For this reason we build userspacecni in a container.
 
+userspacecni is built in a container and then transferred to the host.
+By default Docker is used to build the image
 
-The Userspace CNI requires several files from VPP in-order to build. If VPP
-should be installed but is not installed, see [Installing VPP](#installing-vpp)
-section below for instructions. If Userspace CNI is being built on a build
-server or is using OVS-DPDK (i.e. - don't want VPP installed), then follow the
-instructions below under
-[Building VPP CNI Library with OVS](#building-vpp-cni-library-with-ovs).
-
-To get and build the Userspace CNI plugin:
+To build the docker image:
 ```
-   cd $GOPATH/src/
-   go get github.com/intel/userspace-cni-network-plugin
-   cd github.com/intel/userspace-cni-network-plugin
-   make
+  git clone https://github.com/intel/userspace-cni-network-plugin.git
+  cd userspace-cni-network-plugin
+  make build
 ```
 
-Once the binary is built, it needs to be copied to the CNI directory:
+To copy the userspacecni binary to the host directory /opt/cni/bin/
 ```
-   cp userspace/userspace $CNI_PATH/.
+  make deploy
 ```
-
-To remove the binary and temporary files generated while building the source
-code, perform a make clean:
-```
-   make clean
-```
-
-
-## Update dependencies
-This project is currently using [go modules](https://github.com/golang/go/wiki/Modules)
-to manage dependencies. Please refer to official documentation to learn more
-about **go modules** behavior and typical [workflow](https://github.com/golang/go/wiki/Modules#daily-workflow).
-
 
 # Network Configuration Reference
 
@@ -388,42 +363,9 @@ Instance. So to build the VPP CNI, VPP must be installed (or the proper json
 files must be in */usr/share/vpp/api/*).
 
 
-## Building VPP CNI Library with OVS
-The Userspace CNI plugin builds the VPP CNI Library from the cnivpp
-sub-folder. In order to run with the VPP CNI Library, VPP must be installed
-on the system. If VPP should be installed but is not installed, see the
-[Installing VPP](#installing-vpp) section below.
-
-If the desire is to run the OVS CNI Library with OVS (i.e. - don't want
-VPP installed), several files from a typical VPP install need to be on
-the system to build. To install just these files and NOT VPP, run:
-```
-   cd $GOPATH/src/
-   go get github.com/Billy99/user-space-net-plugin
-   cd github.com/Billy99/user-space-net-plugin
-   make install
-```
-This will install only the 5 or 6 files needed to build the VPP CNI Library.
-To remove these files, run:
-```
-   make clean
-```
-*make install* requires several packages to execute, primarily *wget*,
-*cpio* and *rpm2cpio* on CentOS, and *binutils* on Ubuntu. If these packages are
-not installed on your system, the following can be run to install the required
-packages:
-```
-   make install-dep
-```
-**NOTE:** *make install* has been made to work for CentOS and Ubuntu based
-systems. Other platforms will be made to work long term. If there is an
-immediate need for other platforms, please open an issue to expedite the
-feature (https://github.com/intel/userspace-cni-network-plugin/issues).
-
-
 ## Installing VPP
 There are several ways to install VPP. This code is based on a fixed release
-VPP (VPP 19.04 initially), so it is best to install a released version (even
+VPP (VPP 23.02), so it is best to install a released version (even
 though it is possible to build your own).
 
 
@@ -445,135 +387,52 @@ hugepages to 512, use:
 * **SELinux:** VPP works with SELinux enabled, but when running with
 containers, work still needs to be done. Set SELinux to permissive.
 
+### VPP install guide
+https://s3-docs.fd.io/vpp/23.02/gettingstarted/installing/
 
-### Install on CentOS
-To install VPP on CentOS from https://packagecloud.io/fdio/ repository:
-```
-curl -s https://packagecloud.io/install/repositories/fdio/1904/script.rpm.sh | sudo bash
-```
-To resolve dependency issues, install the following packages:
-```
-yum install -y epel-release mbedtls python36
-```
-Installing RPMs:
-```
-yum install -y vpp vpp-lib vpp-plugins vpp-devel vpp-api-python vpp-api-lua vpp-selinux-policy
-```
+### VPP source code
+https://github.com/FDio/vpp/tree/v23.02
 
-To start and enable VPP:
-```
-sudo systemctl start vpp
-sudo systemctl enable vpp
-```
+### OVS install guide
+https://docs.openvswitch.org/en/latest/intro/install/
 
-### Install on Ubuntu
-**OLD - Needs to be updated!**
-
-To install on Ubuntu 16.04 (Xenial) as an example to demonstrate how to install VPP from pre-build packages:
-```
-export UBUNTU="xenial"
-export RELEASE=".stable.1904"
-sudo rm /etc/apt/sources.list.d/99fd.io.list
-echo "deb [trusted=yes] https://nexus.fd.io/content/repositories/fd.io$RELEASE.ubuntu.$UBUNTU.main/ ./" | sudo tee -a /etc/apt/sources.list.d/99fd.io.list
-sudo apt-get update
-sudo apt-get install vpp vpp-lib
-```
-
-
-### Install on Other Distros
-For installing VPP on other distros, see:
-https://wiki.fd.io/view/VPP/Installing_VPP_binaries_from_packages
-
-
+### OVS source code
+https://github.com/openvswitch/ovs/tree/master
 
 # Testing
 
-## Testing with VPP Docker Image and CNI
-
-There are a few environmental variables used in this test. Here is an example:
-```
-   cat ~/.bashrc
-   :
-   export GOPATH=~/go
-   export CNI_PATH=$GOPATH/src/github.com/containernetworking/plugins/bin
+## Testing VPP with VPP pod as application
+Its assumed that VPP has been set up on the host correctly by the user.
+On the server that the vpp pods get deployed (not the k8 controller) create the directories `/var/run/vpp/app1`
+and `/var/run/vpp/app2` for this example to work
 
 ```
+kubectl create ns vpp
 
-In order to test, a container with VPP 19.04 and usrsp-app has been created:
-```
-  docker pull bmcfall/vpp-centos-userspace-cni:latest
-```
-More details on the Docker Image, how to build from scratch and other
-information, see
-[README.md](https://github.com/intel/userspace-cni-network-plugin/blob/master/docker/vpp-centos-userspace-cni/README.md)
-in the '*./docker/vpp-centos-userspace-cni/*' subfolder.
+kubectl create -f ./examples/vpp-memif-ping/userspace-vpp-netAttach.yaml
 
-Setup your configuration file in your CNI directory. An example is
-*/etc/cni/net.d/*.
+kubectl create -n vpp configmap vpp-app-startup-config --from-file=./examples/vpp-memif-ping/startup.conf
 
-**NOTE:** The *userspace* netconf definition is still a work in progress. So
-the example below is just an example, see *pkg/types/types.go* for latest definitions.
+kubectl create -n vpp configmap vpp-pod-setup-memif --from-file=./examples/vpp-memif-ping/vpp-pod-setup-memif.sh
 
-Example of how to setup a configuration for a VPP memif interface between the
-host and container:
-```
-sudo vi /etc/cni/net.d/90-userspace.conf 
-{
-	"cniVersion": "0.3.1",
-        "type": "userspace",
-        "name": "memif-network",
-        "host": {
-                "engine": "vpp",
-                "iftype": "memif",
-                "netType": "bridge",
-                "memif": {
-                        "role": "master",
-                        "mode": "ethernet"
-                },
-                "bridge": {
-                        "bridgeName": "4"
-                }
-        },
-        "container": {
-                "engine": "vpp",
-                "iftype": "memif",
-                "netType": "interface",
-                "memif": {
-                        "role": "slave",
-                        "mode": "ethernet"
-                }
-        },
-        "ipam": {
-                "type": "host-local",
-                "subnet": "192.168.210.0/24",
-                "routes": [
-                        { "dst": "0.0.0.0/0" }
-                ]
-        }
-}
+kubectl create -f ./examples/vpp-memif-ping/vpp-app-pod-1.yaml
+kubectl create -f ./examples/vpp-memif-ping/vpp-app-pod-2.yaml
+
+kubectl exec -itn vpp vpp-app1 -- ./vpp-pod-setup-memif.sh
+kubectl exec -itn vpp vpp-app2 -- ./vpp-pod-setup-memif.sh
+
+# ping pod 2 from pod 1 (through vpp)
+kubectl exec -itn vpp vpp-app1 -- vppctl "ping  192.168.1.4"
+# sample output
+116 bytes from 192.168.1.4: icmp_seq=1 ttl=64 time=83.4641 ms
+116 bytes from 192.168.1.4: icmp_seq=2 ttl=64 time=72.0057 ms
+116 bytes from 192.168.1.4: icmp_seq=3 ttl=64 time=67.9981 ms
+116 bytes from 192.168.1.4: icmp_seq=4 ttl=64 time=75.9974 ms
+116 bytes from 192.168.1.4: icmp_seq=5 ttl=64 time=72.0021 ms
+
 ```
 
-To test, currently using a local script (copied from CNI scripts):
-https://github.com/containernetworking/cni/blob/master/scripts/docker-run.sh).
-To run script:
-```
-   cd $GOPATH/src/github.com/intel/userspace-cni-network-plugin/
-   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/usrsp-docker-run.sh -it --privileged vpp-centos-userspace-cni
-```
-
-**NOTE:** The *usrsp-docker-run.sh* script mounts some volumes in the container. Change as needed:
-* *-v /var/lib/cni/usrspcni/shared:/var/lib/cni/usrspcni/shared:rw*
-  * Socket files (memif or vhost-user) are passed to the container through a subdirectory of this base directory..
-* *-v /var/lib/cni/usrspcni/$contid:/var/lib/cni/usrspcni/data:rw*
-  * Current implementation is to write the remote configuration into a file and share the directory
-with the container, which is the volume mapping. Directory is currently hard coded.
-* *--device=/dev/hugepages:/dev/hugepages*
-  * VPP requires hugepages, so need to map hugepages into container.
-
-In the container, you should see the usrsp-app ouput the message sequence of
-its communication with local VPP (VPP in the container) and some database
-dumps interleaved.
-
+### Optional debug steps for VPP
 ### Verify Host
 To verify the local config (on host) in another window:
 
@@ -600,7 +459,9 @@ After the container is started, on the host there should be an additional memif
 interface created and added to a new L2 bridge, all created by the Userspace
 CNI.
 
-**After Container Started:**
+
+
+**After vpp pod application Started:**
 ```
 vppctl show interface
               Name               Idx       State          Counter          Count
@@ -693,23 +554,8 @@ vppctl ping 192.168.210.46
 Statistics: 5 sent, 4 received, 20% packet loss
 ```
 
-### Debug
-The *vpp-centos-userspace-cni* container runs a script at startup (in Dockefile
-CMD command) which starts VPP and then runs *usrsp-app*. Assuming the same notes
-above, to see what is happening in the container, cause
-*vpp-centos-userspace-cni* container to start in bash and skip the script, then
-run VPP and *usrsp-app* manually: 
-```
-   cd $GOPATH/src/github.com/containernetworking/cni/scripts
-   sudo CNI_PATH=$CNI_PATH GOPATH=$GOPATH ./scripts/usrsp-docker-run.sh -it --privileged bmcfall/vpp-centos-userspace-cni:0.2.0 bash
-   
-   /* Within Container: */
-   vpp -c /etc/vpp/startup.conf &
-   usrsp-app
-```
-
-
 ## Testing with DPDK Testpmd Application
+
 
 To follow this example you should have a system with kubernetes available and
 configured to support native 1 GB hugepages. You should also have multus-cni and
@@ -719,304 +565,37 @@ check that you have bridge named `br0` in your OVS with `ovs-vsctl show` and if
 not, create it with
 `ovs-vsctl add-br br0 -- set bridge br0 datapath_type=netdev`.
 
-### 1. Build the image to be used
-
-Build container image from
-
-```Dockerfile
-FROM ubuntu:bionic
-
-RUN apt-get update && apt-get install -y dpdk;
-
-ENTRYPOINT ["bash"]
+Build testpmd container image
+```
+make testpmd
 ```
 
-Dockerfile and tag it as `ubuntu-dpdk`:
+Modify the nodeSelector `kubernetes.io/hostname:` in both `./examples/ovs-vhost/testpmd-pod-1.ymal` and `./examples/ovs-vhost/testpmd-pod-2.ymal` 
 
-```bash
-docker build . -t ubuntu-dpdk
 ```
-
-### 2. Create pod with multiple vhostuser interfaces
-
-Copy `get-prefix.sh` script from userspace-cni-network-plugin repo to
-`/var/lib/cni/vhostuser/`. See `examples/pod-multi-vhost.yaml`and start the
-pod:
-
-```bash
-kubectl create -f examples/pod-multi-vhost.yaml
+kubectl create ns ovs
+kubectl apply -f ./examples/ovs-vhost/userspace-ovs-netAttach-1.yaml
+kubectl apply -f ./examples/ovs-vhost/testpmd-pod-1.yaml
+kubectl apply -f ./examples/ovs-vhost/testpmd-pod-2.yaml
 ```
+At this point pod 1 should be sending traffic to pod 2.
+By doing a kubectl logs on pod 2 you will be able to verify that the pod is receiving traffic by looking ath the RX value.
 
-### 3. Open terminal to pod and start testpmd
-
-Open terminal to the created pod once it is running:
-
-```bash
-kubectl exec -it multi-vhost-example bash
+Sample output from a working environment
 ```
+root@hostname:~/userspace-cni-network-plugin# kubectl logs -n ovs pod/ovs-app2 |tail -11
+Port statistics ====================================
+  ######################## NIC statistics for port 0  ########################
+  RX-packets: 404024960  RX-missed: 0          RX-bytes:  25857597440
+  RX-errors: 0
+  RX-nombuf:  0
+  TX-packets: 0          TX-errors: 0          TX-bytes:  0
 
-Launch testpmd and automatically start forwarding packets after sending first
-burst:
+  Throughput (since last show)
+  Rx-pps:      1044345          Rx-bps:    534705080
+  Tx-pps:            0          Tx-bps:            0
+  ############################################################################
 
-```bash
-# Get container ID
-export ID=$(/vhu/get-prefix.sh)
-
-# Run testpmd with ports created by vhostplugin
-# Note: change coremask to suit your system
-testpmd \
-    -d librte_pmd_virtio.so.17.11 \
-    -m 1024 \
-    -c 0xC \
-    --file-prefix=testpmd_ \
-    --vdev=net_virtio_user0,path=/vhu/${ID}/${ID:0:12}-net1 \
-    --vdev=net_virtio_user1,path=/vhu/${ID}/${ID:0:12}-net2 \
-    --no-pci \
-    -- \
-    --no-lsc-interrupt \
-    --auto-start \
-    --tx-first \
-    --stats-period 1 \
-    --disable-hw-vlan;
-```
-
-If packets are not going through, you may need to configure direct flows to your
-switch between the used ports. For example, with OVS as the switch, this is done
-by getting the port numbers with `ovs-ofctl dump-ports br0` and configuring
-flow, for example, from port 1 to port 2 with
-`ovs-ofctl add-flow br0 in_port=1,action=output:2` and vice versa.
-
-## Testing with DPDK L3FWD Application
-
-To follow this example you should have a system with kubernetes available and configured to support native 1 GB hugepages. You should also have multus-cni and userspace-cni-network-plugin up and running. See `examples/crd-userspace-net-ovs-no-ipam.yaml` for example config to use with multus. If using OVS, check that you have bridge named `br0` in your OVS with `ovs-vsctl show` and if not, create it with `ovs-vsctl add-br br0 -- set bridge br0 datapath_type=netdev`.
-
-### 1. Build the images to be used
-
-Create the l3fwd Dockerfile:
-```bash
-$ cat <<EOF > l3fwd-dockerfile
-FROM ubuntu:bionic
-
-RUN apt-get update && apt-get install -y --no-install-recommends \\
-  build-essential make wget vim dpdk libnuma-dev \\
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-ENV DPDK_VERSION=17.11.3 \\
-  RTE_SDK=/usr/src/dpdk \\
-  RTE_TARGET=x86_64-native-linuxapp-gcc
-
-RUN wget http://fast.dpdk.org/rel/dpdk-\${DPDK_VERSION}.tar.xz && tar xf dpdk-\${DPDK_VERSION}.tar.xz && \\
-  mv dpdk-stable-\${DPDK_VERSION} \${RTE_SDK}
-
-RUN sed -i s/CONFIG_RTE_EAL_IGB_UIO=y/CONFIG_RTE_EAL_IGB_UIO=n/ \${RTE_SDK}/config/common_linuxapp \\
-  && sed -i s/CONFIG_RTE_LIBRTE_KNI=y/CONFIG_RTE_LIBRTE_KNI=n/ \${RTE_SDK}/config/common_linuxapp \\
-  && sed -i s/CONFIG_RTE_KNI_KMOD=y/CONFIG_RTE_KNI_KMOD=n/ \${RTE_SDK}/config/common_linuxapp
-
-RUN cd \${RTE_SDK} && make install T=\${RTE_TARGET} && make -C examples
-
-WORKDIR \${RTE_SDK}/examples/l3fwd/\${RTE_TARGET}/app/
-EOF
-```
-
-Build the l3fwd Docker image, tag it as `dpdk-l3fwd`:
-```bash
-docker build -t dpdk-l3fwd -f l3fwd-dockerfile .
-```
-
-Create the pktgen Dockerfile:
-```bash
-$ cat <<EOF > pktgen-dockerfile
-FROM debian:jessie
-
-RUN apt-get update && apt-get install -y --no-install-recommends \\
-  gcc build-essential make wget curl git liblua5.2-dev libedit-dev libpcap-dev libncurses5-dev libncursesw5-dev pkg-config vim libnuma-dev ca-certificates \\
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-ENV DPDK_VERSION=17.11.3 \\
-  RTE_SDK=/usr/src/dpdk \\
-  RTE_TARGET=x86_64-native-linuxapp-gcc \\
-  PKTGEN_COMMIT=pktgen-3.4.8 \\
-  PKTGEN_DIR=/usr/src/pktgen
-
-RUN wget http://fast.dpdk.org/rel/dpdk-\${DPDK_VERSION}.tar.xz && tar xf dpdk-\${DPDK_VERSION}.tar.xz && \\
-  mv dpdk-stable-\${DPDK_VERSION} \${RTE_SDK}
-
-RUN sed -i s/CONFIG_RTE_EAL_IGB_UIO=y/CONFIG_RTE_EAL_IGB_UIO=n/ \${RTE_SDK}/config/common_linuxapp \\
-  && sed -i s/CONFIG_RTE_LIBRTE_KNI=y/CONFIG_RTE_LIBRTE_KNI=n/ \${RTE_SDK}/config/common_linuxapp \\
-  && sed -i s/CONFIG_RTE_KNI_KMOD=y/CONFIG_RTE_KNI_KMOD=n/ \${RTE_SDK}/config/common_linuxapp
-
-RUN sed -i s/CONFIG_RTE_APP_TEST=y/CONFIG_RTE_APP_TEST=n/ \${RTE_SDK}/config/common_linuxapp \\
-  && sed -i s/CONFIG_RTE_TEST_PMD=y/CONFIG_RTE_TEST_PMD=n/ \${RTE_SDK}/config/common_linuxapp
-
-RUN cd \${RTE_SDK} \\
-  && make install T=\${RTE_TARGET} DESTDIR=install -j
-
-RUN git config --global user.email "root@container" \\
-  && git config --global user.name "root"
-
-RUN git clone http://dpdk.org/git/apps/pktgen-dpdk \\
-  && cd pktgen-dpdk \\
-  && git checkout \${PKTGEN_COMMIT} \\
-  && cd .. \\
-  && mv pktgen-dpdk \${PKTGEN_DIR}
-
-RUN cd \${PKTGEN_DIR} \\
-  && make -j
-
-WORKDIR \${PKTGEN_DIR}/
-EOF
-```
-
-Build the pktgen Docker image, tag it as`dpdk-pktgen`:
-```bash
-docker build -t dpdk-pktgen -f pktgen-dockerfile .
-```
-
-### 2. Create the pods to be used
-
-Create the l3fwd Pod Spec:
-```bash
-$ cat <<EOF > l3fwd-pod.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  generateName: dpdk-l3fwd-
-  annotations:
-    k8s.v1.cni.cncf.io/networks: userspace-networkobj
-spec:
-  containers:
-  - name: dpdk-l3fwd
-    image: dpdk-l3fwd
-    imagePullPolicy: IfNotPresent
-    securityContext:
-      privileged: true
-      runAsUser: 0
-    volumeMounts:
-    - mountPath: /vhu/
-      name: socket
-    - mountPath: /dev/hugepages
-      name: hugepage
-    resources:
-      requests:
-        memory: 2Gi
-      limits:
-        hugepages-1Gi: 2Gi
-    command: ["sleep", "infinity"]
-  volumes:
-  - name: socket
-    hostPath:
-      path: /var/lib/cni/vhostuser/
-  - name: hugepage
-    emptyDir:
-      medium: HugePages
-  securityContext:
-    runAsUser: 0
-  restartPolicy: Never
-EOF
-```
-
-Create the pktgen Pod Spec:
-```bash
-$ cat <<EOF > pktgen-pod.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  generateName: dpdk-pktgen-
-  annotations:
-    k8s.v1.cni.cncf.io/networks: userspace-networkobj
-spec:
-  containers:
-  - name: dpdk-pktgen
-    image: dpdk-pktgen
-    imagePullPolicy: IfNotPresent
-    securityContext:
-      privileged: true
-      runAsUser: 0
-    volumeMounts:
-    - mountPath: /vhu/
-      name: socket
-    - mountPath: /dev/hugepages
-      name: hugepage
-    resources:
-      requests:
-        memory: 2Gi
-      limits:
-        hugepages-1Gi: 2Gi
-    command: ["sleep", "infinity"]
-  volumes:
-  - name: socket
-    hostPath:
-      path: /var/lib/cni/vhostuser/
-  - name: hugepage
-    emptyDir:
-      medium: HugePages
-  securityContext:
-    runAsUser: 0
-  restartPolicy: Never
-EOF
-```
-
-Deploy both pods:
-```bash
-$ kubectl create -f l3fwd-pod.yaml
-$ kubectl create -f pktgen-pod.yaml
-```
-
-Verify your pods are running and note their unique name IDs:
-```bash
-$ kubectl get pods
-NAME                       READY   STATUS    RESTARTS   AGE
-dpdk-l3fwd-vj4hj      1/1        Running   0                 51s
-dpdk-pktgen-xrsz9   1/1        Running   0                 2s
-```
-
-### 3. Run L3FWD and Pktgen
-
-Using your pod ID, open a bash shell in the pktgen pod:
-```bash
-$ kubectl exec -it dpdk-pktgen-<ID> bash
-```
-
-Export the port ID prefex and start the pktgen application (adjust cores, memory, etc. to suit your system):
-```bash
-$ export ID=$(/vhu/get-prefix.sh)
-$ ./app/x86_64-native-linuxapp-gcc/pktgen -l 10,11,12 --vdev=virtio_user0,path=/vhu/${ID}/${ID:0:12}-net1 --no-pci --socket-mem=1024,1024 --master-lcore 10 -- -m 11:12.0 -P
-```
-
-The pktgen application should launch. Among the statistics, make note of the pktgen source MAC address listed as ```Src MAC Address```. For example:
-```bash
-Src MAC Address   :   f2:89:22:4e:28:3b
-```
-
-In another terminal, open a bash shell in the l3fwd pod:
-```bash
-kubectl exec -it dpdk-l3fwd-<ID> bash
-```
-
-Export the port ID prefex and start the l3fwd application. Set the destination MAC address using the ```--eth-dest``` argument. This should be the  ```Src MAC Address``` previously noted from the pktgen pod (adjust cores, memory, etc. to suit your system):
-```bash
-$ export ID=$(/vhu/get-prefix.sh)
-$ ./l3fwd -c 0x10 --vdev=virtio_user0,path=/vhu/${ID}/${ID:0:12}-net1 --no-pci --socket-mem=1024,1024 -- -p 0x1 -P --config "(0,0,4)" --eth-dest=0,<pktgen-source-mac-add> --parse-ptype
-```
-
-The l3fwd app should start up. Among the information printed to the screen will be the ```Address```. This is the MAC address of the l3fwd port, make note of it.
-
-Back on the pktgen pod, set the destination MAC address to that of the l3fwd port:
-```bash
-Pktgen:/> set 0 dst mac <l3fwd-mac-address>
-```
-
-Start traffic generation:
-```bash
-Pktgen:/> start 0
-```
-
-You should see the packet counts for Tx and Rx increase, verifying that packets are being transmitted by pktgen and are being sent back via l3fwd running in the other pod.
-
-To exit:
-```bash
-Pktgen:/> stop 0
-Pktgen:/> quit
 ```
 
 # Unit Testing
@@ -1159,9 +738,3 @@ Make Targets for unit testing inside containers:
  make coverage-all    - Calculate code coverage inside container for all supported OS distributions.
                         e.g. make -j 5 coverage-all
 ```
-
-Following Linux OS distributions are supported for unit testing inside containers:
-
-* CentOS 7, 8
-* Fedora 31, 32
-* Ubuntu 16.04, 18.04, 20.04
