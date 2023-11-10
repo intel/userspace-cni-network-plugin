@@ -7,7 +7,7 @@ vpp_ligato_latest_container()
 {
 IMAGE="ligato/vpp-base:latest"
 
-cd $USERSPACEDIR
+cd ${USERSPACEDIR}
 
 echo "Changing to latest tag in dockerfile"
 sed -i "s|\(FROM\).*\(as builder\)|\1 $IMAGE \2|g" ./docker/userspacecni/Dockerfile
@@ -23,13 +23,13 @@ grep -n "$IMAGE" ./ci/vpp_test_setup/vpp_host.sh
 }
 
 install_go_kubectl_kind(){
-wget -qO- https://golang.org/dl/go1.20.1.linux-amd64.tar.gz |tar -C /home/runner -xz
-export PATH="${PATH}:/home/runner/go/bin"
-echo "export PATH=\"${PATH}:/home/runner/go/bin/:home/runner/.local/bin/\"" >>~/.bashrc
+wget -qO- https://golang.org/dl/go1.20.1.linux-amd64.tar.gz |tar -C "$HOME" -xz
+export PATH="${PATH}:${HOME}/go/bin"
+echo "export PATH=\"${PATH}:${HOME}/go/bin/:${HOME}.local/bin/\"" >>~/.bashrc
 go install sigs.k8s.io/kind@v0.20.0
 
-wget -q https://dl.k8s.io/release/v1.27.3/bin/linux/amd64/kubectl -O /home/runner/go/bin/kubectl 
-chmod +x /home/runner/go/bin/kubectl
+wget -q https://dl.k8s.io/release/v1.27.3/bin/linux/amd64/kubectl -O "${HOME}/go/bin/kubectl"
+chmod +x "${HOME}/go/bin/kubectl"
 }
 
 create_kind_cluster(){
@@ -43,12 +43,14 @@ kubectl get all --all-namespaces
 
 #docker run -itd --device=/dev/hugepages:/dev/hugepages --privileged -v "$(pwd)/docker/vpp-centos-userspace-cni/:/etc/vpp/" --name vpp ligato/vpp-base
 sleep 10
-cd /runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/
+cd $USERSPACEDIR
 
 docker build . -f ./docker/userspacecni/Dockerfile -t userspacecni:latest
+# gets path for one directopry above, needed for mkdir with docker cp below
+mkdir_var=$(dirname ${USERSPACEDIR})
 kind load docker-image userspacecni
-docker exec -i kind-control-plane bash -c "mkdir -p '/runner/_work/userspace-cni-network-plugin/'"
-docker cp "/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/" "kind-control-plane:/runner/_work/userspace-cni-network-plugin/"
+docker exec -i kind-control-plane bash -c "mkdir -p $mkdir_var"
+docker cp "${USERSPACEDIR}" "kind-control-plane:${USERSPACEDIR}"
 }
 
 deploy_multus(){
