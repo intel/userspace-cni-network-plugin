@@ -10,6 +10,9 @@ on:
     - master
     paths:
       - '**weekly_e2e.yml'
+permissions:
+  contents: read
+
 jobs:
 
   vpp_latest:
