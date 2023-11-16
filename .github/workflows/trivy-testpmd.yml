@@ -3,7 +3,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: trivy
+name: trivy-testpmd
 
 on:
   push:
@@ -29,21 +29,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
+      - name: Build testpmd image
+        run: docker build -t testpmd:latest -f ./docker/testpmd/Dockerfile ./docker/testpmd/
 
-      - name: Build the Docker image
-        run: docker build . -f ./docker/userspacecni/Dockerfile -t userspacecni:latest
-
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@2b6a709cf9c4025c5438138008beaddbb02086f0
+      - name: Testpmd Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@f78e9ecf42a1271402d4f484518b9313235990e1
         with:
-          image-ref: 'userspacecni:latest'
+          image-ref: 'testpmd:latest'
           format: 'template'
           template: '@/contrib/sarif.tpl'
-          output: 'trivy-results.sarif'
+          output: 'testpmd-trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: 'testpmd-trivy-results.sarif'

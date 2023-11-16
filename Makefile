@@ -42,3 +42,7 @@ deploy:
 
 undeploy:
 	kubectl delete -f ./kubernetes/userspace-daemonset.yml
+
+testpmd:
+	@$(IMAGE_BUILDER) build -t $(IMAGE_REGISTRY)testpmd:latest -f ./docker/testpmd/Dockerfile ./docker/testpmd/
+	@$(IMAGE_BUILDER) push $(IMAGE_REGISTRY)testpmd:latest
