@@ -41,7 +41,7 @@ jobs:
     name: Hadolint
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-    - uses: hadolint/hadolint-action@v3.1.0
+    - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
       name: Run Hadolint
       with:
        dockerfile: ./docker/userspacecni/Dockerfile
