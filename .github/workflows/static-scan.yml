@@ -1,5 +1,9 @@
 name: Go-static-analysis
 on: [push, pull_request]
+
+permissions:
+  contents: read
+
 jobs:
 
   golangci:
