@@ -5,7 +5,7 @@ USERSPACEDIR="${USERSPACEDIR:=/runner/_work/userspace-cni-network-plugin/userspa
 
 kubectl delete ns vpp
 kubectl create ns vpp
-kubectl create -n vpp configmap vpp-startup-config --from-file="${USERSPACEDIR}/docker/vpp-centos-userspace-cni/startup.conf"
+kubectl create -n vpp configmap vpp-startup-config --from-file="${USERSPACEDIR}/examples/sample-vpp-host-config/startup.conf"
 
 worker="kind-control-plane"
 
