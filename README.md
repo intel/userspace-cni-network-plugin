@@ -112,6 +112,9 @@ For this reason we build userspacecni in a container.
 userspacecni is built in a container and then transferred to the host.
 By default Docker is used to build the image
 
+Before building be sure to modify the makefile variable `IMAGE_REGISTRY`.
+`IMAGE_REGISTRY` should be set to an image registry thats accessible across your cluster.
+
 To build the docker image:
 ```
   git clone https://github.com/intel/userspace-cni-network-plugin.git
@@ -119,7 +122,15 @@ To build the docker image:
   make build
 ```
 
-To copy the userspacecni binary to the host directory /opt/cni/bin/
+To copy the userspacecni binary to the host directory `/opt/cni/bin/`
+```
+  make copy
+```
+To push the image to the docker reg defined in the makefile
+```
+  make push
+```
+To deploy the userspacecni across the cluster
 ```
   make deploy
 ```
@@ -423,7 +434,10 @@ kubectl exec -itn vpp vpp-app2 -- ./vpp-pod-setup-memif.sh
 
 # ping pod 2 from pod 1 (through vpp)
 kubectl exec -itn vpp vpp-app1 -- vppctl "ping  192.168.1.4"
-# sample output
+```
+
+Sample output
+```
 116 bytes from 192.168.1.4: icmp_seq=1 ttl=64 time=83.4641 ms
 116 bytes from 192.168.1.4: icmp_seq=2 ttl=64 time=72.0057 ms
 116 bytes from 192.168.1.4: icmp_seq=3 ttl=64 time=67.9981 ms
