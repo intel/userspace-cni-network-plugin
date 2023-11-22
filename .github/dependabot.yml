@@ -11,7 +11,7 @@ updates:
       interval: daily
 
   - package-ecosystem: docker
-    directory: /docker/vpp-centos-userspace-cni
+    directory: /docker/userspacecni/
     schedule:
       interval: daily
 

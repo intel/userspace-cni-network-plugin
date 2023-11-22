@@ -17,10 +17,6 @@ few notes regarding packages in this sub-folder.
 The **usrsp-app** is intended to run in a container. It leverages the VPP CNI code
 to consume interfaces in the container.
 
-## docker/vpp-centos-userspace-cni/
-The docker image **vpp-centos-userspace-cni** runs a VPP instance and the
-usrsp-app at startup. 
-
 ## cnivpp/localdb.go
 **localdb** is use to store data in a DB. For the local VPP instance, the localdb
 is used to store the swIndex generated when the interface is created. It is used

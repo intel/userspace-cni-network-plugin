@@ -41,7 +41,7 @@ esac
 kind create cluster --image "kindest/node:$kubectl_version"
 kubectl get all --all-namespaces
 
-#docker run -itd --device=/dev/hugepages:/dev/hugepages --privileged -v "$(pwd)/docker/vpp-centos-userspace-cni/:/etc/vpp/" --name vpp ligato/vpp-base
+#docker run -itd --device=/dev/hugepages:/dev/hugepages --privileged -v "$(pwd)/example/sample-vpp-host-config:/etc/vpp/" --name vpp ligato/vpp-base
 sleep 10
 cd $USERSPACEDIR
 
