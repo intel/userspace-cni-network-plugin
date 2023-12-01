@@ -14,7 +14,7 @@ RUN make generate-bin
 #End of builder container
 
 # Copy build userspace cni bin to a small deployer container
-FROM alpine:3.18@sha256:eece025e432126ce23f223450a0326fbebde39cdf496a85d8c016293fc851978
+FROM alpine:3.18@sha256:34871e7290500828b39e22294660bee86d966bc0017544e848dd9a255cdf59e0
 RUN mkdir -p /root/userspace-cni-network-plugin/userspace
 COPY --from=builder /root/userspace-cni-network-plugin/userspace/userspace /root/userspace-cni-network-plugin/userspace/userspace
 CMD ["cp", "-rf", "/root/userspace-cni-network-plugin/userspace/userspace", "/opt/cni/bin"]
