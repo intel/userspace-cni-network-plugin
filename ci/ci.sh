@@ -86,8 +86,19 @@ else
 	exit 1
 fi
 
+printf "\n\n Removing vpp app pods \n\n"
 kubectl delete -n vpp pod/vpp-app1-kind-control-plane
 kubectl delete -n vpp pod/vpp-app2-kind-control-plane
+echo "pods deleted"
+
+echo "kubectl get all, app pods should have been removed"
+kubectl get all -A
+
+printf "\n vppctl show interface \n\n"
+kubectl exec -n vpp pod/vpp-kind-control-plane -- vppctl "sh int"
+
+printf "\n vppctl show memif, only the default socket 0 should be still here \n\n"
+kubectl exec -n vpp pod/vpp-kind-control-plane -- vppctl "sh memif"
 kubectl delete -n vpp pod/vpp-kind-control-plane
 }
 
