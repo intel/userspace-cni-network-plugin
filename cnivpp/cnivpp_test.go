@@ -229,9 +229,7 @@ func TestAddOnHost(t *testing.T) {
 			pod := GetTestPod(sharedDir)
 			kubeClient := fake.NewSimpleClientset(pod)
 
-			// SetExecCommand(&FakeExecCommand{Err: tc.fakeErr})
 			err := cniVpp.AddOnHost(tc.netConf, args, kubeClient, sharedDir, result)
-			// SetDefaultExecCommand()
 			if tc.expErr == nil {
 				assert.Equal(t, tc.expErr, err, "Unexpected result")
 				// on success there shall be saved ovs data
