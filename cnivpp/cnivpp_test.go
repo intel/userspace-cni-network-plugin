@@ -307,14 +307,12 @@ func TestDelFromHost(t *testing.T) {
 			_ = cniVpp.AddOnHost(tc.netConf, args, kubeClient, sharedDir, result)
 
 			err := cniVpp.DelFromHost(tc.netConf, args, sharedDir)
-			// time.Sleep(time.Second * 999999)
 			if tc.expErr == nil {
 				assert.Equal(t, tc.expErr, err, "Unexpected result")
 			} else {
 				require.Error(t, err, "Unexpected result")
 				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected result")
 			}
-			// time.Sleep(time.Second * 999999)
 		})
 	}
 }
