@@ -1,0 +1,22 @@
+name: unit-tests
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+    unit-tests:
+        name: unit-tests
+        runs-on: hugepage-runner
+        steps:
+          - name: Set up Go
+            uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+            with:
+              go-version: 1.20.1
+          - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+          - name: make unit-test
+            run: make unit-test
