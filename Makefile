@@ -54,3 +54,4 @@ unit-test:
 	@$(IMAGE_BUILDER) cp userspacecni-unittest:/root/userspace-cni-network-plugin/cnivpp ./
 	@$(IMAGE_BUILDER) exec userspacecni-unittest bash -c "go test ./cnivpp/ -v -cover"
 	@$(IMAGE_BUILDER) rm -f userspacecni-unittest
+	
