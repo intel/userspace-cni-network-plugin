@@ -127,9 +127,11 @@ kind load docker-image testpmd
 ovs_e2e_test(){
 cd $CI_DIR/ovs_test_setup
 ./ovs_host.sh
-sleep 20
+sleep 30
 
 # workaround, cant create in dockerfile
+kubectl get all -A
+kubectl logs -n ovs pod/ovs-kind-control-plane
 kubectl exec -n ovs pod/ovs-kind-control-plane -- bash -c "mkdir -p /dev/net/"
 kubectl exec -n ovs pod/ovs-kind-control-plane -- bash -c "mknod /dev/net/tun c 10 200"
 kubectl exec -n ovs pod/ovs-kind-control-plane -- bash -c 'ovs-vsctl set Open_vSwitch . "other_config:dpdk-init=true"'

@@ -1,9 +1,24 @@
 FROM ubuntu:22.04@sha256:2b7412e6465c3c7fc5bb21d3e6f1917c167358449fecac8176c6e496e5c1f05f
-RUN apt-get -q update && apt-get install -y git vim meson python3-pyelftools libnuma-dev
+RUN apt-get -q update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        git \
+        vim \
+        meson \
+        python3-pyelftools \
+        libnuma-dev \
+        python3-pip \
+        ninja-build \
+        build-essential \
+        && pip3 install --no-cache-dir --upgrade meson==1.3.0 \
+    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 RUN git clone https://github.com/DPDK/dpdk.git
 WORKDIR /dpdk/
 RUN meson build
-RUN cd build && ninja
+WORKDIR /dpdk/build/ 
+RUN ninja
 WORKDIR /dpdk/build/app
 COPY ./testpmd.sh testpmd.sh
-CMD ./testpmd.sh
+CMD ["sh", "-c","./testpmd.sh"]

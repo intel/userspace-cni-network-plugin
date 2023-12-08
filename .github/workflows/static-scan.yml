@@ -43,13 +43,15 @@ jobs:
   hadolint:
     runs-on: ubuntu-latest
     name: Hadolint
+    env:
+      HADOLINT_RECURSIVE: "true"
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
     - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
       name: Run Hadolint
       with:
-       dockerfile: ./docker/userspacecni/Dockerfile
-       ignore: DL3008,DL3059
+       recursive: true
+       ignore: DL3008,DL3059,DL3015
 
   go-check:
     runs-on: ubuntu-latest
