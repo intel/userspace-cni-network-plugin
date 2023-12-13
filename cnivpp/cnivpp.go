@@ -149,6 +149,8 @@ func (cniVpp CniVpp) AddOnHost(conf *types.NetConf,
 		err = errors.New("ERROR: Unknown HostConf.NetType:" + conf.HostConf.NetType)
 		logging.Debugf("AddOnHost(vpp): %v", err)
 		return err
+	} else {
+		return fmt.Errorf("ERROR: NetType must be provided")
 	}
 
 	//
@@ -321,7 +323,7 @@ func delLocalDeviceMemif(vppCh vppinfra.ConnectionData, conf *types.NetConf, arg
 	err = vppmemif.DeleteMemifInterface(vppCh.Ch, interface_types.InterfaceIndex(data.InterfaceSwIfIndex))
 	if err != nil {
 		logging.Debugf("delLocalDeviceMemif(vpp): Error deleting memif inteface: %v", err)
-		return
+		return logging.Errorf("delLocalDeviceMemif(vpp): Error deleting memif inteface: %v", err)
 	} else {
 		if dbgInterface {
 			logging.Verbosef("INTERFACE %d deleted\n", data.InterfaceSwIfIndex)
