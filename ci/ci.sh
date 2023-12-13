@@ -136,7 +136,7 @@ kubectl exec -n ovs pod/ovs-kind-control-plane -- bash -c 'ovs-vsctl set Open_vS
 
 ./testpmd_pod.sh
 
-sleep 30
+sleep 20
 kubectl get all -A
 kubectl logs -n ovs pod/ovs-kind-control-plane
 kubectl describe -n ovs pod/ovs-app1-kind-control-plane

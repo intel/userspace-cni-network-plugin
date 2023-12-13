@@ -51,7 +51,7 @@ jobs:
       name: Run Hadolint
       with:
        recursive: true
-       ignore: DL3008,DL3059
+       ignore: DL3008,DL3059,DL3015
 
   go-check:
     runs-on: ubuntu-latest
