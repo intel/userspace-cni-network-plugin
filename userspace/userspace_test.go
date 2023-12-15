@@ -29,22 +29,13 @@ import (
 	"github.com/containernetworking/plugins/pkg/testutils"
 	"github.com/intel/userspace-cni-network-plugin/cniovs"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
+	"github.com/intel/userspace-cni-network-plugin/userspace/cni"
 	"github.com/intel/userspace-cni-network-plugin/userspace/testdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
-
-const verString = "userspace-cni-network-plugin version:%s, commit:%s, date:%s"
-
-func TestPrintVersionString(t *testing.T) {
-	t.Run("verify version string", func(t *testing.T) {
-		exp := fmt.Sprintf(verString, version, commit, date)
-		out := printVersionString()
-		assert.Equal(t, exp, out, "Version string mismatch")
-	})
-}
 
 func TestLoadNetConf(t *testing.T) {
 	testCases := []struct {
@@ -112,14 +103,14 @@ func TestLoadNetConf(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var netConf *types.NetConf
 
-			// capture stderror messages from loadNetConf
+			// capture stderror messages from LoadNetConf
 			stdR, stdW, stdErr := os.Pipe()
 			if stdErr != nil {
 				t.Fatal("Can't capture stderr")
 			}
 			origStdErr := os.Stderr
 			os.Stderr = stdW
-			netConf, err := loadNetConf([]byte(tc.netConfStr))
+			netConf, err := cni.LoadNetConf([]byte(tc.netConfStr))
 			os.Stderr = origStdErr
 			stdW.Close()
 			var buf bytes.Buffer
@@ -213,7 +204,7 @@ func TestGetPodAndSharedDir(t *testing.T) {
 				args.Args = fmt.Sprintf("K8S_POD_NAME=%s;K8S_POD_NAMESPACE=%s", tc.pod.Name, tc.pod.Namespace)
 			}
 
-			resClient, resPod, sharedDir, err := getPodAndSharedDir(tc.netConf, args, kubeClient)
+			resClient, resPod, sharedDir, err := cni.GetPodAndSharedDir(tc.netConf, args, kubeClient)
 			assert.NoError(t, err, "Unexpected error")
 			assert.Equal(t, tc.expSharedDir, sharedDir, "Unexpected sharedDir returned")
 			assert.Equal(t, tc.pod, resPod, "Unexpected pod returned")
@@ -345,7 +336,7 @@ func TestCmdAdd(t *testing.T) {
 			}
 			origStdout := os.Stdout
 			os.Stdout = stdW
-			err := cmdAdd(args, exec, kubeClient)
+			err := cni.CmdAdd(args, exec, kubeClient)
 			os.Stdout = origStdout
 			stdW.Close()
 			var buf bytes.Buffer
@@ -380,7 +371,7 @@ func TestCmdGet(t *testing.T) {
 		var exec invoke.Exec
 		args := testdata.GetTestArgs()
 		kubeClient := fake.NewSimpleClientset()
-		assert.NoError(t, cmdGet(args, exec, kubeClient), "Unexpected error")
+		assert.NoError(t, cni.CmdGet(args, exec, kubeClient), "Unexpected error")
 	})
 }
 
@@ -473,7 +464,7 @@ func TestCmdDel(t *testing.T) {
 				defer cniovs.SetDefaultExecCommand()
 			}
 
-			err := cmdDel(args, exec, kubeClient)
+			err := cni.CmdDel(args, exec, kubeClient)
 
 			if tc.expError == "" {
 				assert.NoError(t, err, "Unexpected error")

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cni
 
 import (
 	"encoding/json"
@@ -27,7 +27,6 @@ import (
 	"github.com/containernetworking/cni/pkg/skel"
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
-	cniSpecVersion "github.com/containernetworking/cni/pkg/version"
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ipam"
 	"github.com/containernetworking/plugins/pkg/ns"
@@ -43,10 +42,6 @@ import (
 	_ "github.com/vishvananda/netlink"
 )
 
-var version = "master@git"
-var commit = "unknown commit"
-var date = "unknown date"
-
 func init() {
 	// this ensures that main runs only on main thread (thread group leader).
 	// since namespace ops (unshare, setns) are done for a single thread, we
@@ -54,17 +49,8 @@ func init() {
 	runtime.LockOSThread()
 }
 
-//
-// Local functions
-//
-
-func printVersionString() string {
-	return fmt.Sprintf("userspace-cni-network-plugin version:%s, commit:%s, date:%s",
-		version, commit, date)
-}
-
-// loadNetConf() - Unmarshall the inputdata into the NetConf Structure
-func loadNetConf(bytes []byte) (*types.NetConf, error) {
+// LoadNetConf() - Unmarshall the inputdata into the NetConf Structure
+func LoadNetConf(bytes []byte) (*types.NetConf, error) {
 	netconf := &types.NetConf{}
 	if err := json.Unmarshal(bytes, netconf); err != nil {
 		return nil, fmt.Errorf("failed to load netconf: %v", err)
@@ -104,7 +90,7 @@ func loadNetConf(bytes []byte) (*types.NetConf, error) {
 	return netconf, nil
 }
 
-func getPodAndSharedDir(netConf *types.NetConf,
+func GetPodAndSharedDir(netConf *types.NetConf,
 	args *skel.CmdArgs,
 	kubeClient kubernetes.Interface) (kubernetes.Interface, *v1.Pod, string, error) {
 
@@ -159,7 +145,7 @@ func getPodAndSharedDir(netConf *types.NetConf,
 	return kubeClient, pod, sharedDir, err
 }
 
-func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
+func CmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
 	var netConf *types.NetConf
 	var containerEngine string
 
@@ -167,7 +153,7 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 	ovs := cniovs.CniOvs{}
 
 	// Convert the input bytestream into local NetConf structure
-	netConf, err := loadNetConf(args.StdinData)
+	netConf, err := LoadNetConf(args.StdinData)
 
 	logging.Infof("cmdAdd: ENTER (AFTER LOAD) - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 	logging.Verbosef("   Args=%v netConf=%v, exec=%v, kubeClient%v",
@@ -196,7 +182,7 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 
 	// Retrieve the "SharedDir", directory to create the socketfile in.
 	// Save off kubeClient and pod for later use if needed.
-	kubeClient, pod, sharedDir, err := getPodAndSharedDir(netConf, args, kubeClient)
+	kubeClient, pod, sharedDir, err := GetPodAndSharedDir(netConf, args, kubeClient)
 	if err != nil {
 		_ = logging.Errorf("cmdAdd: Unable to determine \"SharedDir\" - %v", err)
 		return err
@@ -283,9 +269,9 @@ func cmdAdd(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 	return cnitypes.PrintResult(result, current.ImplementedSpecVersion)
 }
 
-func cmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
+func CmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
 	/*
-		netConf, err := loadNetConf(args.StdinData)
+		netConf, err := LoadNetConf(args.StdinData)
 
 		logging.Infof("cmdGet: (AFTER LOAD) - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 		logging.Verbosef("   Args=%v netConf=%v, exec=%v, kubeClient%v",
@@ -302,7 +288,7 @@ func cmdGet(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 	return nil
 }
 
-func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
+func CmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface) error {
 	var netConf *types.NetConf
 	var containerEngine string
 
@@ -310,7 +296,7 @@ func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 	ovs := cniovs.CniOvs{}
 
 	// Convert the input bytestream into local NetConf structure
-	netConf, err := loadNetConf(args.StdinData)
+	netConf, err := LoadNetConf(args.StdinData)
 
 	logging.Infof("cmdDel: ENTER (AFTER LOAD) - Container %s Iface %s", args.ContainerID[:12], args.IfName)
 	logging.Verbosef("   Args=%v netConf=%v, exec=%v, kubeClient%v",
@@ -323,7 +309,7 @@ func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 
 	// Retrieve the "SharedDir", directory to create the socketfile in.
 	// Save off kubeClient and pod for later use if needed.
-	_, pod, sharedDir, err := getPodAndSharedDir(netConf, args, kubeClient)
+	_, pod, sharedDir, err := GetPodAndSharedDir(netConf, args, kubeClient)
 	if err != nil {
 		_ = logging.Errorf("cmdDel: Unable to determine \"SharedDir\" - %v", err)
 		return err
@@ -399,37 +385,4 @@ func cmdDel(args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interfac
 	})
 
 	return err
-}
-
-func main() {
-	// Init command line flags to clear vendored packages' one, especially in init()
-	//flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-
-	// add version flag
-	//versionOpt := false
-	//flag.BoolVar(&versionOpt, "version", false, "Show application version")
-	//flag.BoolVar(&versionOpt, "v", false, "Show application version")
-	//flag.Parse()
-	//if versionOpt == true {
-	//	fmt.Printf("%s\n", printVersionString())
-	//	return
-	//}
-
-	// Extend the cmdAdd(), cmdGet() and cmdDel() functions to take
-	// 'exec invoke.Exec' and 'kubeClient k8s.KubeClient' as input
-	// parameters. They are passed in as nill from here, but unit test
-	// code can then call these functions directly and fake out a
-	// Kubernetes Client.
-	skel.PluginMain(
-		func(args *skel.CmdArgs) error {
-			return cmdAdd(args, nil, nil)
-		},
-		func(args *skel.CmdArgs) error {
-			return cmdGet(args, nil, nil)
-		},
-		func(args *skel.CmdArgs) error {
-			return cmdDel(args, nil, nil)
-		},
-		cniSpecVersion.All,
-		"CNI plugin that manages DPDK based interfaces")
 }

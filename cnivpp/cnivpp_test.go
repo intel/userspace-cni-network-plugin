@@ -8,62 +8,17 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/containernetworking/cni/pkg/skel"
 	current "github.com/containernetworking/cni/pkg/types/100"
-	"github.com/google/uuid"
 	"github.com/intel/userspace-cni-network-plugin/pkg/types"
+	"github.com/intel/userspace-cni-network-plugin/userspace/testdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func GetTestPod(sharedDir string) *v1.Pod {
-	id, _ := uuid.NewUUID()
-	pod := &v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			UID:       apitypes.UID(id.String()),
-			Name:      fmt.Sprintf("pod-%v", id[:8]),
-			Namespace: fmt.Sprintf("namespace-%v", id[:8]),
-		},
-	}
-	if sharedDir != "" {
-		pod.Spec.Volumes = append(pod.Spec.Volumes,
-			v1.Volume{
-				Name: "shared-dir",
-				VolumeSource: v1.VolumeSource{
-					HostPath: &v1.HostPathVolumeSource{
-						Path: sharedDir,
-					},
-				},
-			})
-		pod.Spec.Containers = append(pod.Spec.Containers,
-			v1.Container{
-				Name:         "container",
-				VolumeMounts: []v1.VolumeMount{{Name: "shared-dir", MountPath: sharedDir}},
-			})
-	}
-	return pod
-}
-
-func GetTestArgs() *skel.CmdArgs {
-	id, _ := uuid.NewUUID()
-	return &skel.CmdArgs{
-		ContainerID: id.String(),
-		IfName:      fmt.Sprintf("eth%v", int(id[7])),
-		StdinData:   []byte("{}"),
-	}
-}
-
 func TestGetMemifSocketfileName(t *testing.T) {
 	t.Run("get Memif Socker File Name", func(t *testing.T) {
-		args := GetTestArgs()
+		args := testdata.GetTestArgs()
 
 		sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cniovs-")
 		require.NoError(t, dirErr, "Can't create temporary directory")
@@ -83,14 +38,14 @@ func TestGetMemifSocketfileName(t *testing.T) {
 func TestAddOnContainer(t *testing.T) {
 	t.Run("save container data to file", func(t *testing.T) {
 		var result *current.Result
-		args := GetTestArgs()
+		args := testdata.GetTestArgs()
 		cniVpp := CniVpp{}
 
 		sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cniovs-")
 		require.NoError(t, dirErr, "Can't create temporary directory")
 		defer os.RemoveAll(sharedDir)
 
-		pod := GetTestPod(sharedDir)
+		pod := testdata.GetTestPod(sharedDir)
 		resPod, resErr := cniVpp.AddOnContainer(&types.NetConf{}, args, nil, sharedDir, pod, result)
 		assert.NoError(t, resErr, "Unexpected error")
 		assert.Equal(t, pod, resPod, "Unexpected change of pod data")
@@ -101,7 +56,7 @@ func TestAddOnContainer(t *testing.T) {
 
 func TestDelOnContainer(t *testing.T) {
 	t.Run("remove container configuration", func(t *testing.T) {
-		args := GetTestArgs()
+		args := testdata.GetTestArgs()
 		cniVpp := CniVpp{}
 
 		sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cniovs-")
@@ -220,13 +175,13 @@ func TestAddOnHost(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			var result *current.Result
-			args := GetTestArgs()
+			args := testdata.GetTestArgs()
 
 			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cnivpp-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			defer os.RemoveAll(sharedDir)
 
-			pod := GetTestPod(sharedDir)
+			pod := testdata.GetTestPod(sharedDir)
 			kubeClient := fake.NewSimpleClientset(pod)
 
 			err := cniVpp.AddOnHost(tc.netConf, args, kubeClient, sharedDir, result)
@@ -294,14 +249,14 @@ func TestDelFromHost(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			args := GetTestArgs()
+			args := testdata.GetTestArgs()
 			sharedDir, dirErr := os.MkdirTemp("/tmp", "test-cnivpp-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			defer os.RemoveAll(sharedDir)
 
 			var result *current.Result
 
-			pod := GetTestPod(sharedDir)
+			pod := testdata.GetTestPod(sharedDir)
 			kubeClient := fake.NewSimpleClientset(pod)
 
 			_ = cniVpp.AddOnHost(tc.netConf, args, kubeClient, sharedDir, result)
