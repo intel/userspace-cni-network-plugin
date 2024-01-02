@@ -47,11 +47,16 @@ testpmd:
 	@$(IMAGE_BUILDER) build -t $(IMAGE_REGISTRY)testpmd:latest -f ./docker/testpmd/Dockerfile ./docker/testpmd/
 	@$(IMAGE_BUILDER) push $(IMAGE_REGISTRY)testpmd:latest
 
-unit-test:
+build-test-container:
 	@$(IMAGE_BUILDER) rm -f userspacecni-unittest
 	@$(IMAGE_BUILDER) build . -f ./docker/userspacecni/Dockerfile.unittest -t userspacecni-unittest:latest
 	@$(IMAGE_BUILDER) run -m 100g --privileged -v ./examples/sample-vpp-host-config/startup.conf:/etc/vpp/startup.conf --name userspacecni-unittest -itd userspacecni-unittest:latest
 	@$(IMAGE_BUILDER) cp userspacecni-unittest:/root/userspace-cni-network-plugin/cnivpp ./
+
+unit-test: build-test-container
 	@$(IMAGE_BUILDER) exec userspacecni-unittest bash -c "go test ./cnivpp/ -v -cover"
 	@$(IMAGE_BUILDER) rm -f userspacecni-unittest
-	
+
+fuzz: build-test-container
+	@$(IMAGE_BUILDER) exec userspacecni-unittest bash -c "cd ./cnivpp/test; go test -fuzz=FuzzLoadNetConf -v -fuzztime 120s"
+	@$(IMAGE_BUILDER) rm -f userspacecni-unittest
