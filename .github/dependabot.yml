@@ -19,3 +19,23 @@ updates:
     directory: /
     schedule:
       interval: daily
+
+  - package-ecosystem: docker
+    directory: /ci/ovs_test_setup
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /ci/ovs_test_setup/testpmd_image
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /docker/testpmd
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /docker/userspacecni
+    schedule:
+      interval: daily
