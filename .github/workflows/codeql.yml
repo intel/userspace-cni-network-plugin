@@ -46,3 +46,16 @@ jobs:
         uses: github/codeql-action/analyze@012739e5082ff0c22ca6d6ab32e07c36df03c4a4 # v2.3.3
         with:
           category: "/language:${{ matrix.language }}"
+                    
+      - name: CodeQL and Dependabot Report Action
+        uses: rsdmike/github-security-report-action@v3.0.4
+        with:
+          template: report
+          token: ${{ secrets.SECURITY_TOKEN }}
+
+      - name: GitHub Upload Release Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: report
+          path: |
+             ./report.pdf
