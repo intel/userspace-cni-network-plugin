@@ -7,7 +7,7 @@ on:
       - '**weekly_e2e.yml'
   push:
     branches:
-    - master
+    - main
     paths:
       - '**weekly_e2e.yml'
 permissions:
