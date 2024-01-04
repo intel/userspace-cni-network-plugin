@@ -8,3 +8,4 @@ RUN update-alternatives --set ovs-vswitchd /usr/lib/openvswitch-switch-dpdk/ovs-
 # RUN sed -i "/rmmod bridge/d" /usr/share/openvswitch/scripts/ovs-kmod-ctl
 RUN apt-get install -y --no-install-recommends linux-headers-"$(uname -r | cut -d'-' -f1)"
 CMD ["sh", "-c","/usr/share/openvswitch/scripts/ovs-ctl start && sleep inf"]
+USER 10000

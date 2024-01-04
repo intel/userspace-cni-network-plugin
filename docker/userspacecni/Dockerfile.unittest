@@ -12,3 +12,4 @@ RUN go mod download \
     && make generate \
     && go mod tidy \
     && make generate-bin
+USER 10000

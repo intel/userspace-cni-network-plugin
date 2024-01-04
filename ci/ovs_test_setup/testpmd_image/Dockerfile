@@ -22,3 +22,4 @@ RUN ninja
 WORKDIR /dpdk/build/app
 COPY ./testpmd.sh testpmd.sh
 CMD ["sh", "-c","./testpmd.sh"]
+USER 10000
