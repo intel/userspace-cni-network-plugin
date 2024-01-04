@@ -62,7 +62,7 @@ jobs:
 
       - name: GitHub Upload Release Artifacts
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2 # v2.3.1
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
         with:
           name: report
           path: |
