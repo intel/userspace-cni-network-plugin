@@ -1,6 +1,7 @@
 name: "CodeQL"
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
   pull_request:
@@ -53,12 +54,14 @@ jobs:
           category: "/language:${{ matrix.language }}"
                     
       - name: CodeQL and Dependabot Report Action
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: rsdmike/github-security-report-action@a149b24539044c92786ec39af8ba38c93496495d # v3.0.4
         with:
           template: report
           token: ${{ secrets.SECURITY_TOKEN }}
 
       - name: GitHub Upload Release Artifacts
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2 # v2.3.1
         with:
           name: report
