@@ -17,6 +17,16 @@ spec:
       - name: userspace-cni-plugin
         image: localhost:5000/userspacecni #registory:imagename
         imagePullPolicy: IfNotPresent
+        securityContext:
+           allowPrivilegeEscalation: false
+           privileged: false
+        resources:
+          requests:
+             cpu: 1m
+             memory: 1Mi
+          limits:
+             cpu: 100m
+             memory: 30Mi
         volumeMounts:
         - name: cnibin
           mountPath: /opt/cni/bin
