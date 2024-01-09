@@ -30,6 +30,8 @@ jobs:
         run: source ./ci/ci.sh && create_kind_cluster
       - name: deploy_multus
         run: source ./ci/ci.sh && deploy_multus
+      - name: deploy_userspacecni
+        run: source ./ci/ci.sh && deploy_userspace
       - name: vpp_e2e_test
         run: source ./ci/ci.sh && vpp_e2e_test
       - name: build_ovs_container

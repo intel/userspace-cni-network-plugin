@@ -9,37 +9,7 @@ kubectl create -n vpp configmap vpp-startup-config --from-file="${USERSPACEDIR}/
 
 worker="kind-control-plane"
 
-
-rm /opt/cni/bin/userspace
 docker exec -i kind-control-plane bash -c "mkdir -p /var/run/vpp/app"
-
-cat << EOF | kubectl apply -f -
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: userspacecni-$worker
-  namespace: vpp
-spec:
-  nodeSelector:
-    kubernetes.io/hostname: $worker
-  containers:
-  - name: userspacecni-$worker
-    image: userspacecni:latest
-    imagePullPolicy: IfNotPresent
-    volumeMounts:
-    - name: cni
-      mountPath: /opt/cni/bin
-  volumes:
-    - name: cni
-      hostPath:
-        path: /opt/cni/bin
-  restartPolicy: Never
-EOF
-
-
-echo "sleeping for 20 to allow userspace to deploy first"
-sleep 20
 
 cat << EOF | kubectl apply -f -
 ---

@@ -45,10 +45,10 @@ kubectl get all --all-namespaces
 sleep 10
 cd $USERSPACEDIR
 
-docker build . -f ./docker/userspacecni/Dockerfile -t userspacecni:latest
+make build
 # gets path for one directopry above, needed for mkdir with docker cp below
 mkdir_var=$(dirname ${USERSPACEDIR})
-kind load docker-image userspacecni
+kind load docker-image localhost:5000/userspacecni
 docker exec -i kind-control-plane bash -c "mkdir -p $mkdir_var"
 docker cp "${USERSPACEDIR}" "kind-control-plane:${USERSPACEDIR}"
 }
@@ -60,6 +60,15 @@ MULTUS_VERSION="v4.0.2"
 wget https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/$MULTUS_VERSION/deployments/multus-daemonset.yml
 sed -i "s/snapshot-thick/v4.0.2/g" multus-daemonset.yml
 kubectl apply -f ./multus-daemonset.yml
+}
+
+deploy_userspace(){
+cd $USERSPACEDIR
+#kubectl label nodes kind-control-plane app=userspace-cni
+kubectl label nodes --all app=userspace-cni
+make deploy
+echo "sleeping for 20 to allow userspace to deploy first"
+sleep 20
 }
 
 vpp_e2e_test(){
@@ -161,6 +170,7 @@ run_all(){
 install_go_kubectl_kind
 create_kind_cluster -v v1.27.3
 deploy_multus
+deploy_userspace
 vpp_e2e_test
 build_ovs_container
 build_testpmd_container
