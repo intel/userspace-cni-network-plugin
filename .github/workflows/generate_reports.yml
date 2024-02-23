@@ -1,0 +1,97 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: "0.Gen_Report"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+
+      - name: Build the Docker image
+        run: docker build . -f ./docker/userspacecni/Dockerfile -t userspacecni:latest
+
+
+      - name: Trivy Generate Reports
+        run: |
+           wget -q https://github.com/aquasecurity/trivy/releases/download/v0.48.2/trivy_0.48.2_Linux-64bit.deb
+           sudo apt install -y ./*.deb
+           echo "trivy fs -d ." |tee ./trivy_fs_scan.txt
+           trivy fs -d . &>  ./trivy_fs_scan.txt
+           echo "trivy config -s HIGH,CRITICAL . -d" |tee ./trivy_config_scan.txt
+           trivy config -s HIGH,CRITICAL -d . &>  ./trivy_config_scan.txt
+           echo "trivy image userspacecni:latest -s HIGH,CRITICAL" > ./trivy_image_scan.txt
+           trivy image userspacecni:latest -s HIGH,CRITICAL &>  ./trivy_image_scan.txt
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@012739e5082ff0c22ca6d6ab32e07c36df03c4a4 # v2.3.3
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-and-quality
+    
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@012739e5082ff0c22ca6d6ab32e07c36df03c4a4 # v2.3.3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@012739e5082ff0c22ca6d6ab32e07c36df03c4a4 # v2.3.3
+        with:
+          category: "/language:${{ matrix.language }}"
+                    
+      - name: CodeQL and Dependabot Report Action
+        # if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: rsdmike/github-security-report-action@a149b24539044c92786ec39af8ba38c93496495d # v3.0.4
+        with:
+          template: report
+          token: ${{ secrets.SECURITY_TOKEN }}
+        
+      - name: remove deployer container from dockerfile
+        run: sed -ie '/End of builder/,+5d' ./docker/userspacecni/Dockerfile
+      - name: Build the Docker image
+        run: docker build . -f ./docker/userspacecni/Dockerfile -t userspacecni_build:latest
+      - name: run container
+        run: docker run --name userspacecni_build -itd userspacecni_build:latest bash
+      - name: docker copy generated bin api files
+        run: docker cp userspacecni_build:/root/userspace-cni-network-plugin/cnivpp ./
+
+      - name: golangci-lint
+        run: |
+          sudo apt install -y aha
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+          $(go env GOPATH)/bin/golangci-lint run --color always --timeout=5m -v ./...; exitcode=$?; [[ $exitcode != 0 ]] && echo "failed $exitcode" || echo "passed $exitcode" | aha > golangci-lint.html
+
+      - name: GitHub Upload Trivy Reports
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        with:
+          name: reports
+          path: |
+            ./trivy_fs_scan.txt
+            ./trivy_config_scan.txt
+            ./trivy_image_scan.txt
+            ./report.pdf
+            ./golangci-lint.html
