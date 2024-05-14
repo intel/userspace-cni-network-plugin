@@ -1,0 +1,10 @@
+exemptions:
+  - checks:
+      - pinned-dependencies
+    annotations:
+      # The CI files should not be pinned
+      # because the do not ship with the product.
+      - annotation: not-applicable
+        paths:
+          - ci/*
+      # other dependencies can be penalized
