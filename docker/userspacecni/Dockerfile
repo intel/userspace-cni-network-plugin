@@ -1,4 +1,4 @@
-FROM ligato/vpp-base:24.02@sha256:7088ce3822a0f624498f0ee180dfcea46b2e7d75a422592cadc3377611906c5a as builder
+FROM ligato/vpp-base:24.02@sha256:cea77822b9e3a401337f9d2100d3b00881c22bae4c27f1112657b17a7e68e96a as builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 COPY . /root/userspace-cni-network-plugin
 WORKDIR /root/userspace-cni-network-plugin
