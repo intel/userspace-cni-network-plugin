@@ -28,10 +28,7 @@ export PATH="${PATH}:${HOME}/go/bin"
 echo "export PATH=\"${PATH}:${HOME}/go/bin/:${HOME}.local/bin/\"" >>~/.bashrc
 go install sigs.k8s.io/kind@v0.20.0
 
-wget -q https://dl.k8s.io/release/v1.27.3/bin/linux/amd64/kubectl -O "${HOME}/go/bin/kubectl"
-wget -q https://dl.k8s.io/release/v1.27.3/bin/linux/amd64/kubectl.sha256 -O "${HOME}/kubectl.sha256"
-cat_sha=$(cat "${HOME}/kubectl.sha256")
-echo "${cat_sha} ${HOME}/go/bin/kubectl" | sha256sum --check
+wget2 -s --signature-extensions .sha256 -o "${HOME}/go/bin/kubectl" https://dl.k8s.io/release/v1.27.3/bin/linux/amd64/kubectl
 chmod +x "${HOME}/go/bin/kubectl"
 }
 
