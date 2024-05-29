@@ -34,9 +34,9 @@ go install sigs.k8s.io/kind@v0.20.0
 # # sudo apt-get update
 # # sudo apt-get install -y kubectl=1.27.3-1.1
 
-wget -q https://dl.k8s.io/release/v1.27.3/bin/linux/amd64/kubectl.sha256 -O "{HOME}/kubectl.sha256"
+wget -q https://dl.k8s.io/release/v1.27.3/bin/linux/amd64/kubectl.sha256 -O "${HOME}/kubectl.sha256"
 cat_sha=$(cat "${HOME}/kubectl.sha256")
-wget -q https://dl.k8s.io/release/v1.27.3/bin/linux/amd64/kubectl -O "{HOME}/go/bin/kubectl" && echo "${cat_sha} ${HOME}/go/bin/kubectl" | sha256sum --check || exit 1
+wget -q https://dl.k8s.io/release/v1.27.3/bin/linux/amd64/kubectl -O "${HOME}/go/bin/kubectl" && echo "${cat_sha} ${HOME}/go/bin/kubectl" | sha256sum --check || exit 1
 }
 
 create_kind_cluster(){
