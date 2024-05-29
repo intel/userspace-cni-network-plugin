@@ -9,7 +9,7 @@ RUN apt-get -q update \
         python3-pip \
         ninja-build \
         build-essential \
-        && pip3 install --no-cache-dir --upgrade meson==1.3.0 \
+        && pip3 install --no-cache-dir --upgrade --require-hashes -r requirements.txt \
     && rm -rf /var/lib/apt/lists/*
 RUN apt-get update -y \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates \
