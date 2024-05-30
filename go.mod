@@ -13,8 +13,8 @@ require (
 	go.fd.io/govpp v0.10.0
 	golang.org/x/sys v0.18.0
 	k8s.io/api v0.30.1
-	k8s.io/apimachinery v0.30.1
-	k8s.io/client-go v0.29.0
+	k8s.io/apimachinery v0.30.0 // CMP is an issue, it was introduced in Go 1.21
+	k8s.io/client-go v0.30.0
 )
 
 require (
