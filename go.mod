@@ -1,6 +1,6 @@
 module github.com/intel/userspace-cni-network-plugin
 
-go 1.20
+go 1.22
 
 require (
 	github.com/containernetworking/cni v1.2.0
@@ -13,8 +13,8 @@ require (
 	go.fd.io/govpp v0.10.0
 	golang.org/x/sys v0.18.0
 	k8s.io/api v0.30.1
-	k8s.io/apimachinery v0.30.0 // CMP is an issue, it was introduced in Go 1.21
-	k8s.io/client-go v0.30.0
+	k8s.io/apimachinery v0.30.1
+	k8s.io/client-go v0.30.1
 )
 
 require (
