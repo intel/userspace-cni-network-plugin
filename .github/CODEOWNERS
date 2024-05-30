@@ -1,0 +1,4 @@
+# This is the copy of the template: 
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#example-of-a-codeowners-file
+
+* john.oloughlin@intel.com  michael.oreilly@intel.com eoghan.russell@intel.com
