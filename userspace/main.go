@@ -24,7 +24,6 @@ import (
 // args *skel.CmdArgs, exec invoke.Exec, kubeClient kubernetes.Interface
 func main() {
 	skel.PluginMain(
-
 		func(args *skel.CmdArgs) error {
 			err := cni.CmdAdd(args, nil, nil)
 			if err != nil {
@@ -37,4 +36,24 @@ func main() {
 		},
 		func(args *skel.CmdArgs) error { return cni.CmdDel(args, nil, nil) },
 		cniversion.All, "USERSPACE CNI Plugin")
+
+		skel.PluginMainFuncs(
+			skel.CNIFuncs {
+				func(args *skel.CmdArgs) error {
+					err := cni.CmdAdd(args, nil, nil)
+					if err != nil {
+						return err
+					}
+					return nil
+				},
+	
+				func(args *skel.CmdArgs) error { return cni.CmdDel(args, nil, nil) },
+				
+				func(args *skel.CmdArgs) error {
+					return cni.CmdGet(args, nil, nil)
+				},
+	
+				func(args *skel.CmdArgs) error { return cni.}
+			},
+			cniversion.All, "USERSPACE CNI Plugin")
 }
