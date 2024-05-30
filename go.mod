@@ -3,7 +3,7 @@ module github.com/intel/userspace-cni-network-plugin
 go 1.20
 
 require (
-	github.com/containernetworking/cni v1.1.2
+	github.com/containernetworking/cni v1.2.0
 	github.com/containernetworking/plugins v1.4.1
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/pkg/errors v0.9.1
