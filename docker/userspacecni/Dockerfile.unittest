@@ -4,7 +4,7 @@ COPY . /root/userspace-cni-network-plugin
 WORKDIR /root/userspace-cni-network-plugin
 RUN apt-get update -y \
     && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y binutils bash wget make git \
-    && wget -qO- https://golang.org/dl/go1.23.3.linux-amd64.tar.gz | tar -C /usr/local -xz \
+    && wget -qO- https://golang.org/dl/go1.22.3.linux-amd64.tar.gz | tar -C /usr/local -xz \
     && rm -rf /var/lib/apt/lists/*
 ENV PATH="${PATH}:/usr/local/go/bin"
 RUN go mod download \
