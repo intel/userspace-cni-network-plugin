@@ -8,7 +8,7 @@ RUN apt-get update -y \
     && rm -rf /var/lib/apt/lists/*
 ENV PATH="${PATH}:/usr/local/go/bin"
 RUN go mod download \
-    && go get go.fd.io/govpp/binapigen/vppapi@v0.7.0 \
+    && go get go.fd.io/govpp/binapigen/vppapi@v0.10.0 \
     && make generate \
     && go mod tidy \
     && make generate-bin
