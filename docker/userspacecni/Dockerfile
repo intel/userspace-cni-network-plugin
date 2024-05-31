@@ -7,7 +7,7 @@ RUN apt-get update -y \
     && wget -qO- https://golang.org/dl/go1.22.3.linux-amd64.tar.gz | tar -C /usr/local -xz \
     && rm -rf /var/lib/apt/lists/*
 ENV PATH="${PATH}:/usr/local/go/bin"
-RUN go mod tidy \
+RUN go mod download \
     && go get go.fd.io/govpp/binapigen/vppapi@v0.7.0 \
     && make generate \
     && go mod tidy \
