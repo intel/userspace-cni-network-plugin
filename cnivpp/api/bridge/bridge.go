@@ -22,12 +22,10 @@ package vppbridge
 import (
 	"fmt"
 
-	// "github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
-	// "github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/l2"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/interface_types"
+	"github.com/intel/userspace-cni-network-plugin/cnivpp/bin_api/l2"
 	. "github.com/intel/userspace-cni-network-plugin/pkg/types"
 	"go.fd.io/govpp/api"
-	"go.fd.io/govpp/binapi/interface_types"
-	"go.fd.io/govpp/binapi/l2"
 )
 
 // Constants
