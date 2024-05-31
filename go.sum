@@ -1,5 +1,7 @@
 github.com/bennyscetbun/jsongo v1.1.0 h1:ZDSks3aLP13jhY139lWaUqZaU8G0tELMohzumut/KDM=
 github.com/bennyscetbun/jsongo v1.1.0/go.mod h1:suxbVmjBV8+A2BBAM5EYVh6Uj8j3rqJhzWf3hv7Ff8U=
+github.com/bennyscetbun/jsongo v1.1.1 h1:ZlYkrwGtF5lKUOQh8t2Bn8XjCvwFI5Qdl6eBqZOtddE=
+github.com/bennyscetbun/jsongo v1.1.1/go.mod h1:j5mIRkqjZ4eEoIKQyfVPQpv56ZX0rn+jPETkD/2dRqA=
 github.com/containernetworking/cni v1.2.0 h1:fEjhlfWwWAXEvlcMQu/i6z8DA0Kbu7EcmR5+zb6cm5I=
 github.com/containernetworking/cni v1.2.0/go.mod h1:/r+vA/7vrynNfbvSP9g8tIKEoy6win7sALJAw4ZiJks=
 github.com/containernetworking/plugins v1.4.1 h1:+sJRRv8PKhLkXIl6tH1D7RMi+CbbHutDGU+ErLBORWA=

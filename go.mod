@@ -1,6 +1,8 @@
 module github.com/intel/userspace-cni-network-plugin
 
-go 1.22
+go 1.22.0
+
+toolchain go1.22.3
 
 require (
 	github.com/containernetworking/cni v1.2.0
@@ -18,6 +20,7 @@ require (
 )
 
 require (
+	github.com/bennyscetbun/jsongo v1.1.1 // indirect
 	github.com/coreos/go-iptables v0.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
