@@ -13,7 +13,7 @@
 // limitations under the License.
 
 //
-// This module provides the database library functions. Initial implementaion
+// This module provides the database library functions. Initial implementation
 // copies the json data to a known file location.
 //
 
