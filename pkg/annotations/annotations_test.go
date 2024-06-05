@@ -62,26 +62,26 @@ func TestGetPodVolumeMountHostSharedDir(t *testing.T) {
 	}{
 		{
 			name:    "pod with SharedDir",
-			volumes: []v1.Volume{v1.Volume{Name: "shared-dir", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/tmp/test-annotations"}}}},
+			volumes: []v1.Volume{{Name: "shared-dir", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/tmp/test-annotations"}}}},
 
 			expDir: "/tmp/test-annotations",
 		},
 		{
 			name:    "pod with SharedDir 2",
-			volumes: []v1.Volume{v1.Volume{Name: "some-dir"}, v1.Volume{Name: "shared-dir", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/tmp/test-annotations"}}}},
+			volumes: []v1.Volume{{Name: "some-dir"}, {Name: "shared-dir", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/tmp/test-annotations"}}}},
 
 			expDir: "/tmp/test-annotations",
 		},
 		{
 			name:       "pod with SharedDir 3",
-			volumes:    []v1.Volume{v1.Volume{Name: "shared-dir", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/tmp/test-annotations/volumes"}}}},
-			containers: []v1.Container{v1.Container{Name: "container", VolumeMounts: []v1.VolumeMount{{Name: "shared-dir", MountPath: "/tmp/test-annotations/containers"}}}},
+			volumes:    []v1.Volume{{Name: "shared-dir", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/tmp/test-annotations/volumes"}}}},
+			containers: []v1.Container{{Name: "container", VolumeMounts: []v1.VolumeMount{{Name: "shared-dir", MountPath: "/tmp/test-annotations/containers"}}}},
 
 			expDir: "/tmp/test-annotations/volumes",
 		},
 		{
 			name:    "pod with EmptyDir",
-			volumes: []v1.Volume{v1.Volume{Name: "shared-dir", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}},
+			volumes: []v1.Volume{{Name: "shared-dir", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}},
 
 			expDir: "/var/lib/kubelet/pods/#UUID#/volumes/kubernetes.io~empty-dir/shared-dir",
 		},
@@ -96,12 +96,12 @@ func TestGetPodVolumeMountHostSharedDir(t *testing.T) {
 		},
 		{
 			name:    "fail with pod without shareddir volumes",
-			volumes: []v1.Volume{v1.Volume{Name: "shared_dir"}, v1.Volume{Name: "shareddir"}},
+			volumes: []v1.Volume{{Name: "shared_dir"}, {Name: "shareddir"}},
 			expErr:  errors.New("Error: No shared-dir. Need \"shared-dir\" in podSpec \"Volumes\""),
 		},
 		{
 			name:    "fail with pod without shareddir HostPath",
-			volumes: []v1.Volume{v1.Volume{Name: "shared-dir", VolumeSource: v1.VolumeSource{}}},
+			volumes: []v1.Volume{{Name: "shared-dir", VolumeSource: v1.VolumeSource{}}},
 			expErr:  errors.New("Error: Volume is invalid"),
 		},
 	}
@@ -141,26 +141,26 @@ func TestGetPodVolumeMountHostMappedSharedDir(t *testing.T) {
 	}{
 		{
 			name:       "pod with SharedDir",
-			containers: []v1.Container{v1.Container{Name: "container", VolumeMounts: []v1.VolumeMount{{Name: "shared-dir", MountPath: "/tmp/test-annotations"}}}},
+			containers: []v1.Container{{Name: "container", VolumeMounts: []v1.VolumeMount{{Name: "shared-dir", MountPath: "/tmp/test-annotations"}}}},
 
 			expDir: "/tmp/test-annotations",
 		},
 		{
 			name:       "pod with SharedDir 2",
-			containers: []v1.Container{v1.Container{Name: "init-container"}, v1.Container{Name: "container", VolumeMounts: []v1.VolumeMount{{Name: "some-dir"}, {Name: "shared-dir", MountPath: "/tmp/test-annotations"}}}},
+			containers: []v1.Container{{Name: "init-container"}, {Name: "container", VolumeMounts: []v1.VolumeMount{{Name: "some-dir"}, {Name: "shared-dir", MountPath: "/tmp/test-annotations"}}}},
 
 			expDir: "/tmp/test-annotations",
 		},
 		{
 			name:       "pod with SharedDir 3",
-			volumes:    []v1.Volume{v1.Volume{Name: "shared-dir", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/tmp/test-annotations/volumes"}}}},
-			containers: []v1.Container{v1.Container{Name: "container", VolumeMounts: []v1.VolumeMount{{Name: "shared-dir", MountPath: "/tmp/test-annotations/containers"}}}},
+			volumes:    []v1.Volume{{Name: "shared-dir", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/tmp/test-annotations/volumes"}}}},
+			containers: []v1.Container{{Name: "container", VolumeMounts: []v1.VolumeMount{{Name: "shared-dir", MountPath: "/tmp/test-annotations/containers"}}}},
 
 			expDir: "/tmp/test-annotations/containers",
 		},
 		{
 			name:       "fail with empty SharedDir",
-			containers: []v1.Container{v1.Container{Name: "container", VolumeMounts: []v1.VolumeMount{{Name: "shared-dir", MountPath: ""}}}},
+			containers: []v1.Container{{Name: "container", VolumeMounts: []v1.VolumeMount{{Name: "shared-dir", MountPath: ""}}}},
 			expErr:     errors.New("Error: No mapped shared-dir."),
 		},
 		{
@@ -174,7 +174,7 @@ func TestGetPodVolumeMountHostMappedSharedDir(t *testing.T) {
 		},
 		{
 			name:       "fail with pod without shareddir containers",
-			containers: []v1.Container{v1.Container{Name: "container1", VolumeMounts: []v1.VolumeMount{{Name: "shareddir"}, {Name: "shared_dir"}}}, v1.Container{Name: "container2", VolumeMounts: []v1.VolumeMount{{Name: "some-dir"}, {Name: "empty-dir"}}}},
+			containers: []v1.Container{{Name: "container1", VolumeMounts: []v1.VolumeMount{{Name: "shareddir"}, {Name: "shared_dir"}}}, {Name: "container2", VolumeMounts: []v1.VolumeMount{{Name: "some-dir"}, {Name: "empty-dir"}}}},
 			expErr:     errors.New("Error: No mapped shared-dir. Need \"shared-dir\" in podSpec \"Volumes\""),
 		},
 	}
@@ -641,7 +641,7 @@ func TestGetFileAnnotationConfigData(t *testing.T) {
 		{
 			name:      "get configuration data from annotations",
 			annot:     `userspace/configuration-data="[{\"Name\":\"Container New Name\",\"ContainerId\":\"123-456-789-007\"}]"`,
-			expResult: []*types.ConfigurationData{&types.ConfigurationData{Name: "Container New Name", ContainerId: "123-456-789-007"}},
+			expResult: []*types.ConfigurationData{{Name: "Container New Name", ContainerId: "123-456-789-007"}},
 		},
 		{
 			name:   "fail to get configuration data",
