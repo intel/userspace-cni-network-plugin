@@ -23,9 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
-//
 // Unit test related functions
-//
 func GetTestPod(sharedDir string) *v1.Pod {
 	id := uuid.NewUUID()
 	pod := &v1.Pod{
