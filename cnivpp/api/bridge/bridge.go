@@ -107,7 +107,7 @@ func AddBridgeInterface(ch api.Channel, bridgeDomain uint32, swIfId interface_ty
 	var err error
 
 	// Determine if bridge domain exists, and if not, create it. CreateBridge()
-	// checks for existance.
+	// checks for existence.
 	err = CreateBridge(ch, bridgeDomain)
 	if err != nil {
 		return err
