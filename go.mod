@@ -1,6 +1,8 @@
 module github.com/intel/userspace-cni-network-plugin
 
-go 1.20
+go 1.22.0
+
+toolchain go1.22.3
 
 require (
 	github.com/containernetworking/cni v1.2.0
