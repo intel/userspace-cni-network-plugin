@@ -38,7 +38,7 @@ jobs:
         run: docker build -t testpmd:latest -f ./docker/testpmd/Dockerfile ./docker/testpmd/
 
       - name: Testpmd Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@fd25fed6972e341ff0007ddb61f77e88103953c2
+        uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d
         with:
           image-ref: 'testpmd:latest'
           format: 'template'
