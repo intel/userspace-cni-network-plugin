@@ -102,7 +102,7 @@ for more information.
 
 # Build & Clean
 
-This plugin is recommended to be built with Go 1.20.1 and either OVS-DPDK 2.9.0-3
+This plugin is recommended to be built with Go 1.22.3 and either OVS-DPDK 2.9.0-3
 or VPP 23.02. Other versions of Go, OVS-DPDK and VPP are theoretically
 supported, but MIGHT cause unknown issue.
 
