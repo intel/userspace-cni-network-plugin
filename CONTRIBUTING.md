@@ -9,7 +9,7 @@ it easier to get your contribution accepted.
 
 Please follows the standard formatting recommendations and language idioms set out
 in [Effective Go](https://golang.org/doc/effective_go.html) and in the
-[Go Code Review Comments wiki](https://github.com/golang/go/wiki/CodeReviewComments).
+[Go Code Review Comments wiki](https://go.dev/wiki/CodeReviewComments).
 
 ## Certificate of Origin
 
