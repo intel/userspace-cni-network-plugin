@@ -4,6 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/intel/userspace-cni-network-plugin)](https://goreportcard.com/report/github.com/intel/userspace-cni-network-plugin) 
 [![Go Reference](https://pkg.go.dev/badge/github.com/intel/userspace-cni-network-plugin.svg)](https://pkg.go.dev/github.com/intel/userspace-cni-network-plugin) 
 [![E2E](https://github.com/intel/userspace-cni-network-plugin/actions/workflows/e2e.yml/badge.svg)](https://github.com/intel/userspace-cni-network-plugin/actions/workflows/e2e.yml)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7382/badge)](https://www.bestpractices.dev/projects/7382)
 
    * [Links](#links)
    * [BiWeekly Meeting](#biweekly-meeting)
