@@ -6,7 +6,7 @@ toolchain go1.22.3
 
 require (
 	github.com/containernetworking/cni v1.2.3
-	github.com/containernetworking/plugins v1.5.0
+	github.com/containernetworking/plugins v1.5.1
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
@@ -43,7 +43,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/safchain/ethtool v0.3.0 // indirect
+	github.com/safchain/ethtool v0.4.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vishvananda/netns v0.0.4 // indirect
 	golang.org/x/net v0.25.0 // indirect
