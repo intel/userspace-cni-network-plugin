@@ -21,7 +21,7 @@ jobs:
 
 
       - name: set hugapages
-        run: sudo echo 10000 | sudo tee /proc/sys/vm/nr_hugepages
+        run: sudo echo 5000 | sudo tee /proc/sys/vm/nr_hugepages
 
       - name: check hugepages
         run: sudo grep -i Huge /proc/meminfo
