@@ -20,4 +20,4 @@ jobs:
           egress-policy: audit
 
       - name: Harden Runner
-        run: sudo echo "test"
+        run: sudo grep HugePages /proc/meminfo
