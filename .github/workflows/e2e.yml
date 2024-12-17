@@ -12,7 +12,7 @@ jobs:
 
   e2e:
     name: E2E
-    runs-on: hugepage-runner
+    runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
@@ -24,6 +24,13 @@ jobs:
         with:
           go-version: 1.22.3
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: set hugapages
+        run: sudo echo 5000 | sudo tee /proc/sys/vm/nr_hugepages
+
+      - name: check hugepages
+        run: sudo grep -i Huge /proc/meminfo
+
       - name: install_go_kubectl_kind
         run: source ./ci/ci.sh && install_go_kubectl_kind
       - name: create_kind_cluster
