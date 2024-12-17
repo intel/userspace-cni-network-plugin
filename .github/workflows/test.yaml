@@ -10,8 +10,8 @@ permissions:
 
 jobs:
 
-  e2e:
-    name: E2E
+  test1:
+    name: test
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
@@ -19,5 +19,10 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Harden Runner
+
+      - name: set hugapages
+        run: sudoecho 10000 | sudo tee /proc/sys/vm/nr_hugepages
+
+      - name: chech hugepages
         run: sudo grep HugePages /proc/meminfo
+
