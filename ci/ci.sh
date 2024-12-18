@@ -30,7 +30,7 @@ go install sigs.k8s.io/kind@v0.20.0
 
 sudo bash -c 'echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.27/deb/ /" >> /etc/apt/sources.list.d/kubernetes.list'
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.27/deb/Release.key -o Release.key
-sudo bash -c 'gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg -d Release.key'
+sudo bash -c 'gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg --import Release.key'
 sudo apt-get update
 sudo apt-get install -y kubectl=1.27.3-1.1
 }
