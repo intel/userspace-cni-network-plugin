@@ -88,6 +88,10 @@ echo "Setting up vpp pods"
 sleep 20
 kubectl get all -A
 
+kubectl get nodes
+
+kubectl describe -n vpp vpp-app1-kind-control-plane
+
 kubectl exec -n vpp vpp-app1-kind-control-plane -- ./vpp_pod_setup_memif.sh
 kubectl exec -n vpp vpp-app2-kind-control-plane -- ./vpp_pod_setup_memif.sh
 kubectl exec -n vpp vpp-app1-kind-control-plane -- vppctl "sh int address"
