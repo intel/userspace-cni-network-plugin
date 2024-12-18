@@ -1,10 +1,8 @@
 #!/bin/bash
 set -e
 
-pwd
-ls
-echo "*********************************************************************"
-USERSPACEDIR="/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/"
+#USERSPACEDIR="/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/"
+USERSPACEDIR="/home/runner/work/userspace-cni-network-plugin/userspace-cni-network-plugin"
 CI_DIR="$USERSPACEDIR/ci/"
 
 vpp_ligato_latest_container()
