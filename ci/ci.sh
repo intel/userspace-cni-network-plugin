@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
-USERSPACEDIR="/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/"
+
+#USERSPACEDIR="/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/"
+USERSPACEDIR="/home/runner/work/userspace-cni-network-plugin/userspace-cni-network-plugin"
 CI_DIR="$USERSPACEDIR/ci/"
 
 vpp_ligato_latest_container()
@@ -28,10 +30,12 @@ export PATH="${PATH}:${HOME}/go/bin"
 echo "export PATH=\"${PATH}:${HOME}/go/bin/:${HOME}.local/bin/\"" >>~/.bashrc
 go install sigs.k8s.io/kind@v0.20.0
 
-echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.27/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.27/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo bash -c 'echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.27/deb/ /" >> /etc/apt/sources.list.d/kubernetes.list'
+sudo bash -c 'curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.27/deb/Release.key | gpg --dearmor >> /etc/apt/keyrings/kubernetes-apt-keyring.gpg'
+#curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.27/deb/Release.key -o release.key
+#sudo bash -c 'gpg --no-tty -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg --dearmor ./release.key'
 sudo apt-get update
-sudo apt-get install -y kubectl=1.27.3-1.1
+#sudo apt-get install -y kubectl=1.27.3-1.1
 }
 
 create_kind_cluster(){
@@ -83,6 +87,10 @@ echo "Setting up vpp pods"
 
 sleep 20
 kubectl get all -A
+
+kubectl get nodes
+
+kubectl describe pod -n vpp vpp-app1-kind-control-plane
 
 kubectl exec -n vpp vpp-app1-kind-control-plane -- ./vpp_pod_setup_memif.sh
 kubectl exec -n vpp vpp-app2-kind-control-plane -- ./vpp_pod_setup_memif.sh
