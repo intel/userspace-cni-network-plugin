@@ -29,8 +29,9 @@ echo "export PATH=\"${PATH}:${HOME}/go/bin/:${HOME}.local/bin/\"" >>~/.bashrc
 go install sigs.k8s.io/kind@v0.20.0
 
 sudo bash -c 'echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.27/deb/ /" >> /etc/apt/sources.list.d/kubernetes.list'
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.27/deb/Release.key -o release.key
-sudo bash -c 'gpg --no-tty -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg --dearmor ./release.key'
+sudo bash -c 'curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.27/deb/Release.key -o release.key | gpg --dearmor >> /etc/apt/keyrings/kubernetes-apt-keyring.gpg'
+#curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.27/deb/Release.key -o release.key
+#sudo bash -c 'gpg --no-tty -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg --dearmor ./release.key'
 sudo apt-get update
 sudo apt-get install -y kubectl=1.27.3-1.1
 }
