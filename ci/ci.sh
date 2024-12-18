@@ -56,7 +56,7 @@ make build
 mkdir_var=$(dirname ${USERSPACEDIR})
 kind load docker-image localhost:5000/userspacecni
 docker exec -i kind-control-plane bash -c "mkdir -p $mkdir_var"
-docker cp "${}" "kind-control-plane:${}"
+docker cp "${USERSPACEDIR}" "kind-control-plane:${USERSPACEDIR}"
 }
 
 deploy_multus(){
