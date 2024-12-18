@@ -33,7 +33,7 @@ sudo bash -c 'curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.27/deb/Release.key
 #curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.27/deb/Release.key -o release.key
 #sudo bash -c 'gpg --no-tty -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg --dearmor ./release.key'
 sudo apt-get update
-sudo apt-get install -y kubectl=1.27.3-1.1
+#sudo apt-get install -y kubectl=1.27.3-1.1
 }
 
 create_kind_cluster(){
