@@ -90,7 +90,7 @@ kubectl get all -A
 
 kubectl get nodes
 
-kubectl describe -n vpp vpp-app1-kind-control-plane
+kubectl describe pod -n vpp vpp-app1-kind-control-plane
 
 kubectl exec -n vpp vpp-app1-kind-control-plane -- ./vpp_pod_setup_memif.sh
 kubectl exec -n vpp vpp-app2-kind-control-plane -- ./vpp_pod_setup_memif.sh
