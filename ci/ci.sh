@@ -1,5 +1,9 @@
 #!/bin/bash
 set -e
+
+pwd
+ls
+echo "*********************************************************************"
 USERSPACEDIR="/runner/_work/userspace-cni-network-plugin/userspace-cni-network-plugin/"
 CI_DIR="$USERSPACEDIR/ci/"
 
@@ -54,7 +58,7 @@ make build
 mkdir_var=$(dirname ${USERSPACEDIR})
 kind load docker-image localhost:5000/userspacecni
 docker exec -i kind-control-plane bash -c "mkdir -p $mkdir_var"
-docker cp "${USERSPACEDIR}" "kind-control-plane:${USERSPACEDIR}"
+docker cp "${}" "kind-control-plane:${}"
 }
 
 deploy_multus(){
