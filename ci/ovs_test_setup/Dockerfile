@@ -1,4 +1,4 @@
-FROM ubuntu:22.04@sha256:6042500cf4b44023ea1894effe7890666b0c5c7871ed83a97c36c76ae560bb9b
+FROM ubuntu:24.04@sha256:dfc10878be8d8fc9c61cbff33166cb1d1fe44391539243703c72766894fa834a
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update -y \
     && apt-get install -y linux-headers-generic openvswitch-switch-dpdk \
