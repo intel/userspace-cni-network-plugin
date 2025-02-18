@@ -1,0 +1,28 @@
+name: test
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+
+  test1:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
+
+      - name: set hugapages
+        run: sudo echo 5000 | sudo tee /proc/sys/vm/nr_hugepages
+
+      - name: check hugepages
+        run: sudo grep -i Huge /proc/meminfo
+
